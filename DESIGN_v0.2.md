@@ -145,3 +145,21 @@ look Header
 button ✓ named 提出した
 image logo about 会社のロゴ
 ```
+
+### DESIGN_ALL.md の残り（任されて決めたもの）
+DESIGN_ALL.md の案をそのまま採用する。理由も残しておく。
+
+| 項目 | 決めたこと | 理由 |
+|---|---|---|
+| 置き場所 | top / main / side / bottom / over | よくある画面はこの5つで組める。細かい時は row / column / grid がある |
+| 画面の大きさ | phone / tablet / wide の3段階 | 数字で決めると迷う。名前なら読める |
+| do の道具 | DESIGN_ALL B1 の一覧で始める | 既存の言語でよく使う語だけにしてある。足りなければ足す |
+| 数の型 | money / percent / count を足す | お金の計算の誤差と、通貨の混ぜ間違いを言語が止められる |
+| ask ai | how に上限（時間かお金）が無ければエラー | 実行の度にAIを呼ぶので、上限が無いと止まらない・高くつく |
+| change | add / rename / remove。足す項目の初期値が無ければエラー | 決めてないことはエラー |
+| gone | `gone[remove too \| leave empty \| block]` | 3択で全部の場合を覆える |
+| connect | gives / does / needs / limit | 届く・頼む・秘密・上限で、外とのやり取りは全部書ける |
+| does の結果 | 必ず状態（`sent \| failed` など） | true/false が無い原則と揃う。失敗の扱いを書き忘れない |
+| example | given / 出来事 / expect の3段 | 時間・発言・タップ・外からの出来事を同じ形で書ける |
+
+これで DESIGN_ALL.md の「決めたいこと」は全部決まった。

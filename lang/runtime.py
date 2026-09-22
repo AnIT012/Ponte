@@ -106,7 +106,7 @@ class Engine:
                 edges, wins = flow_parts(f)
                 self.flows[(t, fld)] = (edges, wins, flow_states(f))
         self.lists = {l.name: l for l in s.decls("list")}
-        self.matches = {m.name: m for m in s.decls("match")}
+        self.matches = {m.text: m for m in s.decls("match")}   # 「Application.status to color」と「... to icon」を別々に持つ
         self.rules = {r.name: r for r in s.decls("rule")}
         self.actions = {a.name: a for a in s.decls("action")}
         self.relates = relate_lines(s)
@@ -237,6 +237,22 @@ class Engine:
         if fire:
             self.fire(f"{box.thing} moves to {to}", Ctx(user, this=box))
 
+    def update(self, box: Box, values: dict, user: User | None) -> None:
+        """状態ではない項目を書き換える。flow で管理する状態は move でしか変えられない（set 禁止）"""
+        if user is not None and not self.can(user, "change", box.thing, box):
+            raise NotAllowed(f"{user.name} はこの {box.thing} を書き換えられません")
+        for k in values:
+            f = self.fields[box.thing].get(k)
+            if f is None:
+                raise RuleError(f"{box.thing} に {k} という項目はありません")
+            if f.states:
+                raise RuleError(f"{k} は状態なので書き換えられません（move で動かす）")
+        with box.lock:
+            for k, v in values.items():
+                box.values[k] = v
+                self._log({"t": "set", "thing": box.thing, "id": box.id, "field": k, "value": v})
+        self._changed()
+
     def _state_field(self, thing: str, state: str) -> str:
         for name, f in self.fields[thing].items():
             if f.states and state in f.states:
@@ -296,8 +312,8 @@ class Engine:
             items.sort(key=lambda b: (self._time_of(b.values.get(key, "")) or datetime.max, str(b.values.get(key))))
         return items
 
-    def match(self, name: str, value: str) -> str:
-        m = self.matches[name]
+    def match(self, key: str, value: str) -> str:
+        m = self.matches[key]
         default = ""
         for lefts, right, _ in match_arms(m):
             if "else" in lefts:
@@ -306,11 +322,8 @@ class Engine:
                 return right
         return default
 
-    def match_for(self, thing: str, fld: str) -> Node | None:
-        for m in self.matches.values():
-            if m.text.split(" to ")[0].strip() == f"{thing}.{fld}":
-                return m
-        return None
+    def match_for(self, thing: str, fld: str, target: str = "color") -> Node | None:
+        return self.matches.get(f"{thing}.{fld} to {target}")
 
     def owner_of(self, box: Box) -> User | None:
         """通知の宛先: その箱の User を指す項目（QUESTIONS_v0.2 R3）"""

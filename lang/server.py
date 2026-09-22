@@ -17,7 +17,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 from .body import Body, BodyError
-from .parser import Node, Spec, match_arms, states_of
+from .icons import ICONS
+from .parser import Node, Spec, match_arms, parse_button, states_of, words_entries
 from .runtime import Box, Ctx, Engine, RuleError
 from .values import parse_time
 
@@ -49,7 +50,7 @@ class App:
         self.looks = {l.name: l for l in spec.decls("look")}
         self.parts = {p.name: p for p in spec.decls("part")}
         self.inputs = {i.name: i for i in spec.decls("input")}
-        self.words = {w.name: {c.keyword: c.text.strip().strip('"') for c in w.children} for w in spec.decls("words")}
+        self.words = {w.name: words_entries(w) for w in spec.decls("words")}
         self.home = next(iter(self.scenes), None)
         self.part_bodies = {}
         for name, p in self.parts.items():
@@ -85,7 +86,7 @@ class App:
                     this = t[this_id]
         env = Env(user, scene, dict(state), this, origin, lang)
         if scene in self.inputs:
-            top = []
+            top = []  # noqa
             if self.home in self.scenes:
                 top = [self.part_block(self.parts[c.text.strip()], None, env) for c in self.scenes[self.home].children
                        if c.keyword == "top" and c.text.strip() in self.parts]
@@ -135,10 +136,11 @@ class App:
             sc = self.scenes[env.scene]
             vals = self.scene_states(sc).get(name, {}).get("values", [])
             return [{"type": "tabs", "state": name, "current": env.state.get(name),
-                     "options": [{"value": v, "label": self.tr(v, env)} for v in vals]}]
-        m = re.match(r"^button\s+(\S+)(?:\s+named\s+(.+?))?(?:\s+(toggle|set)\s+(\w+)(?:\s+(\w+))?)?$", text)
-        if m:   # 画面の下のボタンだけ目立たせる。上のボタンは控えめ
-            return [self.button(m.group(1), m.group(2), m.group(3), m.group(4), m.group(5), env, main=(node.keyword == "bottom"), on=env.scene)]
+                     "options": [{"value": v, "label": self.tr(v, env), "icon": self.icon_for(name, v)} for v in vals]}]
+        if text.startswith("button "):   # 画面の下のボタンだけ目立たせる。上のボタンは控えめ
+            return [self.button(parse_button(text[7:]), env, main=(node.keyword == "bottom"), on=env.scene)]
+        if text == "notices":
+            return [{"type": "notices"}]
         m = re.match(r"^(\w+) as (\w+)$", text)
         if m:
             name, kind = m.group(1), m.group(2)
@@ -176,14 +178,22 @@ class App:
         return name
 
     # ------------------------------------------------------------------
-    def button(self, bid, label, action, state, value, env: Env, main: bool, on: str) -> dict:
-        tone = self.tones.get(bid) or ("main" if main else "quiet")
-        b = {"type": "button", "id": bid, "label": self.tr(label or bid, env), "tone": tone, "on": on}
-        if action == "toggle":
-            b["act"] = {"kind": "toggle", "state": state}
-        elif action == "set":
-            b["act"] = {"kind": "set", "state": state, "value": value}
+    def button(self, pb: dict, env: Env, main: bool, on: str) -> dict:
+        tone = self.tones.get(pb["id"]) or ("main" if main else "quiet")
+        b = {"type": "button", "id": pb["id"], "label": self.tr(pb["label"] or pb["id"], env), "tone": tone, "on": on,
+             "icon": pb["icon"], "confirm": self.tr(pb["confirm"], env) if pb["confirm"] else None}
+        if pb["act"]:
+            b["act"] = pb["act"]
         return b
+
+    def icon_for(self, subject: str, value) -> str | None:
+        """match 〇〇 to icon があれば、その値のアイコン"""
+        for m in self.eng.matches.values():
+            if m.text == f"{subject} to icon":
+                for lefts, right, _ in match_arms(m):
+                    if str(value) in lefts or "else" in lefts:
+                        return right
+        return None
 
     def can_press(self, box: Box, bid: str, on: str) -> bool:
         """このボタンの rule が `move this to X` なら、flow でいま X へ動けるかを見る（動けないボタンは押せなくする）"""
@@ -215,7 +225,8 @@ class App:
         mt = self.eng.match_for(box.thing, fld)
         states = self.eng.fields[box.thing][fld].states or []
         idx = states.index(v) if v in states else 0
-        return {"label": self.tr(v, env), "value": v, "color": color_of(self.eng.match(mt.name, v) if mt else None, idx)}
+        return {"label": self.tr(v, env), "value": v, "color": color_of(self.eng.match(mt.text, v) if mt else None, idx),
+                "icon": self.icon_for(f"{box.thing}.{fld}", v)}
 
     def show_value(self, box: Box, fld: str, env: Env):
         f = self.eng.fields[box.thing].get(fld)
@@ -258,10 +269,13 @@ class App:
                 elif c.keyword == "mark":
                     m = re.match(r"^color of (\w+)$", c.text.strip())
                     row["mark"] = self.mark_of(box, m.group(1) if m else c.text.strip(), env)
+                elif c.keyword == "lead":
+                    t = str(self.show_value(box, c.text.strip(), env) or "?")
+                    row["lead"] = {"text": t[:1].upper(), "color": AUTO[sum(map(ord, t)) % len(AUTO)]}
                 elif c.keyword == "button":
-                    m = re.match(r"^(\S+)(?:\s+named\s+(.+?))?(?:\s+(toggle|set)\s+(\w+)(?:\s+(\w+))?)?$", c.text.strip())
-                    b = self.button(m.group(1), m.group(2), m.group(3), m.group(4), m.group(5), env, main=(nb == 0), on=list_name)
-                    if not b.get("act") and not self.can_press(box, m.group(1), list_name):
+                    pb = parse_button(c.text.strip())
+                    b = self.button(pb, env, main=(nb == 0), on=list_name)
+                    if not b.get("act") and not self.can_press(box, pb["id"], list_name):
                         b["disabled"] = True
                         b["tone"] = "quiet"
                     row["buttons"].append(b)
@@ -281,14 +295,14 @@ class App:
             cols = []
             for i, st in enumerate(states):
                 mt = self.eng.match_for(thing, sf)
-                cols.append({"state": st, "label": self.tr(st, env), "color": color_of(self.eng.match(mt.name, st) if mt else None, i),
+                cols.append({"state": st, "label": self.tr(st, env), "color": color_of(self.eng.match(mt.text, st) if mt else None, i),
                              "rows": [self.row(b, look, env, name) for b in boxes if b.values.get(sf) == st]})
             return {**base, "type": "board", "columns": cols, "draggable": (thing, sf) in self.eng.flows}
         if kind == "chart":
             states = fields[sf].states if sf else []
             mt = self.eng.match_for(thing, sf) if sf else None
             bars = [{"label": self.tr(st, env), "count": sum(1 for b in boxes if b.values.get(sf) == st),
-                     "color": color_of(self.eng.match(mt.name, st) if mt else None, i)} for i, st in enumerate(states)]
+                     "color": color_of(self.eng.match(mt.text, st) if mt else None, i)} for i, st in enumerate(states)]
             return {**base, "type": "chart", "bars": bars, "total": len(boxes), "title": self.tr(name, env)}
         if kind == "calendar":
             df = next((k for k, f in fields.items() if f.type in ("monthday", "date")), None)
@@ -307,20 +321,50 @@ class App:
             cols = [k for k, f in fields.items() if f.type in ("text", "monthday", "date") or f.states]
             return {**base, "type": "table", "columns": [{"key": c, "label": self.tr(c, env)} for c in cols],
                     "rows": [self.row(b, look, env, name) for b in boxes]}
-        return {**base, "type": "items", "rows": [self.row(b, look, env, name) for b in boxes],
-                "empty": self.empty_text(look, env)}
+        rows = [self.row(b, look, env, name) for b in boxes]
+        out = {**base, "type": "items", "rows": rows, "empty": self.empty_text(look, env), "heading": None, "search": None, "groups": None}
+        if look is not None:
+            h = look.child("heading")
+            if h is not None:
+                out["heading"] = self.tr(h.text.strip().strip('"'), env)
+            sr = look.child("search")
+            if sr is not None:
+                out["search"] = {"fields": [x.strip() for x in sr.text.split(",")], "placeholder": self.tr("さがす", env)}
+            g = look.child("group")
+            if g is not None and g.text.startswith("by "):
+                gf = g.text[3:].strip()
+                f = fields.get(gf)
+                order = f.states if f is not None and f.states else sorted({str(b.values.get(gf, "")) for b in boxes})
+                groups = []
+                for i, st in enumerate(order):
+                    ids = [r["id"] for r, b in zip(rows, boxes) if str(b.values.get(gf, "")) == st]
+                    if not ids:
+                        continue
+                    mt = self.eng.match_for(thing, gf) if f is not None and f.states else None
+                    groups.append({"value": st, "label": self.tr(st, env), "ids": ids,
+                                   "color": color_of(self.eng.match(mt.text, st) if mt else None, i),
+                                   "icon": self.icon_for(f"{thing}.{gf}", st)})
+                out["groups"] = groups
+        return out
 
-    def empty_text(self, look: Node | None, env: Env) -> str:
-        if look is not None and look.child("empty") is not None:
-            return self.tr(look.child("empty").text.strip().strip('"'), env)
-        return self.tr("まだありません", env)
+    def empty_text(self, look: Node | None, env: Env) -> dict:
+        e = look.child("empty") if look is not None else None
+        if e is None:
+            return {"text": self.tr("まだありません", env), "button": None}
+        toks = re.findall(r'"[^"]*"|\S+', e.text)
+        text = toks[0].strip('"') if toks else ""
+        btn = None
+        if "button" in toks:
+            pb = parse_button(" ".join(toks[toks.index("button") + 1:]))
+            btn = self.button(pb, env, main=True, on=env.scene) if pb else None
+        return {"text": self.tr(text, env), "button": btn}
 
     def detail_block(self, env: Env) -> dict:
         box = env.this
         look = self.looks.get(box.thing) or (self.looks.get(env.origin) if env.origin else None)
         r = self.row(box, look, env, env.origin or box.thing)
         fields = [{"label": self.tr(k, env), "value": self.show_value(box, k, env)} for k, f in self.eng.fields[box.thing].items()]
-        return {"type": "detail", "title": r.get("title"), "sub": r.get("sub"), "mark": r.get("mark"),
+        return {"type": "detail", "title": r.get("title"), "sub": r.get("sub"), "mark": r.get("mark"), "lead": r.get("lead"),
                 "fields": fields, "buttons": r["buttons"], "id": box.id, "on": env.origin or box.thing}
 
     def part_block(self, part: Node, value, env: Env) -> dict:
@@ -339,7 +383,8 @@ class App:
             if c.keyword == "show" and m:
                 t = self.tr(m.group(1), env)
                 for _ in range(3):      # 値の中の {名前} も埋める
-                    t2 = re.sub(r"\{(\w+)\}", lambda mm: str(vals.get(mm.group(1), mm.group(0))), t)
+                    t2 = re.sub(r"\{(\w+)\}", lambda mm: self.tr(str(vals.get(mm.group(1), mm.group(0))), env)
+                                if isinstance(vals.get(mm.group(1)), str) else str(vals.get(mm.group(1), mm.group(0))), t)
                     if t2 == t:
                         break
                     t = t2
@@ -347,22 +392,35 @@ class App:
             elif c.keyword == "mark":
                 st = c.text.strip()
                 v = vals.get(st)
-                mt = next((x for x in self.eng.matches.values() if x.text.split(" to ")[0].strip() == f"{part.name}.{st}"), None)
+                mt = self.eng.matches.get(f"{part.name}.{st} to color")
                 decl = next((x for x in part.children if x.keyword == st and x.text.startswith("[")), None)
                 opts = states_of(decl.text) if decl else []
                 idx = opts.index(v) if v in opts else 0
-                mark = {"label": self.tr(v, env), "value": v, "color": color_of(self.eng.match(mt.name, v) if mt else None, idx)}
+                mark = {"label": self.tr(v, env), "value": v, "color": color_of(self.eng.match(mt.text, v) if mt else None, idx)}
         return {"type": "part", "name": part.name, "lines": lines, "mark": mark}
 
     def input_block(self, name: str, env: Env) -> dict:
+        """input。前の画面から with this で開いたら、その1件の編集になる（QUESTIONS_v0.2 U6）"""
         inp = self.inputs[name]
         thing = self.eng.input_thing(name)
+        editing = env.this is not None and env.this.thing == thing
         fields = []
         for c in inp.children:
             f = self.eng.fields[thing][c.keyword]
             kind = {"monthday": "datetime-local", "date": "datetime-local", "number": "number", "count": "number"}.get(f.type, "text")
-            fields.append({"name": c.keyword, "label": self.tr(c.keyword, env), "kind": kind, "required": "required" in c.text})
-        return {"type": "input", "name": name, "title": self.tr(name, env), "fields": fields,
+            if c.keyword == "memo" or "long" in c.text:
+                kind = "textarea"
+            value = ""
+            if editing:
+                value = str(env.this.values.get(c.keyword, ""))
+                if kind == "datetime-local" and value:
+                    try:
+                        t = parse_time(value, self.eng.clock().year)
+                        value = t.strftime("%Y-%m-%dT%H:%M")
+                    except ValueError:
+                        value = ""
+            fields.append({"name": c.keyword, "label": self.tr(c.keyword, env), "kind": kind, "required": "required" in c.text, "value": value})
+        return {"type": "input", "name": name, "title": self.tr(name, env), "fields": fields, "this": env.this.id if editing else None,
                 "submit": self.tr("保存", env), "cancel": self.tr("キャンセル", env)}
 
     # ------------------------------------------------------------------
@@ -545,8 +603,12 @@ def make_handler(app: App):
                                 v = f"{int(m.group(1))}/{int(m.group(2))} {int(m.group(3))}:{m.group(4)}"
                             parse_time(v, 2000)
                         values[k] = v
-                    app.eng.submit(user, data["input"], values)
-                    self._json({"ok": True})
+                    box = next((t[data["this"]] for t in app.eng.boxes.values() if data.get("this") in t), None) if data.get("this") else None
+                    if box is not None:
+                        app.eng.update(box, values, user)
+                    else:
+                        app.eng.submit(user, data["input"], values)
+                    self._json({"ok": True, "edited": box is not None})
                 elif self.path == "/api/says":
                     ctx = app.eng.says(user, data["text"])
                     self._json({"nav": ctx.nav})

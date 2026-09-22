@@ -143,17 +143,47 @@ td{padding:11px 14px;border-bottom:1px solid var(--line)}tr:last-child td{border
 .toast{background:var(--text);color:var(--bg);padding:11px 14px;border-radius:12px;font-size:13px;box-shadow:var(--shadow-2);animation:slide .22s both;display:flex;gap:10px;align-items:flex-start}
 .toast b{font-weight:700}.toast.err{background:var(--danger);color:#fff}
 .toast.out{opacity:0;transform:translateY(-6px);transition:.25s}
+/* アイコン・頭文字・見出し・検索・まとまり・確認・通知 */
+.ic{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn.sm .ic{width:14px;height:14px}.badge .ic{width:12px;height:12px}.tabs .ic{width:15px;height:15px;margin-right:5px;vertical-align:-3px}
+.lead{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-weight:750;font-size:16px;color:#fff;background:var(--c);flex:none;box-shadow:inset 0 -2px 0 rgba(0,0,0,.12)}
+.kind-list .lead{width:34px;height:34px;border-radius:10px;font-size:15px}
+.detail .lead{width:52px;height:52px;border-radius:14px;font-size:22px}
+.card .who{display:flex;gap:12px;align-items:center;min-width:0}
+.heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:2px 2px 12px}
+.heading h3{margin:0;font-size:17px;letter-spacing:-.01em}.heading .count{color:var(--muted);font-size:13px;font-weight:600}
+.search{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:0 12px;margin-bottom:12px;box-shadow:var(--shadow-1);transition:border-color .15s,box-shadow .15s}
+.search:focus-within{border-color:var(--main);box-shadow:0 0 0 3px var(--main-soft)}
+.search .ic{color:var(--muted)}.search input{flex:1;border:0;background:none;font:inherit;padding:10px 0;color:var(--text);outline:0}
+.group{margin-bottom:18px}.group-head{display:flex;align-items:center;gap:8px;margin:0 4px 8px;font-size:13px;font-weight:700;color:var(--muted)}
+.group-head .n{font-weight:600;opacity:.8}
+.hidden{display:none!important}
+.nores{color:var(--muted);text-align:center;padding:24px;font-size:14px}
+.bell{position:relative}.bell .dot{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;border-radius:999px;background:var(--danger);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 5px;border:2px solid var(--bg)}
+.panel{position:fixed;top:64px;right:max(16px,calc((100vw - 1180px)/2 + 20px));width:min(360px,calc(100vw - 32px));max-height:70vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-2);z-index:25;animation:pop .16s both}
+.panel h4{margin:0;padding:14px 16px;border-bottom:1px solid var(--line);font-size:14px}
+.note{padding:12px 16px;border-bottom:1px solid var(--line);font-size:13px;display:grid;gap:2px}.note:last-child{border-bottom:0}
+.note b{font-size:12px;color:var(--muted);font-weight:650}.note time{font-size:11px;color:var(--muted)}
+.ask h3{margin:0 0 6px;font-size:17px}.ask p{margin:0 0 18px;color:var(--muted)}.ask .act{display:flex;gap:8px;justify-content:flex-end}
+.form textarea{font:inherit;font-size:15px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text);min-height:96px;resize:vertical}
+.form textarea:focus{outline:0;border-color:var(--main);box-shadow:0 0 0 3px var(--main-soft)}
+main#root{animation:fade .18s both}
+.empty .btn{margin-top:6px}
 /*__CSS__*/
 </style></head><body>
 <header class="top"><div class="top-in" id="top"></div></header>
 <main id="root"><div class="app"><section class="slot-main"><div class="sk"></div><div class="sk"></div></section></div></main>
 <div class="bottom"><div class="bottom-in" id="bottom"></div></div>
+<div id="over"></div>
 <div class="toasts" id="toasts"></div>
 <script>
 const Q = new URLSearchParams(location.search);
 const USER = Q.get("user") || "me", LANG = Q.get("lang") || "__LANG__", HOME = "__HOME__";
-const S = {scene: HOME, states: {}, thisId: null, origin: null, seen: -1, calShift: 0, last: null};
+const S = {scene: HOME, states: {}, thisId: null, origin: null, seen: -1, calShift: 0, last: null, search: {}, unread: 0, notes: [], history: [], panel: false};
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ICONS = {"plus": "M12 5v14M5 12h14", "check": "M5 12.5l4.5 4.5L19 7.5", "x": "M6 6l12 12M18 6L6 18", "send": "M4 12l16-8-6 16-2.5-6.5z M11.5 13.5L20 4", "trophy": "M8 4h8v4a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 12v4M9 20h6M10 16h4", "calendar": "M4 6h16v14H4zM4 10h16M8 3v4M16 3v4", "list": "M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01", "board": "M4 4h5v16H4zM10 4h4v10h-4zM15 4h5v7h-5z", "clock": "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2", "bell": "M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0", "menu": "M4 7h16M4 12h16M4 17h16", "back": "M15 5l-7 7 7 7", "edit": "M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4", "search": "M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4", "flag": "M5 21V4M5 4h11l-2 4 2 4H5", "mail": "M3 6h18v12H3zM3 7l9 6 9-6", "star": "M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z", "trash": "M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13", "alert": "M12 4l9 16H3zM12 10v4M12 17h.01", "draft": "M6 3h8l4 4v14H6zM14 3v4h4M9 13h6M9 17h4", "chart": "M4 20V10M10 20V4M16 20v-7M22 20H2", "home": "M4 11l8-7 8 7v9h-5v-6H9v6H4z", "user": "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0", "sparkle": "M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"};
+const icon = n => n && ICONS[n] ? `<svg class="ic" viewBox="0 0 24 24"><path d="${ICONS[n]}"/></svg>` : "";
+const lead = l => l ? `<span class="lead" style="--c:${esc(l.color)}">${esc(l.text)}</span>` : "";
 const EMPTY_ICON = `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>`;
 
 async function post(path, body){
@@ -165,27 +195,28 @@ function toast(text, err){
   t.innerHTML = text; document.getElementById("toasts").appendChild(t);
   setTimeout(() => { t.classList.add("out"); setTimeout(() => t.remove(), 300); }, err ? 4200 : 3600);
 }
-const badge = m => m ? `<span class="badge" style="--c:${esc(m.color)}"><i></i>${esc(m.label)}</span>` : "";
+const badge = m => m ? `<span class="badge" style="--c:${esc(m.color)}">${m.icon ? icon(m.icon) : "<i></i>"}${esc(m.label)}</span>` : "";
 const btn = (b, extra = {}) => {
   const a = b.act ? `data-act="${b.act.kind}" data-state="${esc(b.act.state)}" data-value="${esc(b.act.value || "")}"` : `data-act="tap"`;
-  return `<button class="btn ${esc(b.tone)} ${extra.sm ? "sm" : ""}" ${b.disabled ? `disabled title="いまの状態からは動かせません"` : ""} ${a} data-button="${esc(b.id)}" data-on="${esc(extra.on || b.on)}" ${extra.id ? `data-id="${esc(extra.id)}"` : ""}>${esc(b.label)}</button>`;
+  return `<button class="btn ${esc(b.tone)} ${extra.sm ? "sm" : ""}" ${b.disabled ? `disabled title="いまの状態からは動かせません"` : ""} ${a} ${b.confirm ? `data-confirm="${esc(b.confirm)}"` : ""} data-button="${esc(b.id)}" data-on="${esc(extra.on || b.on)}" ${extra.id ? `data-id="${esc(extra.id)}"` : ""}>${icon(b.icon)}${esc(b.label)}</button>`;
 };
 // 印（mark）があって1行だけの部品は、その行を色付きの札にする
 const part = p => p.mark && p.lines.length === 1
   ? `<span class="badge pill" style="--c:${esc(p.mark.color)}"><i></i>${esc(p.lines[0])}</span>`
   : `<div class="part">${badge(p.mark)}<div class="part-lines">${p.lines.map(l => `<div>${esc(l)}</div>`).join("")}</div></div>`;
 const sub = s => !s ? "" : s.type === "part" ? `<div class="sub">${part(s)}</div>` : `<div class="sub">${esc(s.text)}</div>`;
-const empty = t => `<div class="empty">${EMPTY_ICON}<div>${esc(t)}</div></div>`;
+const empty = e => { const t = typeof e === "string" ? {text:e} : (e || {}); return `<div class="empty">${EMPTY_ICON}<div>${esc(t.text)}</div>${t.button ? btn(t.button) : ""}</div>`; };
 
+const hay = r => esc(Object.values(r.values || {}).join(" ").toLowerCase());
 function card(r, b){
   const tap = r.cardTap ? `tap" data-card="${esc(r.id)}" data-on="${esc(b.name)}` : "";
-  return `<div class="card ${tap}" data-key="${esc(r.id)}">
-    <div class="head"><div class="title">${esc(r.title)}</div>${badge(r.mark)}</div>${sub(r.sub)}
+  return `<div class="card ${tap}" data-key="${esc(r.id)}" data-search="${hay(r)}">
+    <div class="head"><div class="who">${lead(r.lead)}<div class="title">${esc(r.title)}</div></div>${badge(r.mark)}</div>${sub(r.sub)}
     ${r.buttons.length ? `<div class="btns">${r.buttons.map(x => btn(x, {sm:1, on:b.name, id:r.id})).join("")}</div>` : ""}</div>`;
 }
 function listRow(r, b){
   const tap = r.cardTap ? `tap" data-card="${esc(r.id)}" data-on="${esc(b.name)}` : "";
-  return `<div class="card ${tap}" data-key="${esc(r.id)}">${badge(r.mark)}<div class="grow"><div class="title">${esc(r.title)}</div>${sub(r.sub)}</div>
+  return `<div class="card ${tap}" data-key="${esc(r.id)}" data-search="${hay(r)}">${lead(r.lead)}<div class="grow"><div class="title">${esc(r.title)}</div>${sub(r.sub)}</div>${badge(r.mark)}
     ${r.buttons.length ? `<div class="btns">${r.buttons.map(x => btn(x, {sm:1, on:b.name, id:r.id})).join("")}</div>` : ""}</div>`;
 }
 function calendar(b){
@@ -210,10 +241,20 @@ function block(b){
     case "empty": return empty(b.text);
     case "part": return part(b);
     case "button": return btn(b);
-    case "tabs": return `<div class="tabs" role="tablist">${b.options.map(o => `<button role="tab" class="${o.value === b.current ? "on" : ""}" data-act="set" data-state="${esc(b.state)}" data-value="${esc(o.value)}">${esc(o.label)}</button>`).join("")}</div>`;
-    case "items":
-      if(!b.rows.length) return `<div class="block look-${esc(b.look)}">${empty(b.empty)}</div>`;
-      return `<div class="block look-${esc(b.look)} kind-${esc(b.kind)}"><div class="rows">${b.rows.map(r => b.kind === "list" ? listRow(r, b) : card(r, b)).join("")}</div></div>`;
+    case "tabs": return `<div class="tabs" role="tablist">${b.options.map(o => `<button role="tab" class="${o.value === b.current ? "on" : ""}" data-act="set" data-state="${esc(b.state)}" data-value="${esc(o.value)}">${icon(o.icon)}${esc(o.label)}</button>`).join("")}</div>`;
+    case "items": {
+      const head = b.heading ? `<div class="heading"><h3>${esc(b.heading)}</h3><span class="count">${b.rows.length}</span></div>` : "";
+      if(!b.rows.length) return `<div class="block look-${esc(b.look)}">${head}${empty(b.empty)}</div>`;
+      const one = r => b.kind === "list" ? listRow(r, b) : card(r, b);
+      const q = (S.search[b.name] || "");
+      const search = b.search ? `<label class="search">${icon("search")}<input data-search-for="${esc(b.name)}" value="${esc(q)}" placeholder="${esc(b.search.placeholder)}" autocomplete="off"></label>` : "";
+      const byId = Object.fromEntries(b.rows.map(r => [r.id, r]));
+      const body = b.groups
+        ? b.groups.map(g => `<div class="group"><div class="group-head">${badge({label:g.label, color:g.color, icon:g.icon})}<span class="n">${g.ids.length}</span></div><div class="rows">${g.ids.map(id => one(byId[id])).join("")}</div></div>`).join("")
+        : `<div class="rows">${b.rows.map(one).join("")}</div>`;
+      return `<div class="block look-${esc(b.look)} kind-${esc(b.kind)}" data-block="${esc(b.name)}">${head}${search}${body}<div class="nores hidden">見つかりません</div></div>`;
+    }
+    case "notices": return `<button class="btn quiet bell" data-act="notices" aria-label="お知らせ">${icon("bell")}${S.unread ? `<span class="dot">${S.unread}</span>` : ""}</button>`;
     case "table": return `<div class="block look-${esc(b.look)} table-wrap"><table><tr>${b.columns.map(c => `<th>${esc(c.label)}</th>`).join("")}</tr>${b.rows.map(r =>
       `<tr ${r.cardTap ? `class="tap" data-card="${esc(r.id)}" data-on="${esc(b.name)}"` : ""} data-key="${esc(r.id)}">${b.columns.map(c => `<td>${c.key === "status" && r.mark ? badge(r.mark) : esc(r.values[c.key])}</td>`).join("")}</tr>`).join("")}</table></div>`;
     case "board": return `<div class="block look-${esc(b.look)} board">${b.columns.map(c => `<div class="col" data-drop="${esc(c.state)}">
@@ -226,12 +267,14 @@ function block(b){
         <div class="stack">${b.bars.map(x => `<span style="--c:${esc(x.color)};flex-grow:${x.count}"></span>`).join("")}</div>
         ${b.bars.map(x => `<div class="bar"><span>${esc(x.label)}</span><div class="track"><div class="fill" style="--c:${esc(x.color)};width:${x.count / max * 100}%"></div></div><span class="n">${x.count}</span></div>`).join("")}</div>`;
     }
-    case "detail": return `<div class="detail"><div class="head" style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start"><div class="title">${esc(b.title)}</div>${badge(b.mark)}</div>${sub(b.sub)}
+    case "detail": return `<div class="detail"><div class="head" style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start"><div class="who" style="display:flex;gap:14px;align-items:center">${lead(b.lead)}<div class="title">${esc(b.title)}</div></div>${badge(b.mark)}</div>${sub(b.sub)}
       <dl class="fields">${b.fields.map(f => `<dt>${esc(f.label)}</dt><dd>${esc(f.value)}</dd>`).join("")}</dl>
       ${b.buttons.length ? `<div class="btns">${b.buttons.map(x => btn(x, {on:b.on, id:b.id})).join("")}</div>` : ""}</div>`;
-    case "input": return `<form class="form" data-input="${esc(b.name)}" novalidate><h2>${esc(b.title)}</h2>${b.fields.map(f =>
-      `<label><span>${esc(f.label)}${f.required ? `<span class="req">*</span>` : ""}</span><input name="${esc(f.name)}" type="${esc(f.kind)}" ${f.required ? "required" : ""}></label>`).join("")}
-      <div class="err" id="err"></div><div class="act"><button type="button" class="btn quiet" data-act="nav" data-value="${HOME}">${esc(b.cancel)}</button><button type="submit" class="btn main">${esc(b.submit)}</button></div></form>`;
+    case "input": return `<form class="form" data-input="${esc(b.name)}" data-this="${esc(b.this || "")}" novalidate><h2>${esc(b.title)}</h2>${b.fields.map(f =>
+      `<label><span>${esc(f.label)}${f.required ? `<span class="req">*</span>` : ""}</span>${f.kind === "textarea"
+        ? `<textarea name="${esc(f.name)}" ${f.required ? "required" : ""}>${esc(f.value)}</textarea>`
+        : `<input name="${esc(f.name)}" type="${esc(f.kind)}" value="${esc(f.value)}" ${f.required ? "required" : ""}>`}</label>`).join("")}
+      <div class="err" id="err"></div><div class="act"><button type="button" class="btn quiet" data-act="back">${esc(b.cancel)}</button><button type="submit" class="btn main">${icon("check")}${esc(b.submit)}</button></div></form>`;
     case "dialog": return `<div class="veil ${esc(b.kind)}" ${b.close ? `data-act="set" data-state="${esc(b.close.state)}" data-value="${esc(b.close.value)}"` : ""}><div class="dialog" data-stop>${b.blocks.map(block).join("")}</div></div>`;
   }
   return "";
@@ -247,9 +290,10 @@ async function render(){
   const before = {}; document.querySelectorAll("[data-key]").forEach(el => before[el.dataset.key] = el.getBoundingClientRect());
   const known = new Set(Object.keys(before)), firstPaint = S.last === null;
   const slot = n => (v.slots.find(s => s.slot === n) || {blocks: []}).blocks;
-  document.getElementById("top").innerHTML = `<div class="role-top" style="flex:1;min-width:200px">${slot("top").filter(b => b.type !== "tabs" && b.type !== "button").map(block).join("")}</div>${slot("top").filter(b => b.type === "tabs" || b.type === "button").map(block).join("")}`;
+  document.getElementById("top").innerHTML = `<div class="role-top" style="flex:1;min-width:200px">${slot("top").filter(b => !["tabs", "button", "notices"].includes(b.type)).map(block).join("")}</div>${slot("top").filter(b => ["tabs", "button", "notices"].includes(b.type)).map(block).join("")}`;
   const hasSide = slot("side").length > 0;
-  document.getElementById("root").innerHTML = `<div class="app scene-${esc(v.scene)} ${hasSide ? "has-side" : ""}"><section class="slot-main">${slot("main").map(block).join("")}</section>${hasSide ? `<aside class="slot-side">${slot("side").map(block).join("")}</aside>` : ""}</div>${slot("over").map(block).join("")}`;
+  document.getElementById("root").innerHTML = `<div class="app scene-${esc(v.scene)} ${hasSide ? "has-side" : ""}"><section class="slot-main">${slot("main").map(block).join("")}</section>${hasSide ? `<aside class="slot-side">${slot("side").map(block).join("")}</aside>` : ""}</div>`;
+  document.getElementById("over").innerHTML = slot("over").map(block).join("");   // 小窓はページの一番上の層に出す
   document.getElementById("bottom").innerHTML = slot("bottom").map(block).join("");
   // 新しく出たものはふわっと、動いたものはするっと
   document.querySelectorAll("[data-key]").forEach(el => {
@@ -259,13 +303,47 @@ async function render(){
     if(dx || dy){ el.animate([{transform:`translate(${dx}px,${dy}px)`}, {transform:"none"}], {duration: parseInt(getComputedStyle(el).getPropertyValue("--reorder")) || 220, easing:"cubic-bezier(.2,.8,.2,1)"}); }
   });
   const n = v.notifications || [];
-  if(S.seen >= 0) n.slice(S.seen).slice(-3).forEach(x => toast(`<b>${esc(x.rule)}</b><span>${esc(x.text)}</span>`));
-  S.seen = n.length; S.last = v;
+  if(S.seen >= 0){ const fresh = n.slice(S.seen); fresh.slice(-3).forEach(x => toast(`<b>${esc(x.rule)}</b><span>${esc(x.text)}</span>`)); S.unread += fresh.length; }
+  S.seen = n.length; S.notes = n; S.last = v;
+  document.querySelectorAll("[data-search-for]").forEach(applySearch);
+  paintBell();
+  if(S.panel) paintPanel();
   document.title = document.querySelector(".role-top .part-lines div")?.textContent || "__TITLE__";
 }
-function go(scene, thisId, origin){ S.scene = scene; S.thisId = thisId ?? null; S.origin = origin ?? null; S.calShift = 0; window.scrollTo({top:0}); render(); }
+function go(scene, thisId, origin, back){
+  if(!back) S.history.push({scene:S.scene, thisId:S.thisId, origin:S.origin});
+  S.scene = scene; S.thisId = thisId ?? null; S.origin = origin ?? null; S.calShift = 0; window.scrollTo({top:0});
+  const r = document.getElementById("root"); r.style.animation = "none"; r.offsetHeight; r.style.animation = ""; render();
+}
+function goBack(){ const h = S.history.pop(); if(h) go(h.scene, h.thisId, h.origin, true); else go(HOME, null, null, true); }
+function applySearch(inp){
+  const q = inp.value.trim().toLowerCase(), blk = inp.closest("[data-block]"); S.search[inp.dataset.searchFor] = inp.value;
+  let shown = 0;
+  blk.querySelectorAll("[data-search]").forEach(el => { const hit = !q || el.dataset.search.includes(q); el.classList.toggle("hidden", !hit); shown += hit; });
+  blk.querySelectorAll(".group").forEach(g => g.classList.toggle("hidden", !g.querySelector("[data-search]:not(.hidden)")));
+  blk.querySelector(".nores")?.classList.toggle("hidden", shown > 0);
+}
+function paintBell(){ document.querySelectorAll(".bell").forEach(b => { b.querySelector(".dot")?.remove(); if(S.unread) b.insertAdjacentHTML("beforeend", `<span class="dot">${S.unread}</span>`); }); }
+function paintPanel(){
+  document.getElementById("panel")?.remove();
+  if(!S.panel) return;
+  const list = S.notes.slice().reverse();
+  document.body.insertAdjacentHTML("beforeend", `<div class="panel" id="panel" data-stop><h4>お知らせ</h4>${list.length ? list.map(x =>
+    `<div class="note"><b>${esc(x.rule)}</b><span>${esc(x.text)}</span><time>${esc((x.at || "").replace("T", " "))}</time></div>`).join("") : `<div class="nores">お知らせはまだありません</div>`}</div>`);
+}
+function ask(text){
+  return new Promise(ok => {
+    const v = document.createElement("div"); v.className = "veil";
+    v.innerHTML = `<div class="dialog ask"><h3>${esc(text)}</h3><p>元に戻せないことがあります。</p><div class="act"><button class="btn quiet" data-ans="0">やめる</button><button class="btn main" data-ans="1">${icon("check")}はい</button></div></div>`;
+    v.addEventListener("click", e => { e.stopPropagation(); const a = e.target.closest("[data-ans]"); if(a || e.target === v){ v.remove(); ok(a?.dataset.ans === "1"); } });
+    document.body.appendChild(v); v.querySelector("[data-ans='1']").focus();
+  });
+}
+document.addEventListener("input", e => { if(e.target.matches("[data-search-for]")) applySearch(e.target); });
+document.addEventListener("keydown", e => { if(e.key === "Escape" && S.panel){ S.panel = false; paintPanel(); } });
 
 document.addEventListener("click", async e => {
+  if(S.panel && !e.target.closest("#panel") && !e.target.closest(".bell")){ S.panel = false; paintPanel(); }
   if(e.target.closest("[data-stop]") && !e.target.closest("[data-act]")) return;
   const el = e.target.closest("[data-act]");
   if(el){
@@ -276,7 +354,10 @@ document.addEventListener("click", async e => {
     if(act === "toggle"){ const vals = S.last?.states?.[el.dataset.state]?.values || []; const i = vals.indexOf(st[el.dataset.state]); st[el.dataset.state] = vals[(i + 1) % vals.length]; return render(); }
     if(act === "cal"){ S.calShift = el.dataset.value === "0" ? 0 : S.calShift + parseInt(el.dataset.value); return render(); }
     if(act === "nav") return go(el.dataset.value);
+    if(act === "back") return goBack();
+    if(act === "notices"){ S.panel = !S.panel; S.unread = 0; paintBell(); return paintPanel(); }
     if(act === "tap"){
+      if(el.dataset.confirm && !(await ask(el.dataset.confirm))) return;
       el.disabled = true;
       const r = await post("/api/tap", {button: el.dataset.button, on: el.dataset.on, id: el.dataset.id || null});
       if(r.nav) return go(r.nav, r.this || el.dataset.id, el.dataset.on);
@@ -293,9 +374,9 @@ document.addEventListener("submit", async e => {
   e.preventDefault(); const f = e.target, err = f.querySelector("#err");
   const missing = [...f.querySelectorAll("[required]")].filter(i => !i.value);
   if(missing.length){ err.textContent = "必須の項目が空です: " + missing.map(i => i.closest("label").firstChild.firstChild.textContent.trim()).join("、"); missing[0].focus(); return; }
-  const r = await post("/api/submit", {input: f.dataset.input, values: Object.fromEntries(new FormData(f).entries())});
+  const r = await post("/api/submit", {input: f.dataset.input, this: f.dataset.this || null, values: Object.fromEntries(new FormData(f).entries())});
   if(r.error){ err.textContent = r.error; return; }
-  toast("保存しました"); go(HOME);
+  toast(r.edited ? "書き換えました" : "保存しました"); goBack();
 });
 let dragId = null;
 document.addEventListener("dragstart", e => { const c = e.target.closest("[data-drag]"); if(c){ dragId = c.dataset.drag; c.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; } });

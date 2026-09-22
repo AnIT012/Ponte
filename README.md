@@ -11,6 +11,8 @@
 python -m lang check spec/hub.lang                # 決めてないことを探す
 python -m lang check spec/hub_ready.lang --publish  # 公開する時の検査
 python -m lang check spec/hub_ready.lang --save-shape  # 通ったら thing の形を残す（次から change を検査）
+python -m lang test spec/hub_app.lang             # rule の example を全部流す
+python -m lang run  spec/hub_app.lang             # 動かす → http://127.0.0.1:8000/
 python -m pytest                                  # テスト
 ```
 
@@ -18,7 +20,8 @@ python -m pytest                                  # テスト
 
 | ファイル | 中身 |
 |---|---|
-| `lang/` | v0.2 のパーサーとチェッカー（エラー27個） |
+| `lang/` | v0.2 のパーサー、チェッカー（エラー27個）、実行エンジン、画面 |
+| `spec/hub_app.lang` | ブラウザで動く就活Hub（画面の部品と「追加」を足した版） |
 | `spec/hub.lang` | 仕様書 v0.2 付録の就活Hub。tbd が残っているので止まる |
 | `spec/hub_ready.lang` | tbd を外した渡せる版 |
 | `tests/cases/` | エラーごとの壊した／直した仕様のペア |
@@ -26,3 +29,11 @@ python -m pytest                                  # テスト
 | `lang_v01/`, `tests/v01/`, `spec/*.spec` | v0.1 の実装（Go 変換を含む）。記録として残している |
 | `experiment/` | 自然文 vs 言語の比較実験（v0.1 時点。作り直し予定） |
 | `NAMES.md` | 名前の候補 |
+
+## 動いている画面
+
+`python -m lang run spec/hub_app.lang` で動かしたもの。依存は Python の標準機能だけ。
+
+| PC | スマホ |
+|---|---|
+| ![](docs/screenshots/hub_wide.png) | ![](docs/screenshots/hub_phone.png) |

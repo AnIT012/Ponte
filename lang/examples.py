@@ -88,8 +88,34 @@ def _expect(eng: Engine, t: str, ctx: Ctx) -> str | None:
     return f"expect の書き方が分かりません: '{t}'"
 
 
-def run_examples(spec: Spec) -> list[Result]:
+def run_action_examples(spec: Spec) -> list[Result]:
+    """中身（by ai / by code）がある action の example を流す。中身が無いものは流さない。"""
+    from .body import parse_expected, same, out_states_of, input_names
+    from .fill import load_body
     out = []
+    for a in spec.decls("action"):
+        try:
+            body = load_body(spec, a)
+        except Exception as e:
+            out.append(Result(a.name, a.line, False, f"中身が読めません: {e}"))
+            continue
+        if body is None:
+            continue
+        outs = out_states_of(a)
+        for ex in a.children_of("example"):
+            left, right = [x.strip() for x in ex.text.split("->", 1)]
+            try:
+                got = body.run({input_names(a)[0]: unquote(left)})
+            except Exception as e:
+                out.append(Result(a.name, ex.line, False, f"{left} で止まりました: {e}"))
+                continue
+            ok = same(got, parse_expected(right, outs))
+            out.append(Result(a.name, ex.line, ok, "" if ok else f"{left} → {right} のはずが {got}"))
+    return out
+
+
+def run_examples(spec: Spec) -> list[Result]:
+    out = run_action_examples(spec)
     for r in spec.decls("rule"):
         for ex in r.children_of("example"):
             out.append(run_example(spec, r, ex))

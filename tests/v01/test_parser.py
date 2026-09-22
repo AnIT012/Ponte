@@ -1,6 +1,6 @@
 import pytest
 
-from lang.parser import ParseError, entity_fields, flow_conflicts, flow_states, flow_transitions, parse, parse_file
+from lang_v01.parser import ParseError, entity_fields, flow_conflicts, flow_states, flow_transitions, parse, parse_file
 
 
 def test_tree_shape():

@@ -73,7 +73,7 @@ def cmd_proposals(args) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(prog="python -m lang", description="人とAIの間の言語（名前未定）")
+    p = argparse.ArgumentParser(prog="python -m lang_v01", description="人とAIの間の言語（名前未定）")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     c = sub.add_parser("check", help="決めてないことを探す")

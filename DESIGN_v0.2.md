@@ -50,13 +50,34 @@ relate
 - `A before B` なのに A が起きえない（B が永遠に待つ）
 - action に else があり、relate でも同じ action に else がある（逃げ道が2つ）
 
+### 名前と型（小さい4つ）
+- entity → **thing**
+- unknown → **tbd**（小文字）
+- `one of [a, b]` → **`a | b`**。flow や出力の `found | missing` と同じ書き方
+- `ref User` → **`User`**。型に箱の名前を書けば別の箱を指す
+
+### コメントは2種類
+| 書き方 | 意味 |
+|---|---|
+| `#` | 普通のコメント。ビルドに関係無い |
+| `##` | 止めるコメント。1つでも残ってたらビルドできない |
+
+- proposed はまるごと `##` に置き換え。
+- AIが仕様の穴に気づいたら、答えの案を `##` で書いて、理由を後ろの `#` に書く。
+- 人は `##` を外して承認、行ごと消して却下。
+- tbd との違い: tbd は答えの無い「まだ決めてないこと」、`##` は答えの案がもう書いてあるもの。
+
+```
+list DueSoon
+  of    Application
+  where status is draft
+  where deadline within 3 days
+  ## where deadline is after now    # 締切が過ぎた応募も通知する？
+```
+
 ## まだ決めてないこと（小さい）
-1. entity を thing にするか
-2. unknown を tbd にするか
-3. `one of [a, b]` を `a | b` にするか、`ref` を消すか
-4. proposed を行頭の `?` にするか
-5. まとまり（group）を入れるか、1ファイル1まとまりにするか
-6. do の中の一時的な状態（true/false の代わり）の名前付け
+1. まとまり（group）を入れるか、1ファイル1まとまりにするか
+2. do の中の一時的な状態（true/false の代わり）の名前付け
 
 ## まだ手を付けてないこと（大きい）
 - 画面（screen）

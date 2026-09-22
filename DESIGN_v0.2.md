@@ -99,8 +99,19 @@ action ...
 - rule や relate などを名前で括る。継承は無い。外からは `Mail.ReadMail` で呼ぶ。
 - group の中の字下げは入れ子と数えない。ただし group の中に group は書けない。
 
+### 項目の書き方
+- `名前 型` を並べるだけ。`:` は付けない。名前と型は色分けで見分ける。
+
+```
+thing Application
+  company  text
+  deadline date
+  owner    User
+  status[draft | submitted | passed | failed]
+```
+
 ## まだ決めてないこと（小さい）
-- thing の状態以外の項目の書き方（`company text` か `company: text` か）
+- 無し
 
 ## まだ手を付けてないこと（大きい）
 - 画面（screen）

@@ -113,3 +113,12 @@ tabs、this as detail、empty、part の中の計算、days until、match の数
 ### U5. match で「より小さい」が書けなかった
 過ぎた締切（マイナスの日数）を分けるのに、比べる書き方が無かった。
 - 仮: 数の範囲 `..-1` を足した。if を入れずに済む書き方として。
+
+### U6. 編集は input を with this で開く
+- 仮: 新しい語は足さず、`go EditApplication with this` で開いた input はその1件の編集にした。状態の項目は input に並べても書き換えられない（move だけ）。
+
+### U7. ボタンの名前は1語
+- 仮: `named 応募を追加` のように1語。空白を含むなら `named "Mark submitted"`。以前は後ろの語を全部名前にしていたので、打ち間違いが名前に紛れ込んでいた。
+
+### U8. match は「何から何へ」で1つ
+- 見つけたバグ: `match Application.status to color` と `... to icon` を両方書くと、後の方で前の方が消えていた。今は「〇〇 to △△」ごとに別に持つ。

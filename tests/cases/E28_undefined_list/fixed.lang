@@ -42,6 +42,7 @@ action ExtractDeadline
   example "来週中にご提出ください"        -> missing
   example "9/24 23:59 または 9/30 23:59"  -> missing
   never   guess the year
+  else    ask user
   by      ai
 
 rule ReadMail
@@ -74,6 +75,7 @@ scene Home
   main    match count of DueSoon
             0    -> EmptyNote
             else -> DueSoon as cards
+  side    Mine as list
   bottom  button add named 追加
 
 flow scene
@@ -99,5 +101,6 @@ style DueSoon
   card   round 12, shadow soft, pad 16
   title  size 18, bold
 
-relate
-  ExtractDeadline else Remind
+list Mine
+  of    Application
+  sort  deadline

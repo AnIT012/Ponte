@@ -42,6 +42,7 @@ action ExtractDeadline
   example "来週中にご提出ください"        -> missing
   example "9/24 23:59 または 9/30 23:59"  -> missing
   never   guess the year
+  else    ask user
   by      ai
 
 rule ReadMail
@@ -100,4 +101,4 @@ style DueSoon
   title  size 18, bold
 
 relate
-  ExtractDeadline else Remind
+  Remind > Remindd

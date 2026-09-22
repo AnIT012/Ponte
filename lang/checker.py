@@ -1,4 +1,4 @@
-"""チェッカー（仕様 v0.2 13章「エラー一覧」27個）。1つ1関数。
+"""チェッカー（仕様 v0.2 13章「エラー一覧」28個）。1つ1関数。
 
 判定の細かい定義で仕様に書いてないものは QUESTIONS_v0.2.md に書いた（仮の扱い）。
 コードが W で始まるものは警告（渡せる判定には数えない）。
@@ -733,6 +733,62 @@ def check_money(spec: Spec, opt: Options) -> list[Finding]:
 
 
 # ---------------------------------------------------------------------------
+# 28. 定義されていない名前（v0.2 の相談で追加）
+# ---------------------------------------------------------------------------
+
+def check_undefined(spec: Spec, opt: Options) -> list[Finding]:
+    out = []
+    ths, lists = set(things(spec)), {l.name for l in spec.decls("list")}
+    parts = {p.name for p in spec.decls("part")}
+    scenes = {x.name for x in spec.decls("scene")} | {i.name for i in spec.decls("input")}
+    looks = {l.name for l in spec.decls("look")}
+    callables = set(rules(spec)) | set(actions(spec))
+
+    def need(name, kinds, line, where):
+        if name not in kinds:
+            out.append(Finding("E28", line, f"{where}: 「{name}」がどこにも定義されていません"))
+
+    def slot(text, line, where):
+        text = text.strip()
+        if not text or text == "nothing" or text.startswith(("button ", "match ")):
+            return
+        m = re.match(r"^(\w+) as \w+$", text)
+        if m:
+            need(m.group(1), ths | lists, line, where)
+        elif re.fullmatch(r"[A-Z]\w*", text):
+            need(text, parts | looks, line, where)
+
+    for sc in spec.decls("scene"):
+        for c in sc.walk():
+            if c is sc or c.text.startswith("["):
+                continue
+            if "->" in c.raw:
+                slot(c.raw.split("->", 1)[1], c.line, f"scene {sc.name}")
+            elif c.parent is sc:
+                slot(c.text, c.line, f"scene {sc.name}")
+    for lk in spec.decls("look"):
+        need(lk.name, ths | lists, lk.line, "look")
+        for c in lk.children:
+            m = re.match(r"^([A-Z]\w*) of \w+$", c.text)
+            if m:
+                need(m.group(1), parts, c.line, f"look {lk.name}")
+    for f in spec.decls("flow"):
+        if f.name == "scene":
+            for a, b in flow_parts(f)[0]:
+                need(a, scenes, f.line, "flow scene")
+                need(b, scenes, f.line, "flow scene")
+    for l in spec.decls("list"):
+        of = l.child("of")
+        if of is not None:
+            need(of.text.strip(), ths | lists, of.line, f"list {l.name}")
+    for a, rel, b, line in relate_lines(spec):
+        if rel != "before":          # before の左は E16 が見る
+            need(a, callables, line, "relate")
+        need(b, callables, line, "relate")
+    return out
+
+
+# ---------------------------------------------------------------------------
 
 ALL_CHECKS = [
     check_match_else, check_until_limit, check_examples, check_else, check_tbd,
@@ -741,7 +797,7 @@ ALL_CHECKS = [
     check_relate_cycle, check_relate_contradiction, check_before_possible,
     check_double_else, check_match_states, check_who, check_gone, check_change,
     check_ask_ai_limit, check_connect_fallback, check_scene_move, check_words,
-    check_a11y, check_money,
+    check_a11y, check_money, check_undefined,
 ]
 
 

@@ -106,3 +106,14 @@ python experiment/score.py          # EXPERIMENT.md を上書き
 - do の中身の実行（shape、`名前 = 式`）。
 - 画面の状態（toggle / set）、calendar / board / chart などの見せ方、画面の移動のアニメーション。
 - 仮で決めた動きは `QUESTIONS_v0.2.md` の R 節に7件。
+
+## v0.2：AIに中身を書かせるループ（完了、本物のAPIはキー待ち）
+
+「人は決めて、AIが書いて、言語が守る」が一周した。
+
+- `lang/body.py`: action の do と shape を動かす。if・for・ループ無しで、名前の依存で順番を決める。仕様書の ExtractDeadline の do がそのまま動き、example 4つと全角の入力を通る。
+- `lang/fill.py` と `python -m lang fill`: 契約をAIに渡す → do を書かせる → 読めるか・チェッカー・example・never を機械で確かめる → ダメなら問題をそのまま返して書き直させる（既定5回まで）→ 通ったら `<spec>.ai/<action>.lang` に残す。
+- 実行エンジンは残した中身を読んで使う。missing なら else（ask user）に進む。`python -m lang test` は action の example も流す（hub_app で9件全部通過）。
+- **API キーが無いので、AIの役はこのセッションの Claude が引き受けた**（`experiment/ai_replies/`）。ループが送るのと同じプロンプトを読んで返事を書き、機械の確認は1回目で通った。
+- テスト: 決まった返事を順に返すAIで、構文の間違い → 入れ子 → 答えの間違い → 正解、と4回目で通ること、各回の問題が次のプロンプトに入ることを確かめた。人が中身を書き換えて壊したら `lang test` が止めることも確かめた。
+- E28（定義されていない名前）を足した。仕様書の付録にも Header / EmptyNote を足した。テストは全体で147件通過。

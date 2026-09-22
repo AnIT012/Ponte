@@ -1,0 +1,98 @@
+# hub.lang から tbd を外した渡せる版（タイムゾーンは QUESTIONS_v0.2.md で確認待ち）
+
+thing Application
+  company   text
+  deadline  monthday
+  owner     User   gone[remove too]
+  status[draft | submitted | passed | failed]
+
+thing User
+  name  text
+
+flow Application.status
+  draft -> submitted -> passed | failed
+  failed > passed
+
+who
+  user   can see    Application where owner is me
+  user   can change Application where owner is me
+  user   can see    User where it is me
+
+list DueSoon
+  of    Application
+  where status is draft
+  where deadline within 3 days
+  sort  deadline
+
+match Application.status to color
+  draft     -> red
+  submitted -> gray
+  passed    -> blue
+  failed    -> gray
+
+connect Gmail
+  gives  new message  Message
+  needs  key GMAIL_TOKEN
+
+action ExtractDeadline
+  in      mail text
+  out     found monthday | missing
+  example "10/15(木)12:00まで"            -> found 10/15 12:00
+  example "【締切9/24 23:59】"            -> found 9/24 23:59
+  example "来週中にご提出ください"        -> missing
+  example "9/24 23:59 または 9/30 23:59"  -> missing
+  never   guess the year
+  else    ask user
+  by      ai
+
+rule ReadMail
+  why   メールの締切を自動で拾うため
+  when  Gmail gives new message
+  do    ExtractDeadline
+
+rule Remind
+  why   締切を落とさないため
+  when  every day at 21:00
+  do    notify each of DueSoon
+  example
+    given   Application(company "Osaka Gas", deadline "9/24 23:59", status draft)
+    at      "9/21 21:00"
+    expect  notify "Osaka Gas"
+
+rule MarkSubmitted
+  when  user taps submitted-button on DueSoon
+  do    move this to submitted
+  example
+    given   Application(company "Osaka Gas", status draft)
+    taps    submitted-button on Application(company "Osaka Gas")
+    expect  Application(company "Osaka Gas") is submitted
+
+relate
+  MarkSubmitted > Remind
+
+scene Home
+  top     Header
+  main    match count of DueSoon
+            0    -> EmptyNote
+            else -> DueSoon as cards
+  bottom  button add named 追加
+
+flow scene
+  Home -> AddApplication
+
+look DueSoon as cards
+  title   company
+  sub     deadline
+  mark    color of status
+  button  submitted-button named 提出した
+
+input AddApplication
+  company   required
+  deadline  required
+
+style DueSoon
+  card   round 12, shadow soft, pad 16
+  title  size 18, bold
+
+relate
+  Remind > MarkSubmitted

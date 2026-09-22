@@ -1,0 +1,11 @@
+{
+  "Application": {
+    "company": "text",
+    "deadline": "monthday",
+    "owner": "User",
+    "status": "[draft | submitted | passed | failed]"
+  },
+  "User": {
+    "name": "text"
+  }
+}

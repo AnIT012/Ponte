@@ -798,6 +798,62 @@ def read_action(a: Node, model: Model) -> ActionSig:
     )
 
 
+_BY = re.compile(r'^(ai|code\s+"([^"]+)"|connect\s+(\w+))$')
+
+
+def parse_by(text: str, line: int) -> tuple[str, str]:
+    """`ai` / `code "extract.go"` / `connect gmail` → ("ai", "") / ("code", "extract.go") / ("connect", "gmail")"""
+    m = _BY.match(text.strip())
+    if not m:
+        raise CodegenError(line, f"by の書き方が分かりません（ai / code \"file.go\" / connect 名前）: '{text}'")
+    if m.group(2):
+        return "code", m.group(2)
+    if m.group(3):
+        return "connect", m.group(3)
+    return "ai", ""
+
+
+def gen_connects(spec: Spec, model: Model, package: str) -> str:
+    """connect（△）の骨組み。`sends 〇〇: 型` を出来事の interface に、by connect の action を Connector に。"""
+    o = Out(package)
+    o.w("// connect は △（設計は次回）。ここは骨組みだけ: つないだ先が出す出来事と、by connect の action の置き場。")
+    o.w()
+    by_connect: dict[str, list[Node]] = {}
+    for a in spec.decls_of("action"):
+        b = a.child("by")
+        if b is None:
+            continue
+        kind, arg = parse_by(b.text, b.line)
+        if kind == "connect":
+            by_connect.setdefault(arg, []).append(a)
+    for c in spec.decls_of("connect"):
+        C = go_name(c.name)
+        o.w(f"// ---- connect {c.name} ----")
+        o.w(f"// {C}Events — {c.name} から届く出来事。")
+        o.w(f"type {C}Events interface {{")
+        for ev in c.children:
+            if not ev.keyword == "sends" or ":" not in ev.text:
+                raise CodegenError(ev.line, f"connect の中は `sends 出来事名: 型` で書きます: '{ev.raw}'")
+            name, typ = [s.strip() for s in ev.text.split(":", 1)]
+            f = go_type_of(typ, model, ev.line)
+            o.w(f"\t// sends {name}: {typ}")
+            o.w(f"\tOn{go_name(name)}(handler func({f.go_type}))")
+        o.w("}")
+        o.w()
+        o.w(f"// {C}Connector — by connect {c.name} の action の中身。つないだ先が実装する。")
+        o.w(f"type {C}Connector interface {{")
+        for a in by_connect.get(c.name, []):
+            sig = read_action(a, model)
+            o.w(f"\t{go_name(sig.name)}(ctx context.Context, {go_lower(sig.in_name)} {sig.in_type.go_type}) ({sig.out_type.go_type}, error)")
+        o.w("}")
+        o.w()
+    for name in by_connect:
+        if spec.find("connect", name) is None:
+            a = by_connect[name][0]
+            raise CodegenError(a.line, f"action {a.name}: by connect {name} の connect がありません")
+    return o.text()
+
+
 def gen_actions(spec: Spec, model: Model, package: str) -> str:
     o = Out(package)
     o.w("// ErrElse — 自信がないとき、中身は必ずこれを返す（else の逃げ道に進む）。")
@@ -826,6 +882,28 @@ def gen_actions(spec: Spec, model: Model, package: str) -> str:
         o.w(f"// {A}Impl — 中身。by ai なら AI が、by code なら自分のコードが、by connect なら外部サービスがここに入る。")
         o.w(f"var {A}Impl {A}")
         o.w()
+        by_kind, by_arg = parse_by(sig.by, a.line)
+        if by_kind == "code":
+            o.w(f"// by code {q(by_arg)}: 中身は自分で書く。{by_arg} の中で")
+            o.w(f"//   func init() {{ {A}Impl = ... }}")
+            o.w(f"// のように {A}Impl を設定する（フェーズ4の骨組み。ファイルの有無は検査していない）。")
+            o.w()
+        elif by_kind == "connect":
+            if spec.find("connect", by_arg) is None:
+                raise CodegenError(a.line, f"action {a.name}: by connect {by_arg} の connect がありません")
+            C = go_name(by_arg)
+            o.w(f"// by connect {by_arg}: 中身は connect {by_arg}（{C} interface）が埋める。")
+            o.w(f"// {C}Connector を実装した値から {A}Impl を作る（フェーズ4の骨組み）。")
+            o.w(f"type {A}By{C} struct{{ Conn {C}Connector }}")
+            o.w()
+            o.w(f"func (x {A}By{C}) Run(ctx context.Context, in {sig.in_type.go_type}) ({sig.out_type.go_type}, error) {{")
+            o.w(f"\tvar zero {sig.out_type.go_type}")
+            o.w("\tif x.Conn == nil {")
+            o.w(f'\t\treturn zero, errors.New("{sig.name}: connect {by_arg} がつながっていません")')
+            o.w("\t}")
+            o.w(f"\treturn x.Conn.{A}(ctx, in)")
+            o.w("}")
+            o.w()
         o.w(f"// {A}Else — 自信がないときの逃げ道（{sig.else_ or '（else 無し）'}）。")
         o.w(f"const {A}Else = {q(sig.else_)}")
         o.w()
@@ -838,7 +916,7 @@ def gen_actions(spec: Spec, model: Model, package: str) -> str:
         o.w(f"func Run{A}(ctx context.Context, {go_lower(sig.in_name)} {sig.in_type.go_type}) ({sig.out_type.go_type}, error) {{")
         o.w(f"\tvar zero {sig.out_type.go_type}")
         o.w(f"\tif {A}Impl == nil {{")
-        o.w(f'\t\treturn zero, errors.New("{sig.name}: 中身がまだありません（by {sig.by}）")')
+        o.w(f"\t\treturn zero, errors.New({q(f'{sig.name}: 中身がまだありません（by {sig.by}）')})")
         o.w("\t}")
         o.w("\tvar err error")
         o.w(f"\tfor attempt := 0; attempt <= {A}How.Retry; attempt++ {{")
@@ -888,7 +966,7 @@ def gen_action_tests(spec: Spec, model: Model, package: str) -> str:
         o.w(f"// Test{A} — action {sig.name} の example。誰が中身を埋めても同じ example で検証される。")
         o.w(f"func Test{A}(t *testing.T) {{")
         o.w(f"\tif {A}Impl == nil {{")
-        o.w(f'\t\tt.Skip("{sig.name}: 中身がまだありません（by {sig.by}）")')
+        o.w(f"\t\tt.Skip({q(f'{sig.name}: 中身がまだありません（by {sig.by}）')})")
         o.w("\t}")
         o.w("\tcases := []struct {")
         o.w(f"\t\tin   {sig.in_type.go_type}")
@@ -1020,6 +1098,8 @@ def generate(spec: Spec, package: str = "hub") -> dict[str, str]:
     files["matches.go"] = gen_matches(spec, model, package)
     files["rules.go"] = gen_rules(spec, model, package)
     files["actions.go"] = gen_actions(spec, model, package)
+    if spec.decls_of("connect"):
+        files["connects.go"] = gen_connects(spec, model, package)
     files["actions_test.go"] = gen_action_tests(spec, model, package)
     files["rules_test.go"] = gen_rule_tests(spec, model, package)
     files["go.mod"] = f"module {package}\n\ngo 1.22\n"

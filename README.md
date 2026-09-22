@@ -8,6 +8,8 @@
 ```
 python -m lang check spec/hub.spec        # 決めてないことを探す
 python -m lang gen   spec/hub_ready.spec -o generated/hub   # Goに変換（フェーズ2）
+python -m lang proposals spec/hub.spec  # AIの提案で承認待ちのもの（フェーズ4）
+python experiment/run.py --dummy && python experiment/score.py   # 検証実験（フェーズ3）
 python -m pytest                          # テスト
 ```
 
@@ -20,5 +22,9 @@ python -m pytest                          # テスト
 | `REPORT.md` | フェーズごとの報告 |
 | `lang/parser.py` | 宣言／節の木を作る |
 | `lang/checker.py` | 仕様6章のエラー12個 |
-| `spec/` | 就活Hubの例 |
+| `spec/` | 就活Hubの例（hub.spec は原文どおり＝止まる、hub_ready.spec は渡せる版） |
+| `lang/codegen.py` | 決まった部分の Go 変換 |
+| `generated/hub/` | hub_ready.spec からの変換結果 |
+| `experiment/` | 自然文 vs 言語の実験（EXPERIMENT.md） |
+| `NAMES.md` | 名前の候補と被りチェック |
 | `tests/` | 壊した仕様／直した仕様のペア |

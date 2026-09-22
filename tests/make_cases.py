@@ -73,6 +73,11 @@ cases["E28_undefined_part"] = (rep("  top     Header\n", "  top     Heder\n"), b
 cases["E28_undefined_list"] = (rep("  side    ", "  side    ") if False else rep("  bottom  button add named 追加\n", "  side    Mine as list\n  bottom  button add named 追加\n"),
                                rep("  bottom  button add named 追加\n", "  side    Mine as list\n  bottom  button add named 追加\n") + "\nlist Mine\n  of    Application\n  sort  deadline\n")
 cases["E28_undefined_relate"] = (base + "\nrelate\n  Remind > Remindd\n", base)
+cases["E28_unknown_icon"] = (rep("  button  submitted-button named 提出した\n", "  button  submitted-button named 提出した icon sendd\n"),
+                             rep("  button  submitted-button named 提出した\n", "  button  submitted-button named 提出した icon send\n"))
+cases["E28_unknown_field"] = (rep("  title   company\n", "  title   compny\n"), base)
+cases["E28_bad_button"] = (rep("  button  submitted-button named 提出した\n", "  button  submitted-button named 提出した blink\n"), base)
+cases["E25_words_quoted"] = (base + '\nwords ja\n  "提出した"  提出した\n\nwords en\n  draft  Draft\n', base + '\nwords ja\n  "提出した"  提出した\n\nwords en\n  "提出した"  Submit\n')
 
 if __name__ == "__main__":
     out = os.path.join(ROOT, "tests/cases")

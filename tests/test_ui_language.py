@@ -35,3 +35,31 @@ def test_app_spec_passes_publish_check():
 def test_days_until_is_not_until():
     spec = parse("action A\n  in x text\n  out n number\n  example \"a\" -> 1\n  example \"b\" -> 2\n  else skip\n  by ai\n  do\n    n = days until x\n")
     assert "E02" not in [f.code for f in check(spec)]
+
+
+def test_parse_button():
+    from lang.parser import parse_button
+    b = parse_button('failed-button    named 不合格 icon x confirm "不合格にしますか？"')
+    assert (b["id"], b["label"], b["icon"], b["confirm"]) == ("failed-button", "不合格", "x", "不合格にしますか？")
+    assert parse_button("menu named メニュー toggle menu")["act"] == {"kind": "toggle", "state": "menu"}
+    assert parse_button("x named y bogus z") is None
+
+
+def test_words_quoted_keys():
+    from lang.parser import words_entries
+    w = parse('words en\n  draft  Draft\n  "あと{left}日"   {left} days left\n').decls("words")[0]
+    assert words_entries(w) == {"draft": "Draft", "あと{left}日": "{left} days left"}
+
+
+def test_update_refuses_state_fields():
+    import pytest
+    from lang.runtime import Engine, RuleError
+    e = Engine(parse_file("spec/hub_app.lang"), clock=lambda: datetime(2026, 9, 21))
+    me = e.login("me")
+    a = e.create("Application", {"company": "A"}, me)
+    e.update(a, {"memo": "hi"}, me)
+    assert a.values["memo"] == "hi"
+    with pytest.raises(RuleError):
+        e.update(a, {"status": "passed"}, me)            # 状態は move でしか変えられない
+    with pytest.raises(RuleError):
+        e.update(a, {"memo": "x"}, e.login("other"))     # who

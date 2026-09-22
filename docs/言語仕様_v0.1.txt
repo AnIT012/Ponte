@@ -1,0 +1,255 @@
+人とAIの間の言語 — 仕様 v0.1（名前未定）
+2026-09-23 深夜に決めたことの全部。★は今夜確定、△は提案（要判断）。
+0. コンセプト ★
+人とAIの間の言語。人は決めて、AIが書いて、言語が守る。
+今までの言語は「人と機械の間」で、どうやるかを書いた
+この言語は「人とAIの間」で、何が欲しいか・何がダメか・何がまだ決まってないかを書く
+ifもforも無いのは、それが「どうやるか」の道具だから
+1. 設計原則 ★
+1. パーツは少なく、1パーツ1仕事。複雑さはパーツを増やさず、組み合わせで出す
+2. 何を（必須）／どうやるか（任意）。どうやるかは how にだけ書ける。書かなければAIが決め
+る
+3. 順序を書かない → 並列が標準。entity 1件＝1つの独立した箱。箱をまたぐ処理は全部並列、同
+じ箱の中は1つずつ
+4. 決めてないことはエラー。曖昧なまま渡せない
+5. 入れ子禁止、名前を付けて積む。条件の中に条件を書かない。名前付きの list を段階的に作る
+6. 何でも作れる、危ないことは箱の中に閉じ込める。外側（要件と契約）は絞る、内側（action
+の中身）は何でもあり
+2. 型 ★
+型
+意味
+text
+文字
+number
+数
+datetime
+日時
+
+
+=====PAGE=====
+
+duration
+期間（3 days , 5 seconds ）
+one of [a, b, c]
+決まった値のどれか
+ref 箱名
+別の箱を1つ指す
+many 箱名
+別の箱を複数指す
+true / false は無い。done: one of [todo, done] のように、全部名前の付いた状態にする
+（ifを生ませないため）
+組み込みの値：now 、current user △
+3. パーツ一覧
+宣言（塊の見出し・紫太字）
+entity flow list match rule action connect role △ unknown
+節（塊の中の項目・グレー）
+from where sort by when do because input output example by how use △
+守り（言語が守らせる・赤）
+never else otherwise on conflict proposed △ until （上限必須）
+4. 各パーツ
+entity ★ — データの形
+entity Application
+  owner:    ref User
+  company:  ref Company
+  deadline: datetime
+  status:   one of [draft, submitted, passed, failed]
+1件が1つの「箱」。箱の中の書き換えは1つずつ処理される
+flow ★ — 状態の流れ
+
+
+=====PAGE=====
+
+flow Application.status
+  draft -> submitted -> passed | failed
+  on conflict failed wins over passed
+-> の通りにしか動けない（draft から passed に飛べない）
+flow で管理する項目は move でしか変えられない。set 禁止
+on conflict ：同じ箱に矛盾する move が同時に来たときの勝者。同時に来うるのに書いてな
+い → エラー
+旧名 priority は意味が伝わらないので改名 ★
+list ★ — 条件で絞った集まり
+list DueSoon
+  from Application
+  where status is draft
+  where deadline within 3 days
+  sort by deadline
+where を複数行 → 全部満たす（and）
+list から list を作れる（積み重ね）。循環参照 → エラー
+for の代わり：ルールや通知は「当てはまるもの全部」に効く
+match ★ — 値ごとの結果（表）
+match Application.status to color
+  draft     -> red
+  submitted -> gray
+  passed    -> blue
+  otherwise -> gray
+otherwise 必須。無いとエラー（switchの抜け漏れ防止）
+rule ★ — きっかけ → やること
+rule Remind
+  because "締切を落とさないため"
+  when every day at 21:00
+  do notify user each of DueSoon
+  example
+
+
+=====PAGE=====
+
+    given Application(company "Osaka Gas", deadline "9/24 23:59", status draft)
+    at "9/21 21:00"
+    expect notify "Osaka Gas"
+because ：目的。AIが書いてない細部を正しく埋めるための一番大事な情報 △（必須にするか
+要判断）
+when は出来事だけ。状態は where に書く（when deadline within 3 days は禁止：成り
+立ってる間ずっと発火してしまう）
+when に書ける出来事（閉じたリスト）：
+時間：every day at 21:00 / every monday at 9:00 / at 9/24 23:00
+人：user says "..." / user does 〇〇
+データ：〇〇 is created / 〇〇 moves to 状態 / 〇〇 is removed
+外：mail sends new message （connect した先からの出来事）
+{...} で取り出した値は変数になる。対象の箱は必ず絞る： when user says "submitted
+{company}" → do move Application where company is {company} to submitted
+ルール同士に順序は書かない。順序が要るなら flow で表す
+flow の状態ごとにルールを書いていて抜けがある → ビルド前に「passed のときは？」と出る
+action ★ — 中身が空の箱（契約だけ書く）
+action ExtractDeadline
+  input   mail: Message
+  output  deadline: datetime
+  example "10/15(木)12:00まで" -> 10/15 12:00
+  example "【締切9/24 23:59】" -> 9/24 23:59
+  never   guess the year
+  else    ask user
+  by      ai
+  how
+    limit 5 seconds
+    on failure retry 3 times
+中身は書けない。契約（入力・出力・例・禁止・逃げ道）だけ
+example 最低2つ必須。中身は例を全部通らないと採用されない
+else 必須：自信がないときの逃げ道（ask user / use default ... / skip ）
+
+
+=====PAGE=====
+
+by ：誰が中身を埋めるか ★
+by ai （標準）：AIが書く
+by code "extract.go" ：自分で書いたコード
+by connect gmail ：つないだ外部サービス
+誰が埋めても同じ example で検証される（Goのinterfaceと同じ考え方）
+derive 〇〇 from 〇〇 using ai は名前のない小さな action の省略形。同じく例2つと
+else が必須
+組み合わせ △：
+action ParseApplicationMail
+  input  mail: Message
+  output Application
+  use ExtractCompany  -> company
+  use ExtractDeadline -> deadline
+  use ClassifyResult  -> status
+how ★ — どうやるか（任意）
+rule と action の中にだけ書ける
+書かなければAIが決める。書いたらAIはその通りにしか作れない
+例：check every 10 minutes / limit 5 seconds / on failure retry 3 times /
+repeat ... until 〇〇 or 1 hour passed
+until は回数か時間の上限必須。無いとエラー（無限ループ防止）
+connect △ — 外のサービス
+connect gmail
+  sends new message: Message
+設計は次回。
+role △ — 誰が何をできるか
+未設計。次回。
+unknown ★ — まだ決めてないこと
+
+
+=====PAGE=====
+
+unknown
+  timezone of deadline
+  who can delete Application
+残っているとビルドできない。AIは埋めずに質問してくる
+never ★ — やってはいけないこと
+action の中にも、ファイル全体にも書ける
+生成されたコードのガード＋テストになる。証明できる違反はビルド前にエラー
+proposed △ — AIが提案した行
+never notify for status failed   # proposed by ai
+AIが仕様を書く未来用。proposed が付いた行は人が承認するまでビルドできない
+「人は決めて」を仕組みで保証する。他の仕様言語に無いこの言語だけの武器
+5. 実行モデル ★
+箱＝アクター。entity 1件ごとに独立。Erlang / Goのgoroutine＋channelと同じ思想
+ルールは全部独立。並列を書かなくても並列
+同じ箱への書き換えは届いた順に1つずつ。矛盾は on conflict で決める
+変換先はGoを想定（箱→goroutine、箱への出来事→channelがそのまま対応）
+6. ビルド手順 ★
+1. 読む：解析
+2. チェック：下のエラー一覧を全部見る。通らないと先に進めない
+3. 組み立て：entity flow list match rule はAI無しで決まった変換でGoに。毎回同じ結果
+4. 穴埋め：action の中身だけAIが書く（by code / by connect ならそれを使う）
+5. 検証：全部の example を流す。通ったら完成、通らなければAIに書き直させる
+エラー一覧（決めてないことはエラー）
+
+
+=====PAGE=====
+
+match に otherwise が無い
+until に上限が無い
+action / derive に example が2つ未満
+action / derive に else が無い
+unknown が残っている
+proposed が承認されていない
+when に状態を書いている
+move の対象が絞れていない
+flow の状態にルールの抜けがある（警告）
+矛盾する move が同時に来うるのに on conflict が無い
+list の循環参照
+入れ子
+7. 色分け ★
+種類
+色
+対象
+宣言
+紫・太字
+entity flow list match rule action unknown
+節
+グレー
+from where when do because input output example by how
+守り
+赤
+never else otherwise on conflict proposed
+型
+緑
+text datetime one of ref
+名前
+青
+Application DueSoon Remind
+値
+黄
+draft "…" 21:00 3 days
+コメント
+薄グレー斜体
+# …
+how
+背景グレー
+どうやるかの塊
+赤は「安全装置が付いてる印」。赤の無い塊は守りが足りないかも、と気づける。
+
+
+=====PAGE=====
+
+8. 未決（次回決める）
+名前（Intent系は既存と被る可能性大。調べてから）
+because を必須にするか
+connect / role の設計
+画面（UI）まで書くか、ロジックだけか → 最初はロジックだけの方針
+how に書ける語彙の一覧
+action 同士の組み合わせ（use ）の正式な形
+箱同士の関係（ref の先が消えたらどうするか）
+example の書き方（examples ブロックでまとめ書きを許すか）
+9. 次の一手：検証実験（Claude Codeで）
+1. 題材を1つ決める（就活Hubの「メール→締切→通知」がおすすめ）
+2. 同じ要件を 日本語 と この言語 で書く
+3. それぞれAIに実装させる（各5回）
+4. 数える：動いたか／バグの数／AIが聞き返した回数／出来上がりのブレ
+5. 「この言語の方がAIが間違えない」を数字で言えたら、面接でも語れる
+10. 他AIレビューの仕分け（9/23）
+取り入れ：priority の曖昧さ指摘（→ on conflict に改名）、now / current user 、
+actionの組み合わせ
+取り入れない：do の下に where （入れ子禁止に反する）、where mail seems related （曖
+昧禁止に反する。derive using ai ＋例＋else にする）
+向こうが見落としていた武器：並列が標準で壊れない／決めてないことはエラー／proposed の
+承認

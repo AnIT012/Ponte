@@ -12,6 +12,7 @@ python -m lang check spec/hub.lang                # 決めてないことを探�
 python -m lang check spec/hub_ready.lang --publish  # 公開する時の検査
 python -m lang check spec/hub_ready.lang --save-shape  # 通ったら thing の形を残す（次から change を検査）
 python -m lang test spec/hub_app.lang             # rule の example を全部流す
+python -m lang fill spec/hub_app.lang             # by ai の action の中身をAIに書かせる（要 ANTHROPIC_API_KEY）
 python -m lang run  spec/hub_app.lang             # 動かす → http://127.0.0.1:8000/
 python -m pytest                                  # テスト
 ```
@@ -20,8 +21,9 @@ python -m pytest                                  # テスト
 
 | ファイル | 中身 |
 |---|---|
-| `lang/` | v0.2 のパーサー、チェッカー（エラー27個）、実行エンジン、画面 |
+| `lang/` | v0.2 のパーサー、チェッカー（エラー28個）、実行エンジン、画面、AIに中身を書かせるループ |
 | `spec/hub_app.lang` | ブラウザで動く就活Hub（画面の部品と「追加」を足した版） |
+| `spec/hub_app.lang.ai/` | AIが書いた action の中身。人も読めて直せる |
 | `spec/hub.lang` | 仕様書 v0.2 付録の就活Hub。tbd が残っているので止まる |
 | `spec/hub_ready.lang` | tbd を外した渡せる版 |
 | `tests/cases/` | エラーごとの壊した／直した仕様のペア |

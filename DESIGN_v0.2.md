@@ -75,9 +75,32 @@ list DueSoon
   ## where deadline is after now    # 締切が過ぎた応募も通知する？
 ```
 
+### 状態は `[ ]` で並べる
+- `[ ]` は「状態を並べる」専用。中の `|` は「どれか1つ（or）」。
+- and の記号は作らない。and は where を行で重ねて書く。
+- thing の項目も do の中の一時的な状態も同じ書き方。
+
+```
+thing Application
+  status[draft | submitted | passed | failed]
+
+action ...
+  do
+    day = weekday of deadline
+    kind[weekend | weekday] = match day
+                                saturday | sunday -> weekend
+                                else              -> weekday
+```
+
+- match の右側に、宣言に無い状態を書いたらエラー（打ち間違いを止める）。
+- 宣言した状態を全部書いた match なら else は省略できる。1つでも抜けていたら else は必須。
+
+### group（まとまり）
+- rule や relate などを名前で括る。継承は無い。外からは `Mail.ReadMail` で呼ぶ。
+- group の中の字下げは入れ子と数えない。ただし group の中に group は書けない。
+
 ## まだ決めてないこと（小さい）
-1. まとまり（group）を入れるか、1ファイル1まとまりにするか
-2. do の中の一時的な状態（true/false の代わり）の名前付け
+- thing の状態以外の項目の書き方（`company text` か `company: text` か）
 
 ## まだ手を付けてないこと（大きい）
 - 画面（screen）

@@ -121,3 +121,27 @@ thing Application
 - user says のルールの example
 - do の中で使える道具の一覧
 - 他のAIからの指摘: ExtractDeadline の契約の矛盾（never guess the year と datetime）、by ai と ask ai の区別
+
+## DESIGN_ALL.md から決まったこと
+
+### who
+- who が1行も無い thing はエラー（渡せません）。
+- 書いてないことは誰もできない。
+
+### 画面の状態の短縮
+- 画面だけの状態（メニュー、タブなど）は look の中で `toggle 状態` / `set 状態 値` と書ける。rule は要らない。
+- データ（thing の項目）は今まで通り rule の move でしか変えられない。
+
+```
+look Header
+  button menu-button   toggle menu
+  button close-button  set menu closed
+```
+
+### 読み上げ対応
+- 名前の無いボタン、説明の無い画像は、試作の間は「注意」、公開する時は「エラー」。
+
+```
+button ✓ named 提出した
+image logo about 会社のロゴ
+```

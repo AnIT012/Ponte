@@ -8,9 +8,10 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from .icons import ICONS
 from .parser import (
-    Node, Spec, flow_parts, flow_states, match_arms, relate_lines, states_of,
-    thing_fields,
+    Node, Spec, flow_parts, flow_states, match_arms, parse_button, relate_lines, states_of,
+    thing_fields, words_entries,
 )
 
 
@@ -102,7 +103,13 @@ def match_domain(spec: Spec, node: Node, subject: str) -> list[str] | None:
                     return states_of(c.text)
             return None
         return state_table(spec).get(t, {}).get(f)
-    return local_states(node).get(subject) if not node.is_decl else None
+    if node.is_decl:
+        for sc in spec.decls("scene"):       # match tab to icon のように画面の状態で分ける
+            for c in sc.children:
+                if c.keyword == subject and c.text.startswith("["):
+                    return states_of(c.text)
+        return None
+    return local_states(node).get(subject)
 
 
 def match_result_states(node: Node) -> list[str] | None:
@@ -690,7 +697,7 @@ def check_scene_move(spec: Spec, opt: Options) -> list[Finding]:
 
 def check_words(spec: Spec, opt: Options) -> list[Finding]:
     blocks = spec.decls("words")
-    keys = {w.name: {c.keyword for c in w.children} for w in blocks}
+    keys = {w.name: set(words_entries(w)) for w in blocks}
     every = set().union(*keys.values()) if keys else set()
     out = []
     for w in blocks:
@@ -794,6 +801,47 @@ def check_undefined(spec: Spec, opt: Options) -> list[Finding]:
         if rel != "before":          # before の左は E16 が見る
             need(a, callables, line, "relate")
         need(b, callables, line, "relate")
+    # ボタンの行・アイコン
+    for d in spec.decls():
+        if d.keyword not in ("scene", "look"):
+            continue
+        for c in d.walk():
+            m = re.search(r"(?:^|\s)button\s+(.+)$", c.raw) if c is not d else None
+            if not m:
+                continue
+            b = parse_button(m.group(1))
+            if b is None:
+                out.append(Finding("E28", c.line, f"ボタンの書き方が分かりません（button 名前 named 文字 [icon 名前] [confirm \"文\"] [toggle 状態 / set 状態 値]）: '{c.raw}'"))
+            elif b["icon"] and b["icon"] not in ICONS:
+                out.append(Finding("E28", c.line, f"アイコン「{b['icon']}」はありません（使えるのは {', '.join(sorted(ICONS))}）"))
+    for m in spec.decls("match"):
+        if m.text.endswith(" to icon"):
+            for _, right, arm in match_arms(m):
+                if right not in ICONS:
+                    out.append(Finding("E28", arm.line, f"アイコン「{right}」はありません"))
+    # look の項目名
+    fields_of = {n: {f.name for f in thing_fields(t)} for n, t in things(spec).items()}
+    def thing_of(name):
+        seen = set()
+        while name in lists and name not in seen:
+            seen.add(name)
+            name = spec.find("list", name).child("of").text.strip()
+        return name
+    for lk in spec.decls("look"):
+        flds = fields_of.get(thing_of(lk.name), set())
+        for c in lk.children:
+            names = []
+            if c.keyword in ("title", "lead"):
+                names = [c.text.strip()]
+            elif c.keyword == "search":
+                names = [x.strip() for x in c.text.split(",")]
+            elif c.keyword == "group" and c.text.startswith("by "):
+                names = [c.text[3:].strip()]
+            elif c.keyword == "sub" and re.fullmatch(r"\w+", c.text.strip()):
+                names = [c.text.strip()]
+            for n in names:
+                if flds and n not in flds:
+                    out.append(Finding("E28", c.line, f"look {lk.name}: 「{n}」という項目はありません（{', '.join(sorted(flds))}）"))
     return out
 
 

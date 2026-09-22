@@ -266,3 +266,45 @@ def match_arms(node: Node) -> list[tuple[list[str], str, Node]]:
         left, right = [s.strip() for s in c.raw.split("->", 1)]
         arms.append(([x.strip() for x in left.split("|")], right, c))
     return arms
+
+
+def words_entries(words: Node) -> dict[str, str]:
+    """words の中身 → {鍵: 訳}。鍵は名前か "引用符の文"（spec にそのまま書いた日本語など）"""
+    out = {}
+    for c in words.children:
+        m = re.match(r'^"([^"]+)"\s+(.+)$', c.raw) or re.match(r"^(\S+)\s+(.+)$", c.raw)
+        if m:
+            out[m.group(1)] = m.group(2).strip().strip('"')
+    return out
+
+
+BUTTON_OPTS = ("named", "toggle", "set", "icon", "confirm")
+
+
+def parse_button(text: str) -> dict | None:
+    """`submitted-button named 提出した icon send confirm "提出しますか？"` → 辞書"""
+    toks = re.findall(r'"[^"]*"|\S+', text.strip())
+    if not toks:
+        return None
+    b = {"id": toks[0], "label": None, "act": None, "icon": None, "confirm": None}
+    i = 1
+    while i < len(toks):
+        t = toks[i]
+        if t == "named" and i + 1 < len(toks):
+            b["label"] = toks[i + 1].strip('"')     # 空白を含む名前は "引用符" で書く
+            i += 2
+        elif t == "toggle" and i + 1 < len(toks):
+            b["act"] = {"kind": "toggle", "state": toks[i + 1]}
+            i += 2
+        elif t == "set" and i + 2 < len(toks):
+            b["act"] = {"kind": "set", "state": toks[i + 1], "value": toks[i + 2]}
+            i += 3
+        elif t == "icon" and i + 1 < len(toks):
+            b["icon"] = toks[i + 1]
+            i += 2
+        elif t == "confirm" and i + 1 < len(toks):
+            b["confirm"] = toks[i + 1].strip('"')
+            i += 2
+        else:
+            return None
+    return b

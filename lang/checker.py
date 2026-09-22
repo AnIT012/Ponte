@@ -95,6 +95,12 @@ def match_domain(spec: Spec, node: Node, subject: str) -> list[str] | None:
     """match で分ける値の取りうる状態。分からなければ None。"""
     if "." in subject:
         t, f = subject.split(".", 1)
+        if t in {p.name for p in spec.decls("part")}:
+            part = spec.find("part", t)
+            for c in part.children:
+                if c.keyword == f and c.text.startswith("["):
+                    return states_of(c.text)
+            return None
         return state_table(spec).get(t, {}).get(f)
     return local_states(node).get(subject) if not node.is_decl else None
 
@@ -135,7 +141,7 @@ _LIMIT = re.compile(r"\b\d+\s+(times?|(seconds?|minutes?|hours?|days?|weeks?)\s+
 def check_until_limit(spec: Spec, opt: Options) -> list[Finding]:
     out = []
     for n in spec.walk():
-        if re.search(r"\buntil\b", n.raw):
+        if re.search(r"(?<!days )\buntil\b", n.raw):   # 道具の days until は繰り返しではない
             after = n.raw.split("until", 1)[1]
             if not _LIMIT.search(after):
                 out.append(Finding("E02", n.line, f"until に上限がありません（`or 3 times` か `or 1 hour passed`）: '{n.raw}'"))
@@ -752,9 +758,12 @@ def check_undefined(spec: Spec, opt: Options) -> list[Finding]:
         text = text.strip()
         if not text or text == "nothing" or text.startswith(("button ", "match ")):
             return
+        if text.startswith("tabs "):
+            return
         m = re.match(r"^(\w+) as \w+$", text)
         if m:
-            need(m.group(1), ths | lists, line, where)
+            if m.group(1) != "this":
+                need(m.group(1), ths | lists | parts, line, where)
         elif re.fullmatch(r"[A-Z]\w*", text):
             need(text, parts | looks, line, where)
 

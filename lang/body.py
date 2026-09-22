@@ -96,6 +96,15 @@ def compile_shape(shape: Node) -> re.Pattern:
 # 式
 # ---------------------------------------------------------------------------
 
+def in_range(key, text: str) -> bool:
+    """match の左の `1..3` / `..-1` / `4..`（数の範囲。両端を含む）"""
+    m = re.fullmatch(r"(-?\d+)?\.\.(-?\d+)?", text)
+    if not m or not isinstance(key, int) or (m.group(1) is None and m.group(2) is None):
+        return False
+    lo = int(m.group(1)) if m.group(1) is not None else None
+    hi = int(m.group(2)) if m.group(2) is not None else None
+    return (lo is None or key >= lo) and (hi is None or key <= hi)
+
 @dataclass
 class Step:
     name: str
@@ -105,13 +114,14 @@ class Step:
 
 
 class Body:
-    def __init__(self, do: Node, shapes: dict[str, Node], inputs: list[str], out_states: dict[str, bool]):
+    def __init__(self, do: Node, shapes: dict[str, Node], inputs: list[str], out_states: dict[str, bool],
+                 single_result: bool = True, lines: list[Node] | None = None):
         """out_states: out の状態名 → 値を持つか（found monthday なら True、missing なら False）"""
         self.shapes = {n: compile_shape(s) for n, s in shapes.items()}
         self.inputs = inputs
         self.out_states = out_states
         self.steps: dict[str, Step] = {}
-        for c in do.children:
+        for c in (lines if lines is not None else do.children):
             m = re.match(r"^(\w+)\s*(\[[^\]]*\])?\s*=\s*(.+)$", c.raw)
             if not m:
                 raise BodyError(c.line, f"do に書けるのは `名前 = 式` だけです: '{c.raw}'")
@@ -119,8 +129,11 @@ class Body:
             if name in self.steps or name in inputs:
                 raise BodyError(c.line, f"{name} はもう使われています（書き換えはできません）")
             self.steps[name] = Step(name, m.group(3).strip(), c, states_of(m.group(2)) if m.group(2) else None)
-        if not self.steps:
+        if not self.steps and single_result:
             raise BodyError(do.line, "do が空です")
+        self.result = None
+        if not single_result:
+            return
         def refs(expr: str) -> set:
             words = re.findall(r"\b\w+\b", re.sub(r'"[^"]*"', "", expr))
             if words and words[0] in out_states:     # 先頭の状態名は値の印で、名前の参照ではない
@@ -139,6 +152,13 @@ class Body:
     def run(self, inputs: dict) -> object:
         memo: dict = dict(inputs)
         return self._get(self.result, memo, [])
+
+    def values(self, inputs: dict) -> dict:
+        """全部の行の値（part で使う）"""
+        memo: dict = dict(inputs)
+        for n in self.steps:
+            self._get(n, memo, [])
+        return memo
 
     # --------------------------------------------------------------
     def _get(self, name: str, memo: dict, path: list):
@@ -169,7 +189,7 @@ class Body:
                 chosen = chosen or (right, arm)
                 continue
             for l in lefts:
-                if str(key) == l or (l.isdigit() and isinstance(key, int) and key == int(l)):
+                if str(key) == l or (re.fullmatch(r"-?\d+", l) and isinstance(key, int) and key == int(l)) or in_range(key, l):
                     return self._eval(right, st, memo, path, arm.line)
         if chosen is None:
             raise BodyError(st.node.line, f"match {st.expr[6:]}: {key} に当たる枝がありません")
@@ -210,6 +230,17 @@ class Body:
                 raise BodyError(line, f"shape {m.group(1)} がありません")
             text = str(ev(m.group(2)))
             return [dict(mm.groupdict(), text=mm.group(0)) for mm in self.shapes[m.group(1)].finditer(text)]
+        m = re.fullmatch(r"days until (.+)", e)
+        if m:
+            from .values import parse_time
+            now = memo.get("__now__")
+            if now is None:
+                raise BodyError(line, "days until: 今の時刻がありません")
+            try:
+                t = parse_time(str(ev(m.group(1))), now.year)
+            except ValueError as err:
+                raise BodyError(line, str(err))
+            return (t.date() - now.date()).days
         m = re.fullmatch(r"(count|length|first|last|monthday|number) of (.+)", e)
         if m:
             v = ev(m.group(2))

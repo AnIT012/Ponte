@@ -558,7 +558,19 @@ class Engine:
             for t in self.boxes.values():
                 if box_id in t:
                     box = t[box_id]
-        return self.fire(f"user taps {button} on {on}", Ctx(user, this=box))
+        ctx = self.fire(f"user taps {button} on {on}", Ctx(user, this=box))
+        if box is not None and box.thing != on:        # thing の名前で書いた rule も動く（QUESTIONS_v0.2 U2）
+            c2 = self.fire(f"user taps {button} on {box.thing}", Ctx(user, this=box))
+            ctx.nav = ctx.nav or c2.nav
+        return ctx
+
+    def drag(self, user: User, box_id: str, to: str) -> None:
+        """board でカードを別の列へ動かした → move の出来事（flow と who が守られる）"""
+        for t in self.boxes.values():
+            if box_id in t:
+                self.move(t[box_id], to, user)
+                return
+        raise RuleError(f"{box_id} が見つかりません")
 
     def gives(self, connect: str, event: str, payload: str) -> Ctx:
         return self.fire(f"{connect} gives {event}", Ctx(None, payload=payload))

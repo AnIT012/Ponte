@@ -93,6 +93,8 @@ def split_comment(line: str) -> tuple[str, str | None, bool]:
         if ch == '"':
             in_quote = not in_quote
         elif ch == "#" and not in_quote:
+            if re.match(r"#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})(?![\w])", line[i:]) and (i == 0 or line[i - 1] in " ,("):
+                continue   # #4F46E5 は色の値（コメントではない）
             blocking = line[i:i + 2] == "##"
             rest = line[i + (2 if blocking else 1):].strip()
             return line[:i].rstrip(), rest, blocking

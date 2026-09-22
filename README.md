@@ -34,8 +34,12 @@ python -m pytest                                  # テスト
 
 ## 動いている画面
 
-`python -m lang run spec/hub_app.lang` で動かしたもの。依存は Python の標準機能だけ。
+`python -m lang run spec/hub_app.lang` で動かしたもの。依存は Python の標準機能だけ（画面も素の HTML / CSS / JavaScript）。
 
-| PC | スマホ |
-|---|---|
-| ![](docs/screenshots/hub_wide.png) | ![](docs/screenshots/hub_phone.png) |
+| 締切が近い | すべて | ボード |
+|---|---|---|
+| ![](docs/screenshots/home.png) | ![](docs/screenshots/all.png) | ![](docs/screenshots/board.png) |
+
+| カレンダー | 詳しく | スマホ | ダーク |
+|---|---|---|---|
+| ![](docs/screenshots/calendar.png) | ![](docs/screenshots/detail.png) | ![](docs/screenshots/phone.png) | ![](docs/screenshots/dark.png) |

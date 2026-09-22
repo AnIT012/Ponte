@@ -48,3 +48,25 @@
 
 ### 気づいたこと
 - `connect`（△）からの出来事（`mail sends new message`）は変換できないので、フェーズ3の題材「メール→締切→通知」のうち「メール→」の入口は action の契約（ExtractDeadline）までしか言語で書けていない。
+
+## フェーズ3：検証実験（基盤は完了、本番は API キー待ち）
+
+### やったこと
+- 同じ要件を2通りで用意: `experiment/prompts/A_japanese.md`（日本語の自然文）と `experiment/prompts/B_lang.md`（`spec/hub_ready.spec` そのまま＋読み方の8行）。
+  両方に `experiment/prompts/common.md`（テストの窓口となる Go の型・関数と「分からなければコードを書かず `Q:` で質問だけ返す」）を付ける。
+- 採点は `experiment/harness_test.go`（AI に見せない10テスト）。仕様の example 2つ、flow、on conflict、絞り込み、match、else、直列化（`-race`）。
+- `experiment/run.py`: 各条件5回。モデルと effort を固定（Opus 5 系には temperature が無いので effort で代用）。ストリーミングで受け、```go ブロックを `hub.go` に切り出す。
+- `experiment/score.py`: 動いたか／example 通過／バグ数（落ちたテスト数）／聞き返し（`Q:` 行の数）／5回のブレ（run 同士の差分行数の平均）を数えて `EXPERIMENT.md` を書く。
+- **API キーが無いので `--dummy` でダミー結果を置き、手順だけ通した。** `EXPERIMENT.md` は「未実行」と明記した表。
+- 検算: `experiment/reference/hub.go`（自分で書いた参照実装）がハーネス10テスト全部を通ること、わざと壊すと該当テストだけ落ちることをテストで保証。
+
+### 本番のやり方
+```
+export ANTHROPIC_API_KEY=...
+python experiment/run.py            # --model / --effort / --runs で固定値を変えられる
+python experiment/score.py          # EXPERIMENT.md を上書き
+```
+
+### 正直に
+- (B) は example / never / else / how が明示されている分、情報量で有利。(A) は慣れた自然文で有利。EXPERIMENT.md の注記に書いた。
+- 「聞き返し」は機械的に数えるため、コードと質問を両方出した run は 0 と数える。

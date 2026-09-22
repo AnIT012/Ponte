@@ -2,6 +2,7 @@
 import json
 import threading
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime
 
@@ -12,7 +13,7 @@ from lang.parser import parse, parse_file
 from lang.runtime import Engine, NotAllowed, RuleError
 from lang.server import serve
 
-NOW = datetime(2026, 9, 21, 21, 0)
+NOW = datetime(2026, 9, 21, 21, 0)   # 9/21 21:00
 APP = "spec/hub_app.lang"
 
 
@@ -167,7 +168,7 @@ def test_data_survives_restart(tmp_path):
     e.move(a, "submitted", me)
     e2 = engine(store=store)
     got = [b.values for b in e2.all("Application")]
-    assert got == [{"company": "Keep", "deadline": "9/24 23:59", "owner": me.id, "status": "submitted"}]
+    assert got == [{"company": "Keep", "deadline": "9/24 23:59", "memo": "", "owner": me.id, "status": "submitted"}]
     assert e2.create("Application", {"company": "New"}, e2.login("me")).id not in {b.id for b in e.all("Application")}
 
 
@@ -186,18 +187,42 @@ def test_server_end_to_end():
         except urllib.error.HTTPError as err:       # 400 はエラーの中身を返す
             return json.loads(err.read())
 
-    def view():
-        return json.loads(opener.open(base + "/api/view?scene=Home&user=me").read())
+    def view(scene="Home", **q):
+        qs = urllib.parse.urlencode({"scene": scene, "user": "me", **q})
+        return json.loads(opener.open(base + "/api/view?" + qs).read())
+
+    def blocks(v, slot):
+        return next(s["blocks"] for s in v["slots"] if s["slot"] == slot)
     try:
-        assert 'id="root"' in opener.open(base + "/").read().decode()
-        assert view()["slots"][1]["blocks"][0]["text"].startswith("3日以内")
+        page = opener.open(base + "/").read().decode()
+        assert 'id="root"' in page and "--main:#4F46E5" in page          # style theme の色が効いている
+        v = view()
+        assert [b["type"] for b in blocks(v, "top")] == ["part", "tabs", "button"]
+        assert blocks(v, "main")[0]["type"] == "items" and blocks(v, "main")[0]["rows"] == []   # 空 → empty の文
+        assert blocks(v, "main")[0]["empty"].startswith("3日以内")
         assert post("/api/tap", {"user": "me", "button": "add", "on": "Home"})["nav"] == "AddApplication"
-        assert post("/api/submit", {"user": "me", "input": "AddApplication", "values": {"company": "Web", "deadline": "9/23 10:00"}})["ok"]
-        rows = view()["slots"][1]["blocks"][0]["rows"]
-        assert rows[0]["title"] == "Web" and rows[0]["mark"]["label"] == "draft"
-        post("/api/tap", {"user": "me", "button": "submitted-button", "on": "DueSoon", "id": rows[0]["id"]})
-        assert view()["slots"][1]["blocks"][0]["type"] == "text"      # DueSoon が空になった
-        bad = post("/api/submit", {"user": "me", "input": "AddApplication", "values": {"company": "X", "deadline": "来週"}})
-        assert "error" in bad
+        assert blocks(view("AddApplication"), "top")[0]["name"] == "Header"
+        assert post("/api/submit", {"user": "me", "input": "AddApplication",
+                                    "values": {"company": "Web", "deadline": "2026-09-23T10:00"}})["ok"]
+        row = blocks(view(), "main")[0]["rows"][0]
+        assert row["title"] == "Web" and row["mark"]["label"] == "下書き"
+        assert row["sub"]["lines"] == ["9/23 10:00 ・ あと2日"] and row["sub"]["mark"]["value"] == "soon"
+        # タブ（画面の状態）で見せ方が変わる
+        assert blocks(view(state=json.dumps({"tab": "board"})), "main")[0]["type"] == "board"
+        assert blocks(view(state=json.dumps({"tab": "calendar"})), "main")[0]["items"][0]["date"] == "2026-09-23"
+        assert blocks(view(state=json.dumps({"menu": "open"})), "over")[0]["type"] == "dialog"
+        # 詳しく: flow で動けないボタンは押せない
+        r = post("/api/tap", {"user": "me", "button": "card", "on": "Mine", "id": row["id"]})
+        assert r["nav"] == "Detail"
+        d = blocks(view("Detail", this=row["id"], origin="Mine"), "main")[0]
+        assert [(b["label"], bool(b.get("disabled"))) for b in d["buttons"]] == [("提出した", False), ("通過", True), ("不合格", True)]
+        # board で動かす: flow に無い流れは人の言葉で断る
+        bad = post("/api/drag", {"user": "me", "id": row["id"], "to": "passed"})
+        assert "「下書き」から「通過」へは動かせません" in bad["error"]
+        assert post("/api/drag", {"user": "me", "id": row["id"], "to": "submitted"})["ok"]
+        assert blocks(view(), "main")[0]["rows"] == []                  # DueSoon から抜けた
+        assert "error" in post("/api/submit", {"user": "me", "input": "AddApplication", "values": {"company": "X", "deadline": "来週"}})
+        en = view(lang="en", state=json.dumps({"tab": "all"}))
+        assert blocks(en, "main")[0]["rows"][0]["mark"]["label"] == "Submitted"
     finally:
         httpd.shutdown()

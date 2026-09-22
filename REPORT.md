@@ -81,3 +81,12 @@ python experiment/score.py          # EXPERIMENT.md を上書き
 - テスト48件通過（parser / checker 13ペア / codegen 決定性・go test -race / experiment 検算 / proposals）。
 - **GitHub リポジトリは未作成**（このセッションの GitHub App に作成権限が無く 403）。ローカルの git にコミット済み。空リポジトリを作ってもらえれば push できる。
 - 本番の実験は API キー待ち。
+
+## v0.2：チェッカーの作り直し（完了）
+
+- `lang/` を仕様 v0.2 で書き直した。v0.1 の実装は `lang_v01/` に退避（テストもそのまま通る）。
+- パーサー: 見出し／節の木、`#` と `##` の2種類のコメント、`[a | b]` の状態、group の中の見出し。
+- チェッカー: 13章のエラー27個を1つ1関数。警告は W09（flow の抜け）と W26（読み上げ対応、試作中）。
+- `spec/hub.lang` は仕様書の付録そのまま。**tbd だけで止まる**（狙いどおり）。`spec/hub_ready.lang` は公開の検査まで通る。
+- `tests/cases/` に壊した／直したペア34組。壊した方はそのコードだけで止まることも確認した。テストは v0.1 分と合わせて全部通る。
+- 仕様に無い判定は `QUESTIONS_v0.2.md` に9件。特に V1（action の else と relate の else の関係）は仕様の矛盾に近い。

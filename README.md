@@ -1,30 +1,28 @@
-# nameless-lang（仮）— 人とAIの間の言語 v0.1
+# nameless-lang（仮）— 人とAIの間の言語
 
-「人は決めて、AIが書いて、言語が守る」言語の検証リポジトリ。
-言語にまだ名前は無い。仕様は `docs/言語仕様_v0.1.txt`（PDFからテキスト化）。
+「人は決めて、AIが書いて、言語が守る」言語。名前はまだ無い。
 
-## 使い方
+- 仕様: `docs/言語仕様_v0.2.md`（最新）、`docs/言語仕様_v0.1.txt`
+- 相談の記録: `DESIGN_v0.2.md`（決まったこと）、`DESIGN_ALL.md`（全体案）
+
+## 使い方（v0.2）
 
 ```
-python -m lang check spec/hub.spec        # 決めてないことを探す
-python -m lang gen   spec/hub_ready.spec -o generated/hub   # Goに変換（フェーズ2）
-python -m lang proposals spec/hub.spec  # AIの提案で承認待ちのもの（フェーズ4）
-python experiment/run.py --dummy && python experiment/score.py   # 検証実験（フェーズ3）
-python -m pytest                          # テスト
+python -m lang check spec/hub.lang                # 決めてないことを探す
+python -m lang check spec/hub_ready.lang --publish  # 公開する時の検査
+python -m lang check spec/hub_ready.lang --save-shape  # 通ったら thing の形を残す（次から change を検査）
+python -m pytest                                  # テスト
 ```
 
 ## ファイル
 
 | ファイル | 中身 |
 |---|---|
-| `QUESTIONS.md` | 仕様の分からない点・矛盾。判断待ち |
-| `PROPOSALS.md` | 仕様に無いが足したくなったこと（足していない） |
-| `REPORT.md` | フェーズごとの報告 |
-| `lang/parser.py` | 宣言／節の木を作る |
-| `lang/checker.py` | 仕様6章のエラー12個 |
-| `spec/` | 就活Hubの例（hub.spec は原文どおり＝止まる、hub_ready.spec は渡せる版） |
-| `lang/codegen.py` | 決まった部分の Go 変換 |
-| `generated/hub/` | hub_ready.spec からの変換結果 |
-| `experiment/` | 自然文 vs 言語の実験（EXPERIMENT.md） |
-| `NAMES.md` | 名前の候補と被りチェック |
-| `tests/` | 壊した仕様／直した仕様のペア |
+| `lang/` | v0.2 のパーサーとチェッカー（エラー27個） |
+| `spec/hub.lang` | 仕様書 v0.2 付録の就活Hub。tbd が残っているので止まる |
+| `spec/hub_ready.lang` | tbd を外した渡せる版 |
+| `tests/cases/` | エラーごとの壊した／直した仕様のペア |
+| `QUESTIONS_v0.2.md` | 仕様に無くて仮で決めた判定 |
+| `lang_v01/`, `tests/v01/`, `spec/*.spec` | v0.1 の実装（Go 変換を含む）。記録として残している |
+| `experiment/` | 自然文 vs 言語の比較実験（v0.1 時点。作り直し予定） |
+| `NAMES.md` | 名前の候補 |

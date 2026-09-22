@@ -4,6 +4,7 @@
   python -m lang check spec/hub.lang --publish     公開する時の検査（読み上げ対応もエラー）
   python -m lang check spec/hub.lang --save-shape  通ったら thing の形を <spec>.shape.json に残す（次の change 検査に使う）
   python -m lang test  spec/hub_app.lang           rule の example を全部流す
+  python -m lang fill  spec/hub_app.lang           by ai の action の中身をAIに書かせる
   python -m lang run   spec/hub_app.lang           動かす（ブラウザで http://127.0.0.1:8000/）
 """
 from __future__ import annotations
@@ -79,7 +80,8 @@ def cmd_test(args) -> int:
     results = run_examples(spec)
     bad = [r for r in results if not r.ok]
     for r in results:
-        print(f"  {'通過' if r.ok else '失敗'}  rule {r.rule}（L{r.line}）{'' if r.ok else ': ' + r.message}")
+        kind = "action" if r.rule in {a.name for a in spec.decls("action")} else "rule"
+        print(f"  {'通過' if r.ok else '失敗'}  {kind} {r.rule}（L{r.line}）{'' if r.ok else ': ' + r.message}")
     print(f"example {len(results)}件中 {len(results) - len(bad)}件通過")
     return 1 if bad else 0
 
@@ -100,6 +102,48 @@ def cmd_run(args) -> int:
     return 0
 
 
+def cmd_fill(args) -> int:
+    from .fill import AnthropicHTTP, FileAI, fill_action, load_body
+    spec = _load_checked(args.spec)
+    if spec is None:
+        return 1
+    targets = [a for a in spec.decls("action")
+               if (a.child("by") and a.child("by").text.strip() == "ai") and (not args.action or a.name == args.action)]
+    if not targets:
+        print("by ai の action がありません")
+        return 1
+    try:
+        if args.ai.startswith("file:"):
+            ai, label = FileAI(args.ai[5:]), f"用意した返事（{args.ai[5:]}）"
+        else:
+            ai, label = AnthropicHTTP(args.model, args.effort), args.model
+    except RuntimeError as e:
+        print(e)
+        return 2
+    bad = 0
+    for a in targets:
+        if load_body(spec, a) is not None and not args.again:
+            print(f"  済み  {a.name}（書き直すなら --again）")
+            continue
+        print(f"  書かせています  {a.name} ...")
+        try:
+            r = fill_action(spec, a, ai, tries=args.tries, label=label)
+        except RuntimeError as e:
+            print(f"  止まりました  {a.name}: {e}")
+            bad += 1
+            continue
+        for i, probs in enumerate(r.history, 1):
+            print(f"    {i}回目: {'通過' if not probs else f'{len(probs)}件ダメ'}")
+            for p in probs:
+                print(f"      - {p}")
+        if r.ok:
+            print(f"  できました  {a.name}（{r.tries}回目で全部の example と never を通過）→ {r.path}")
+        else:
+            print(f"  できませんでした  {a.name}（{r.tries}回試した）")
+            bad += 1
+    return 1 if bad else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m lang", description="人とAIの間の言語（名前未定）v0.2")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -111,6 +155,15 @@ def main(argv: list[str] | None = None) -> int:
     t = sub.add_parser("test", help="rule の example を全部流す")
     t.add_argument("spec")
     t.set_defaults(fn=cmd_test)
+    fl = sub.add_parser("fill", help="by ai の action の中身をAIに書かせる（example と never を通るまで）")
+    fl.add_argument("spec")
+    fl.add_argument("--action", help="この action だけ")
+    fl.add_argument("--ai", default="anthropic", help="anthropic（ANTHROPIC_API_KEY が要る）か file:返事.md")
+    fl.add_argument("--model", default="claude-opus-5")
+    fl.add_argument("--effort", default="high")
+    fl.add_argument("--tries", type=int, default=5)
+    fl.add_argument("--again", action="store_true", help="もう中身があっても書き直す")
+    fl.set_defaults(fn=cmd_fill)
     r = sub.add_parser("run", help="動かす（ブラウザで開く）")
     r.add_argument("spec")
     r.add_argument("--port", type=int, default=8000)

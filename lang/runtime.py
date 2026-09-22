@@ -79,6 +79,15 @@ class Engine:
         self._pending: list[tuple[Node, Ctx]] = []   # before 待ちの rule
         self._fired_today: set = set()
         self._read_spec()
+        self.bodies = {}
+        from .fill import load_body     # action の中身（by ai / by code）
+        for name, a in self.actions.items():
+            try:
+                b = load_body(self.spec, a)
+            except Exception:
+                b = None
+            if b is not None:
+                self.bodies[name] = b
         for t in self.fields:
             self.boxes[t] = {}
         if store and os.path.exists(store):
@@ -490,11 +499,20 @@ class Engine:
         impl = self.action_impls.get(name)
         if impl is not None:
             return impl(inp)
+        body = self.bodies.get(name)
+        if body is not None:
+            from .body import Tagged, input_names, out_states_of
+            result = body.run({input_names(a)[0]: inp})
+            outs = out_states_of(a)
+            if not (isinstance(result, Tagged) and result.state in outs and not outs[result.state]):
+                return result
+            # 値を持たない状態（missing など）は「決められなかった」→ else へ（QUESTIONS_v0.2 A2）
         els = a.child("else")
         what = els.text.strip() if els else ""
         # 中身（by ai の do）はまだ無い → else の逃げ道へ（QUESTIONS_v0.2 R4）
         if what == "ask user":
-            self.notify(name, f"確認してください（{name} の中身がまだありません）: {inp[:60]}", ctx.user)
+            why = "決められませんでした" if name in self.bodies else f"{name} の中身がまだありません"
+            self.notify(name, f"確認してください（{why}）: {inp[:60]}", ctx.user)
             return None
         if what == "skip":
             return None

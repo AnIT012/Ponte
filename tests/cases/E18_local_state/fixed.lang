@@ -85,6 +85,12 @@ scene Home
 flow scene
   Home -> AddApplication
 
+part Header
+  show  text "就活Hub"
+
+part EmptyNote
+  show  text "3日以内に締切の下書きはありません"
+
 look DueSoon as cards
   title   company
   sub     deadline

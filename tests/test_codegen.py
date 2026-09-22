@@ -55,3 +55,44 @@ def test_undecided_forms_stop(text, msg):
     with pytest.raises(CodegenError) as e:
         generate(parse(text))
     assert msg in str(e.value)
+
+
+BY_SPEC = """entity A
+  x: text
+
+connect gmail
+  sends new message: Message
+
+action ByCode
+  input  m: Message
+  output r: text
+  example "a" -> "b"
+  example "c" -> "d"
+  else   skip
+  by     code "mine.go"
+
+action ByConnect
+  input  m: Message
+  output r: text
+  example "a" -> "b"
+  example "c" -> "d"
+  else   skip
+  by     connect gmail
+"""
+
+
+@pytest.mark.skipif(shutil.which("go") is None, reason="go が無い")
+def test_by_code_and_by_connect_skeleton(tmp_path):
+    files = generate(parse(BY_SPEC))
+    assert "GmailConnector" in files["connects.go"] and "OnNewMessage" in files["connects.go"]
+    assert 'by code "mine.go"' in files["actions.go"]
+    assert "ByConnectByGmail" in files["actions.go"]
+    generate_to_dir(parse(BY_SPEC), str(tmp_path))
+    r = subprocess.run(["go", "vet", "./..."], cwd=tmp_path, capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+
+
+def test_by_connect_without_connect_stops():
+    with pytest.raises(CodegenError) as e:
+        generate(parse(BY_SPEC.replace("connect gmail\n  sends new message: Message\n\n", "")))
+    assert "connect がありません" in str(e.value)

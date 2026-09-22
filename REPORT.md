@@ -70,3 +70,14 @@ python experiment/score.py          # EXPERIMENT.md を上書き
 ### 正直に
 - (B) は example / never / else / how が明示されている分、情報量で有利。(A) は慣れた自然文で有利。EXPERIMENT.md の注記に書いた。
 - 「聞き返し」は機械的に数えるため、コードと質問を両方出した run は 0 と数える。
+
+## フェーズ4：余力分（完了）
+
+- **by code / by connect の骨組み**: `by code "file.go"` は「そのファイルの `init()` で `XxxImpl` を設定する」というコメント付きの置き場。`by connect gmail` は `connects.go` に `GmailEvents`（`sends` の出来事）と `GmailConnector`（by connect の action の中身）の interface を出し、`XxxByGmail` でつなぐ。connect が無いのに by connect したらエラー。
+- **proposed の承認待ち**: `python -m lang proposals <spec>` が `# proposed` 行を一覧し、あれば終了コード1。承認は「マーカーを消す」（仕様に無いので Q13 で確認待ち）。
+- **NAMES.md**: 候補10個。Web 検索で被りを調べ、おすすめは Sadame / Tsumori / Hitoai。商標DBは未確認。
+
+## 全体の状態
+- テスト48件通過（parser / checker 13ペア / codegen 決定性・go test -race / experiment 検算 / proposals）。
+- **GitHub リポジトリは未作成**（このセッションの GitHub App に作成権限が無く 403）。ローカルの git にコミット済み。空リポジトリを作ってもらえれば push できる。
+- 本番の実験は API キー待ち。

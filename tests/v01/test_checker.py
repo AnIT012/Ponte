@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from lang.checker import check
-from lang.parser import parse_file
+from lang_v01.checker import check
+from lang_v01.parser import parse_file
 
 CASES = sorted(p for p in (Path(__file__).parent / "cases").iterdir() if p.is_dir())
 

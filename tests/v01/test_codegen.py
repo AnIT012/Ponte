@@ -10,8 +10,8 @@ from pathlib import Path
 
 import pytest
 
-from lang.codegen import CodegenError, generate, generate_to_dir
-from lang.parser import parse, parse_file
+from lang_v01.codegen import CodegenError, generate, generate_to_dir
+from lang_v01.parser import parse, parse_file
 
 HUB = Path("spec/hub_ready.spec")
 
@@ -37,7 +37,7 @@ def test_committed_output_is_up_to_date():
 @pytest.mark.skipif(shutil.which("go") is None, reason="go が無い")
 def test_generated_go_builds_and_passes(tmp_path):
     generate_to_dir(parse_file(str(HUB)), str(tmp_path))
-    shutil.copy("tests/go/semantics_test.go", tmp_path / "semantics_test.go")
+    shutil.copy("tests/v01/go/semantics_test.go", tmp_path / "semantics_test.go")
     for cmd in (["gofmt", "-l", "."], ["go", "vet", "./..."], ["go", "test", "-race", "./..."]):
         r = subprocess.run(cmd, cwd=tmp_path, capture_output=True, text=True)
         assert r.returncode == 0, f"{' '.join(cmd)}\n{r.stdout}\n{r.stderr}"

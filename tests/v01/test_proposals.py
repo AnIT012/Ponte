@@ -1,6 +1,6 @@
-from lang.cli import main
-from lang.parser import parse
-from lang.proposals import list_proposals
+from lang_v01.cli import main
+from lang_v01.parser import parse
+from lang_v01.proposals import list_proposals
 
 
 def test_list_proposals():

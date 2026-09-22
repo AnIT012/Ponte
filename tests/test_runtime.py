@@ -99,7 +99,7 @@ def test_tap_moves_only_this_and_relate_wins():
 
 
 def test_action_without_body_goes_to_else():
-    e = engine()
+    e = engine("spec/hub_ready.lang")          # 中身（.ai）がまだ無い spec
     e.gives("Gmail", "new message", "【締切9/24 23:59】")
     assert "確認してください" in e.notifications[-1]["text"]
 

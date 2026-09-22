@@ -36,10 +36,14 @@ python -m pytest                                  # テスト
 
 `python -m lang run spec/hub_app.lang` で動かしたもの。依存は Python の標準機能だけ（画面も素の HTML / CSS / JavaScript）。
 
-| 締切が近い | すべて | ボード |
+| 締切が近い | すべて（検索・まとまり） | ボード |
 |---|---|---|
 | ![](docs/screenshots/home.png) | ![](docs/screenshots/all.png) | ![](docs/screenshots/board.png) |
 
-| カレンダー | 詳しく | スマホ | ダーク |
+| カレンダー | 詳しく（編集のあと） | 確認 | 英語 |
 |---|---|---|---|
-| ![](docs/screenshots/calendar.png) | ![](docs/screenshots/detail.png) | ![](docs/screenshots/phone.png) | ![](docs/screenshots/dark.png) |
+| ![](docs/screenshots/calendar.png) | ![](docs/screenshots/detail.png) | ![](docs/screenshots/confirm.png) | ![](docs/screenshots/english.png) |
+
+| スマホ | ダーク |
+|---|---|
+| ![](docs/screenshots/phone.png) | ![](docs/screenshots/dark.png) |

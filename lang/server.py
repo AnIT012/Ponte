@@ -2,9 +2,9 @@
 
   python -m lang run spec/hub_app.lang --port 8000
 
-- scene / look / part / input / style を読んで、画面の中身を JSON にして渡す。描くのはブラウザ。
-- 箱が変わったら、開いている画面へ「変わった」を送る（Server-Sent Events）。画面は自動で最新になる。
-- 時間の出来事は裏で1分ごとに見る。
+サーバーは scene / look / part / input / style / words を読んで「何を見せるか」を JSON にする。
+描くのはブラウザ。画面の状態（タブ・メニューの開閉）はブラウザが持ち、見せる時にサーバーへ渡す。
+箱が変わると開いている画面へ「変わった」を送る（Server-Sent Events）。
 """
 from __future__ import annotations
 
@@ -12,154 +12,359 @@ import json
 import re
 import threading
 import time
+from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-from .parser import Node, Spec, match_arms
-from .runtime import Ctx, Engine, RuleError
+from .body import Body, BodyError
+from .parser import Node, Spec, match_arms, states_of
+from .runtime import Box, Ctx, Engine, RuleError
 from .values import parse_time
 
-COLORS = {"red": "#E5484D", "gray": "#8B8D98", "blue": "#3E63DD", "green": "#30A46C",
-          "orange": "#F76B15", "yellow": "#FFC53D", "purple": "#8E4EC6", "black": "#1C2024"}
+PALETTE = {
+    "red": "#E5484D", "gray": "#8B8D98", "blue": "#3E63DD", "green": "#30A46C", "orange": "#F76B15",
+    "yellow": "#E2A336", "purple": "#8E4EC6", "pink": "#D6409F", "teal": "#12A594", "black": "#1C2024",
+}
+AUTO = ["#3E63DD", "#30A46C", "#F76B15", "#8E4EC6", "#12A594", "#D6409F", "#E2A336", "#8B8D98"]
+KINDS = {"cards", "list", "table", "board", "calendar", "chart", "detail", "dialog", "sheet"}
+
+
+def color_of(name: str | None, fallback_index: int = 0) -> str:
+    if not name:
+        return AUTO[fallback_index % len(AUTO)]
+    return PALETTE.get(name, name if name.startswith("#") else AUTO[fallback_index % len(AUTO)])
+
+
+class Env:
+    """1回の「見せる」に必要なもの"""
+    def __init__(self, user, scene: str, state: dict, this: Box | None, origin: str | None, lang: str):
+        self.user, self.scene, self.state, self.this, self.origin, self.lang = user, scene, state, this, origin, lang
+        self.ctx = Ctx(user, this=this)
 
 
 class App:
     def __init__(self, spec: Spec, engine: Engine):
-        self.spec = spec
-        self.eng = engine
+        self.spec, self.eng = spec, engine
         self.scenes = {s.name: s for s in spec.decls("scene")}
         self.looks = {l.name: l for l in spec.decls("look")}
         self.parts = {p.name: p for p in spec.decls("part")}
         self.inputs = {i.name: i for i in spec.decls("input")}
+        self.words = {w.name: {c.keyword: c.text.strip().strip('"') for c in w.children} for w in spec.decls("words")}
         self.home = next(iter(self.scenes), None)
+        self.part_bodies = {}
+        for name, p in self.parts.items():
+            lines = [c for c in p.children if re.match(r"^\w+\s*(\[[^\]]*\])?\s*=", c.raw)]
+            in_ = p.child("in")
+            self.part_bodies[name] = Body(p, {}, [in_.text.split()[0]] if in_ else [], {}, single_result=False, lines=lines)
+        self.tones = {}
+        for st in spec.decls("style"):
+            for c in st.children:
+                m = re.search(r"\btone\s+(\w+)", c.text)
+                if m:
+                    self.tones[c.keyword] = m.group(1)
 
     # ------------------------------------------------------------------
-    # 画面の中身
-    # ------------------------------------------------------------------
-    def view(self, scene: str, user) -> dict:
-        ctx = Ctx(user)
+    def tr(self, key, env: Env) -> str:
+        key = "" if key is None else str(key)
+        return self.words.get(env.lang, {}).get(key, key)
+
+    def scene_states(self, scene: Node) -> dict:
+        out = {}
+        for c in scene.children:
+            if c.text.startswith("["):
+                vals = states_of(c.text)
+                init = c.text.split("=", 1)[1].strip() if "=" in c.text else vals[0]
+                out[c.keyword] = {"values": vals, "init": init}
+        return out
+
+    def view(self, scene: str, user, state: dict, this_id: str | None, origin: str | None, lang: str) -> dict:
+        this = None
+        if this_id:
+            for t in self.eng.boxes.values():
+                if this_id in t:
+                    this = t[this_id]
+        env = Env(user, scene, dict(state), this, origin, lang)
         if scene in self.inputs:
-            return {"scene": scene, "slots": [{"slot": "main", "blocks": [self.input_block(scene)]}]}
+            top = []
+            if self.home in self.scenes:
+                top = [self.part_block(self.parts[c.text.strip()], None, env) for c in self.scenes[self.home].children
+                       if c.keyword == "top" and c.text.strip() in self.parts]
+            return {"scene": scene, "states": {}, "slots": [{"slot": "top", "blocks": top}, {"slot": "main", "blocks": [self.input_block(scene, env)]}]}
         s = self.scenes.get(scene)
         if s is None:
-            return {"scene": scene, "slots": [], "error": f"{scene} という画面はありません"}
-        slots = []
+            return {"scene": scene, "states": {}, "slots": [], "error": f"{scene} という画面はありません"}
+        states = self.scene_states(s)
+        for k, v in states.items():
+            if env.state.get(k) not in v["values"]:
+                env.state[k] = v["init"]
+        slots: dict[str, list] = {}
+        order = []
         for c in s.children:
-            if c.text.startswith("["):      # 画面の状態の宣言（ブラウザ側で持つ）
+            if c.text.startswith("["):
                 continue
-            slots.append({"slot": c.keyword, "blocks": self.content(c.text, c, ctx, scene)})
-        return {"scene": scene, "slots": slots}
+            if c.keyword not in slots:
+                slots[c.keyword] = []
+                order.append(c.keyword)
+            slots[c.keyword] += self.content(c.text, c, env)
+        return {"scene": scene, "states": {k: {"values": v["values"], "current": env.state[k],
+                                                 "labels": {x: self.tr(x, env) for x in v["values"]}} for k, v in states.items()},
+                "slots": [{"slot": k, "blocks": slots[k]} for k in order]}
 
-    def content(self, text: str, node: Node, ctx: Ctx, scene: str) -> list[dict]:
-        text = text.strip()
+    # ------------------------------------------------------------------
+    def content(self, text: str, node: Node, env: Env, match_state: str | None = None) -> list[dict]:
+        text = (text or "").strip()
+        if not text or text == "nothing":
+            return []
         m = re.match(r"^match (.+)$", text)
         if m:
-            value = self.eval_value(m.group(1), ctx)
+            subj = m.group(1).strip()
+            value = env.state.get(subj) if subj in env.state else self.eval_value(subj, env)
             chosen = None
             for lefts, right, _ in match_arms(node):
                 if str(value) in lefts:
                     chosen = right
                     break
-                if "else" in lefts:
-                    chosen = chosen or right
-            return self.content(chosen, node, ctx, scene) if chosen else []
-        if text == "nothing" or not text:
-            return []
-        m = re.match(r"^button (\S+)(?: named (.+?))?(?:\s+(toggle|set) .+)?$", text)
+                if "else" in lefts and chosen is None:
+                    chosen = right
+            if chosen is None:
+                return []
+            return self.content(chosen, node, env, subj if subj in env.state else None)
+        m = re.match(r"^tabs (\w+)$", text)
         if m:
-            return [{"type": "button", "id": m.group(1), "label": m.group(2) or m.group(1), "on": scene}]
+            name = m.group(1)
+            sc = self.scenes[env.scene]
+            vals = self.scene_states(sc).get(name, {}).get("values", [])
+            return [{"type": "tabs", "state": name, "current": env.state.get(name),
+                     "options": [{"value": v, "label": self.tr(v, env)} for v in vals]}]
+        m = re.match(r"^button\s+(\S+)(?:\s+named\s+(.+?))?(?:\s+(toggle|set)\s+(\w+)(?:\s+(\w+))?)?$", text)
+        if m:   # 画面の下のボタンだけ目立たせる。上のボタンは控えめ
+            return [self.button(m.group(1), m.group(2), m.group(3), m.group(4), m.group(5), env, main=(node.keyword == "bottom"), on=env.scene)]
         m = re.match(r"^(\w+) as (\w+)$", text)
         if m:
-            return [self.items_block(m.group(1), m.group(2), ctx)]
+            name, kind = m.group(1), m.group(2)
+            if kind in ("dialog", "sheet"):
+                inner = self.part_block(self.parts[name], None, env) if name in self.parts else {"type": "text", "text": name}
+                close = None
+                if match_state:
+                    vals = self.scene_states(self.scenes[env.scene])[match_state]["values"]
+                    close = {"state": match_state, "value": next((v for v in vals if v != env.state.get(match_state)), vals[0])}
+                return [{"type": "dialog", "kind": kind, "blocks": [inner], "close": close}]
+            if name == "this":
+                return [self.detail_block(env)] if env.this is not None else [{"type": "empty", "text": "選ばれたものがありません"}]
+            return [self.collection(name, kind, env)]
         if text in self.parts:
-            return self.part_blocks(self.parts[text])
-        if text in self.looks:
-            return [{"type": "text", "text": text}]
-        return [{"type": "text", "text": text, "muted": True}]
+            return [self.part_block(self.parts[text], None, env)]
+        return [{"type": "text", "text": self.tr(text, env)}]
 
-    def eval_value(self, expr: str, ctx: Ctx):
+    def eval_value(self, expr: str, env: Env):
         m = re.match(r"^count of (\w+)$", expr.strip())
         if m:
-            return len(self.source(m.group(1), ctx))
+            return len(self.source(m.group(1), env))
         return expr
 
-    def source(self, name: str, ctx: Ctx):
+    def source(self, name: str, env: Env) -> list[Box]:
         if name in self.eng.lists:
-            return self.eng.list_items(name, ctx)
+            return self.eng.list_items(name, env.ctx)
         items = self.eng.all(name)
-        if ctx.user is not None:
-            items = [b for b in items if self.eng.can(ctx.user, "see", name, b)]
+        if env.user is not None:
+            items = [b for b in items if self.eng.can(env.user, "see", name, b)]
         return items
 
-    def items_block(self, name: str, kind: str, ctx: Ctx) -> dict:
-        boxes = self.source(name, ctx)
+    def thing_of(self, name: str) -> str:
+        while name in self.eng.lists:
+            name = self.eng.lists[name].child("of").text.strip()
+        return name
+
+    # ------------------------------------------------------------------
+    def button(self, bid, label, action, state, value, env: Env, main: bool, on: str) -> dict:
+        tone = self.tones.get(bid) or ("main" if main else "quiet")
+        b = {"type": "button", "id": bid, "label": self.tr(label or bid, env), "tone": tone, "on": on}
+        if action == "toggle":
+            b["act"] = {"kind": "toggle", "state": state}
+        elif action == "set":
+            b["act"] = {"kind": "set", "state": state, "value": value}
+        return b
+
+    def can_press(self, box: Box, bid: str, on: str) -> bool:
+        """このボタンの rule が `move this to X` なら、flow でいま X へ動けるかを見る（動けないボタンは押せなくする）"""
+        for r in self.eng.rules.values():
+            w = r.child("when")
+            if w is None or not re.match(rf"^user taps {re.escape(bid)} on ({re.escape(on)}|{re.escape(box.thing)})$", w.text.strip()):
+                continue
+            for d in r.children_of("do"):
+                m = re.match(r"^move this to (\w+)$", d.text.strip())
+                if not m:
+                    continue
+                to = m.group(1)
+                fld = next((k for k, f in self.eng.fields[box.thing].items() if f.states and to in f.states), None)
+                if fld is None:
+                    return False
+                edges, wins, _ = self.eng.flows.get((box.thing, fld), ([], [], []))
+                cur = box.values.get(fld)
+                prev = box.prev.get(fld)
+                ok = (cur, to) in edges or ((to, cur) in wins and prev is not None and (prev, to) in edges)
+                if not ok:
+                    return False
+        return True
+
+    def state_field(self, thing: str) -> str | None:
+        return next((k for k, f in self.eng.fields.get(thing, {}).items() if f.states), None)
+
+    def mark_of(self, box: Box, fld: str, env: Env) -> dict:
+        v = box.values.get(fld, "")
+        mt = self.eng.match_for(box.thing, fld)
+        states = self.eng.fields[box.thing][fld].states or []
+        idx = states.index(v) if v in states else 0
+        return {"label": self.tr(v, env), "value": v, "color": color_of(self.eng.match(mt.name, v) if mt else None, idx)}
+
+    def show_value(self, box: Box, fld: str, env: Env):
+        f = self.eng.fields[box.thing].get(fld)
+        v = box.values.get(fld, "")
+        if f is not None and f.type in self.eng.fields and v:
+            ub = self.eng.boxes.get(f.type, {}).get(v)
+            return ub.values.get("name", v) if ub else v
+        return self.tr(v, env) if f is not None and f.states else v
+
+    def has_card_rule(self, name: str) -> bool:
+        thing = self.thing_of(name)
+        for r in self.eng.rules.values():
+            w = r.child("when")
+            if w is not None and re.match(rf"^user taps card on ({re.escape(name)}|{re.escape(thing)})$", w.text.strip()):
+                return True
+        return False
+
+    def row(self, box: Box, look: Node | None, env: Env, list_name: str) -> dict:
+        fields = self.eng.fields[box.thing]
+        texts = [k for k, f in fields.items() if f.type in ("text", "monthday", "date")]
+        sf = self.state_field(box.thing)
+        row = {"id": box.id, "buttons": [], "values": {k: self.show_value(box, k, env) for k in fields}}
+        if look is None:
+            row["title"] = box.values.get(texts[0], "") if texts else box.id
+            if len(texts) > 1:
+                row["sub"] = {"text": " · ".join(str(box.values.get(k, "")) for k in texts[1:])}
+            if sf:
+                row["mark"] = self.mark_of(box, sf, env)
+        else:
+            nb = 0
+            for c in look.children:
+                if c.keyword == "title":
+                    row["title"] = self.show_value(box, c.text.strip(), env)
+                elif c.keyword == "sub":
+                    m = re.match(r"^(\w+) of (\w+)$", c.text.strip())
+                    if m and m.group(1) in self.parts:
+                        row["sub"] = self.part_block(self.parts[m.group(1)], box.values.get(m.group(2)), env)
+                    else:
+                        row["sub"] = {"text": self.show_value(box, c.text.strip(), env)}
+                elif c.keyword == "mark":
+                    m = re.match(r"^color of (\w+)$", c.text.strip())
+                    row["mark"] = self.mark_of(box, m.group(1) if m else c.text.strip(), env)
+                elif c.keyword == "button":
+                    m = re.match(r"^(\S+)(?:\s+named\s+(.+?))?(?:\s+(toggle|set)\s+(\w+)(?:\s+(\w+))?)?$", c.text.strip())
+                    b = self.button(m.group(1), m.group(2), m.group(3), m.group(4), m.group(5), env, main=(nb == 0), on=list_name)
+                    if not b.get("act") and not self.can_press(box, m.group(1), list_name):
+                        b["disabled"] = True
+                        b["tone"] = "quiet"
+                    row["buttons"].append(b)
+                    nb += 1
+        row["cardTap"] = self.has_card_rule(list_name)
+        return row
+
+    def collection(self, name: str, kind: str, env: Env) -> dict:
+        boxes = self.source(name, env)
+        thing = self.thing_of(name)
         look = self.looks.get(name)
-        thing = boxes[0].thing if boxes else (self.eng.lists[name].child("of").text.strip() if name in self.eng.lists else name)
-        while thing in self.eng.lists:
-            thing = self.eng.lists[thing].child("of").text.strip()
-        spec_fields = self.eng.fields.get(thing, {})
-        rows = []
-        for b in boxes:
-            row = {"id": b.id, "buttons": [], "values": {}}
-            if look is not None:
-                for c in look.children:
-                    if c.keyword in ("title", "sub"):
-                        row[c.keyword] = self.field_text(b, c.text)
-                    elif c.keyword == "mark":
-                        mm = re.match(r"^(\w+) of (\w+)$", c.text)
-                        if mm:
-                            mt = self.eng.match_for(b.thing, mm.group(2))
-                            value = b.values.get(mm.group(2), "")
-                            color = self.eng.match(mt.name, value) if mt else ""
-                            row["mark"] = {"label": value, "color": COLORS.get(color, color)}
-                    elif c.keyword == "button":
-                        mm = re.match(r"^(\S+)(?: named (.+))?$", c.text)
-                        row["buttons"].append({"id": mm.group(1), "label": mm.group(2) or mm.group(1)})
-            else:
-                texts = [k for k, f in spec_fields.items() if f.type in ("text", "monthday", "date")]
-                if texts:
-                    row["title"] = str(b.values.get(texts[0], ""))
-                    row["sub"] = " · ".join(str(b.values.get(k, "")) for k in texts[1:])
-                states = [k for k, f in spec_fields.items() if f.states]
-                if states:
-                    v = b.values.get(states[0], "")
-                    mt = self.eng.match_for(b.thing, states[0])
-                    color = self.eng.match(mt.name, v) if mt else "gray"
-                    row["mark"] = {"label": v, "color": COLORS.get(color, color)}
-            for k, f in spec_fields.items():
-                if f.type in ("text", "monthday", "date") or f.states:
-                    row["values"][k] = b.values.get(k, "")
-            rows.append(row)
-        columns = [k for k, f in spec_fields.items() if f.type in ("text", "monthday", "date") or f.states]
-        return {"type": "items", "kind": kind, "name": name, "rows": rows, "columns": columns}
+        fields = self.eng.fields.get(thing, {})
+        sf = self.state_field(thing)
+        base = {"name": name, "look": name, "kind": kind}
+        if kind == "board":
+            states = self.eng.flows.get((thing, sf), (None, None, fields[sf].states if sf else []))[2] if sf else []
+            cols = []
+            for i, st in enumerate(states):
+                mt = self.eng.match_for(thing, sf)
+                cols.append({"state": st, "label": self.tr(st, env), "color": color_of(self.eng.match(mt.name, st) if mt else None, i),
+                             "rows": [self.row(b, look, env, name) for b in boxes if b.values.get(sf) == st]})
+            return {**base, "type": "board", "columns": cols, "draggable": (thing, sf) in self.eng.flows}
+        if kind == "chart":
+            states = fields[sf].states if sf else []
+            mt = self.eng.match_for(thing, sf) if sf else None
+            bars = [{"label": self.tr(st, env), "count": sum(1 for b in boxes if b.values.get(sf) == st),
+                     "color": color_of(self.eng.match(mt.name, st) if mt else None, i)} for i, st in enumerate(states)]
+            return {**base, "type": "chart", "bars": bars, "total": len(boxes), "title": self.tr(name, env)}
+        if kind == "calendar":
+            df = next((k for k, f in fields.items() if f.type in ("monthday", "date")), None)
+            now = self.eng.clock()
+            items = []
+            for b in boxes:
+                try:
+                    t = parse_time(b.values.get(df, ""), now.year)
+                except (ValueError, AttributeError):
+                    continue
+                r = self.row(b, look, env, name)
+                items.append({"id": b.id, "date": t.strftime("%Y-%m-%d"), "time": t.strftime("%H:%M"),
+                              "title": r.get("title"), "color": (r.get("mark") or {}).get("color", AUTO[0]), "cardTap": r["cardTap"]})
+            return {**base, "type": "calendar", "items": items, "today": now.strftime("%Y-%m-%d")}
+        if kind == "table":
+            cols = [k for k, f in fields.items() if f.type in ("text", "monthday", "date") or f.states]
+            return {**base, "type": "table", "columns": [{"key": c, "label": self.tr(c, env)} for c in cols],
+                    "rows": [self.row(b, look, env, name) for b in boxes]}
+        return {**base, "type": "items", "rows": [self.row(b, look, env, name) for b in boxes],
+                "empty": self.empty_text(look, env)}
 
-    def field_text(self, box, expr: str) -> str:
-        expr = expr.strip()
-        m = re.match(r"^(\w+) of (\w+)$", expr)
-        if m and m.group(1) in self.parts:
-            return str(box.values.get(m.group(2), ""))
-        return str(box.values.get(expr, expr))
+    def empty_text(self, look: Node | None, env: Env) -> str:
+        if look is not None and look.child("empty") is not None:
+            return self.tr(look.child("empty").text.strip().strip('"'), env)
+        return self.tr("まだありません", env)
 
-    def part_blocks(self, part: Node) -> list[dict]:
-        out = []
+    def detail_block(self, env: Env) -> dict:
+        box = env.this
+        look = self.looks.get(box.thing) or (self.looks.get(env.origin) if env.origin else None)
+        r = self.row(box, look, env, env.origin or box.thing)
+        fields = [{"label": self.tr(k, env), "value": self.show_value(box, k, env)} for k, f in self.eng.fields[box.thing].items()]
+        return {"type": "detail", "title": r.get("title"), "sub": r.get("sub"), "mark": r.get("mark"),
+                "fields": fields, "buttons": r["buttons"], "id": box.id, "on": env.origin or box.thing}
+
+    def part_block(self, part: Node, value, env: Env) -> dict:
+        body = self.part_bodies[part.name]
+        in_ = part.child("in")
+        inputs = {"__now__": self.eng.clock()}
+        if in_ is not None:
+            inputs[in_.text.split()[0]] = value
+        try:
+            vals = body.values(inputs) if body.steps else inputs
+        except BodyError as e:
+            return {"type": "part", "name": part.name, "lines": [f"（{e.message}）"], "mark": None}
+        lines, mark = [], None
         for c in part.children:
-            m = re.match(r'^text "(.*)"$', c.text)
+            m = re.match(r'^text "(.*)"$', c.text.strip())
             if c.keyword == "show" and m:
-                out.append({"type": "text", "text": m.group(1), "role": part.name})
-        return out
+                t = self.tr(m.group(1), env)
+                for _ in range(3):      # 値の中の {名前} も埋める
+                    t2 = re.sub(r"\{(\w+)\}", lambda mm: str(vals.get(mm.group(1), mm.group(0))), t)
+                    if t2 == t:
+                        break
+                    t = t2
+                lines.append(t)
+            elif c.keyword == "mark":
+                st = c.text.strip()
+                v = vals.get(st)
+                mt = next((x for x in self.eng.matches.values() if x.text.split(" to ")[0].strip() == f"{part.name}.{st}"), None)
+                decl = next((x for x in part.children if x.keyword == st and x.text.startswith("[")), None)
+                opts = states_of(decl.text) if decl else []
+                idx = opts.index(v) if v in opts else 0
+                mark = {"label": self.tr(v, env), "value": v, "color": color_of(self.eng.match(mt.name, v) if mt else None, idx)}
+        return {"type": "part", "name": part.name, "lines": lines, "mark": mark}
 
-    def input_block(self, name: str) -> dict:
+    def input_block(self, name: str, env: Env) -> dict:
         inp = self.inputs[name]
         thing = self.eng.input_thing(name)
         fields = []
         for c in inp.children:
             f = self.eng.fields[thing][c.keyword]
-            fields.append({"name": c.keyword, "type": f.type, "required": "required" in c.text,
-                           "hint": "9/24 23:59" if f.type in ("monthday", "date") else ""})
-        return {"type": "input", "name": name, "fields": fields}
+            kind = {"monthday": "datetime-local", "date": "datetime-local", "number": "number", "count": "number"}.get(f.type, "text")
+            fields.append({"name": c.keyword, "label": self.tr(c.keyword, env), "kind": kind, "required": "required" in c.text})
+        return {"type": "input", "name": name, "title": self.tr(name, env), "fields": fields,
+                "submit": self.tr("保存", env), "cancel": self.tr("キャンセル", env)}
 
-    # ------------------------------------------------------------------
-    # 見た目（style → CSS）
     # ------------------------------------------------------------------
     def css(self) -> str:
         out = []
@@ -167,28 +372,44 @@ class App:
             words = st.text.split()
             name = words[0]
             media = words[2] if len(words) >= 3 and words[1] == "on" else None
+            rules = []
             if name == "theme":
                 for c in st.children:
-                    m = re.match(r"^(color|space)\s+(\w+)\s+(\S+)$", c.raw)
-                    if m:
-                        out.append(f":root{{--{m.group(1)}-{m.group(2)}:{m.group(3) if m.group(1) == 'color' else m.group(3) + 'px'}}}")
+                    w = c.raw.split()
+                    if w[0] == "color" and len(w) == 3:
+                        rules.append(f":root{{--{w[1]}:{color_of(w[2])}}}")
+                    elif w[0] == "radius" and len(w) == 2:
+                        rules.append(f":root{{--radius:{w[1]}px}}")
+                    elif w[0] == "font" and len(w) >= 2:
+                        rules.append(f":root{{--font:{' '.join(w[1:])}}}")
+                out.append("\n".join(rules))
                 continue
-            rules = []
+            scope = f".scene-{name}" if name in self.scenes else f".look-{name}"
             for c in st.children:
-                sel = {"card": ".row", "title": ".title", "sub": ".sub", "mark": ".mark", "button": "button",
-                       "gap": None, "main": None}.get(c.keyword, f".{c.keyword}")
-                decl = self.css_decl(c.text)
+                sel = {"card": ".card", "title": ".title", "sub": ".sub", "mark": ".badge", "button": ".btn"}.get(c.keyword)
                 if c.keyword == "gap":
-                    rules.append(f".block-{name} .rows{{gap:{c.text.strip()}px}}")
+                    rules.append(f"{scope} .rows{{gap:{c.text.strip()}px}}")
                 elif c.keyword == "main" and name in self.scenes:
-                    cols = "1fr" if c.text.strip() == "column" else f"repeat({c.text.split()[-1]},minmax(0,1fr))" if c.text.startswith("grid") else "1fr"
-                    rules.append(f".scene-{name} .slot-main .rows{{grid-template-columns:{cols}}}")
-                elif sel and decl:
-                    rules.append(f".block-{name} {sel}{{{decl}}}")
+                    t = c.text.strip()
+                    cols = "1fr" if t == "column" else f"repeat({t.split()[-1]},minmax(0,1fr))" if t.startswith("grid") else None
+                    if cols:
+                        rules.append(f"{scope} .slot-main .rows{{grid-template-columns:{cols}}}")
+                elif c.keyword == "enter":
+                    m = re.match(r"^(fade|slide|pop)\s+(\d+)ms$", c.text.strip())
+                    if m:
+                        rules.append(f"{scope} .enter{{animation:{m.group(1)} {m.group(2)}ms ease-out both}}")
+                elif c.keyword == "reorder":
+                    m = re.match(r"^slide\s+(\d+)ms$", c.text.strip())
+                    if m:
+                        rules.append(f"{scope}{{--reorder:{m.group(1)}ms}}")
+                elif sel:
+                    decl = self.css_decl(c.text)
+                    if decl:
+                        rules.append(f"{scope} {sel}{{{decl}}}")
             body = "\n".join(rules)
             if media:
-                q = {"phone": "(max-width:599px)", "tablet": "(min-width:600px) and (max-width:1023px)", "wide": "(min-width:1024px)"}[media]
-                body = f"@media {q}{{{body}}}"
+                q = {"phone": "(max-width:599px)", "tablet": "(min-width:600px) and (max-width:1023px)", "wide": "(min-width:1024px)"}.get(media)
+                body = f"@media {q}{{{body}}}" if q else body
             out.append(body)
         return "\n".join(out)
 
@@ -199,102 +420,36 @@ class App:
             w = part.split()
             if not w:
                 continue
-            if w[0] == "round" and len(w) > 1:
-                decl.append(f"border-radius:{w[1]}px")
-            elif w[0] == "shadow":
-                decl.append("box-shadow:0 1px 2px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.08)" if (w[1:] or ["soft"])[0] == "soft" else "box-shadow:0 8px 32px rgba(0,0,0,.18)")
-            elif w[0] == "pad" and len(w) > 1:
-                decl.append(f"padding:{w[1]}px")
-            elif w[0] == "size" and len(w) > 1:
-                decl.append(f"font-size:{w[1]}px")
-            elif w[0] == "bold":
+            k, v = w[0], w[1:] if len(w) > 1 else []
+            if k == "round" and v:
+                decl.append(f"border-radius:{v[0]}px")
+            elif k == "shadow":
+                lvl = (v or ["soft"])[0]
+                decl.append({"soft": "box-shadow:var(--shadow-1)", "strong": "box-shadow:var(--shadow-2)", "none": "box-shadow:none"}.get(lvl, ""))
+            elif k == "pad" and v:
+                decl.append(f"padding:{v[0]}px")
+            elif k == "size" and v:
+                decl.append(f"font-size:{v[0]}px")
+            elif k == "bold":
                 decl.append("font-weight:700")
-            elif w[0] == "color" and len(w) > 1:
-                decl.append(f"color:{COLORS.get(w[1], w[1])}")
-            elif w[0] == "background" and len(w) > 1:
-                decl.append(f"background:{COLORS.get(w[1], w[1])}")
-        return ";".join(decl)
+            elif k == "color" and v:
+                decl.append(f"color:{color_of(v[0])}")
+            elif k == "background" and v:
+                decl.append(f"background:{color_of(v[0])}")
+            elif k == "border" and v:
+                decl.append(f"border-color:{color_of(v[0])}")
+        return ";".join(d for d in decl if d)
+
+    def title(self) -> str:
+        for p in self.parts.values():
+            for c in p.children:
+                m = re.match(r'^text "(.*)"$', c.text.strip())
+                if c.keyword == "show" and m:
+                    return m.group(1)
+        return self.home or "app"
 
 
-# ----------------------------------------------------------------------
-# HTTP
-# ----------------------------------------------------------------------
-
-PAGE = """<!doctype html>
-<html lang="ja"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>__TITLE__</title>
-<style>
-:root{--bg:#F7F8FA;--panel:#fff;--text:#1C2024;--muted:#6B7280;--line:#E5E7EB;--color-main:#3E63DD;--radius:12px}
-@media (prefers-color-scheme:dark){:root{--bg:#111113;--panel:#1B1B1F;--text:#EDEEF0;--muted:#9CA3AF;--line:#2E2E33}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif}
-.app{max-width:1080px;margin:0 auto;padding:16px;display:grid;gap:16px;grid-template-columns:1fr;grid-template-areas:"top" "main" "side" "bottom"}
-@media (min-width:900px){.app.has-side{grid-template-columns:2fr 1fr;grid-template-areas:"top top" "main side" "bottom bottom"}}
-.slot-top{grid-area:top}.slot-main{grid-area:main}.slot-side{grid-area:side}.slot-bottom{grid-area:bottom}
-.rows{display:grid;gap:12px}.kind-cards .rows{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
-.row{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px;display:flex;flex-direction:column;gap:6px;transition:transform .15s}
-.kind-list .row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;column-gap:10px;padding:10px 14px}
-.kind-list .row .title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.kind-list .row .sub{grid-column:2}
-.kind-list .row .btns{grid-row:1 / span 2;grid-column:3;display:flex;gap:6px}.kind-list .row button{white-space:nowrap}
-.slot-head{font-size:13px;color:var(--muted);margin:0 0 8px}
-.title{font-weight:600}.sub{color:var(--muted);font-size:13px}
-.mark{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}.mark i{width:8px;height:8px;border-radius:50%;display:inline-block}
-button{font:inherit;border:0;border-radius:8px;padding:8px 14px;background:var(--color-main);color:#fff;cursor:pointer}
-button:hover{filter:brightness(1.08)}.row button{padding:6px 12px;font-size:13px}.btns{display:flex;gap:6px}
-.text{color:var(--muted)}.role-Header{font-size:22px;font-weight:700;color:var(--text)}
-table{width:100%;border-collapse:collapse;background:var(--panel);border-radius:var(--radius);overflow:hidden}td,th{padding:8px 12px;border-bottom:1px solid var(--line);text-align:left}
-form{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px;display:grid;gap:14px;max-width:480px}
-label{display:grid;gap:4px;font-size:13px;color:var(--muted)}input{font:inherit;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text)}
-.toast{position:fixed;right:16px;bottom:16px;display:grid;gap:8px;max-width:360px}.toast div{background:var(--text);color:var(--bg);padding:10px 14px;border-radius:10px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.2)}
-.err{color:#E5484D;font-size:13px}.nav{display:flex;gap:8px;margin-bottom:4px}.nav a{color:var(--muted);font-size:13px;cursor:pointer}
-__CSS__
-</style></head><body>
-<div id="root"></div><div class="toast" id="toast"></div>
-<script>
-const USER = new URLSearchParams(location.search).get("user") || "me";
-let scene = "__HOME__", seen = 0;
-const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-async function post(path, body){ const r = await fetch(path,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({user:USER,...body})}); return r.json(); }
-function renderBlock(b){
-  if(b.type==="text") return `<div class="text ${b.role?"role-"+b.role:""}">${esc(b.text)}</div>`;
-  if(b.type==="button") return `<button data-tap="${esc(b.id)}" data-on="${esc(b.on)}">${esc(b.label)}</button>`;
-  if(b.type==="input") return `<form data-input="${esc(b.name)}">${b.fields.map(f=>`<label>${esc(f.name)}${f.required?" *":""}<input name="${esc(f.name)}" placeholder="${esc(f.hint)}" ${f.required?"required":""}></label>`).join("")}<div class="err" id="err"></div><button type="submit">送る</button><a onclick="go('__HOME__')">戻る</a></form>`;
-  if(b.type==="items"){
-    if(b.kind==="table") return `<div class="block-${b.name} kind-table"><table><tr>${b.columns.map(c=>`<th>${esc(c)}</th>`).join("")}</tr>${b.rows.map(r=>`<tr>${b.columns.map(c=>`<td>${esc(r.values[c])}</td>`).join("")}</tr>`).join("")}</table></div>`;
-    return `<div class="block-${b.name} kind-${b.kind}"><div class="rows">${b.rows.map(r=>`<div class="row">
-      ${r.mark?`<span class="mark"><i style="background:${esc(r.mark.color)}"></i>${esc(r.mark.label)}</span>`:""}
-      <div class="title">${esc(r.title)}</div>${r.sub?`<div class="sub">${esc(r.sub)}</div>`:""}
-      <div class="btns">${r.buttons.map(x=>`<button data-tap="${esc(x.id)}" data-on="${esc(b.name)}" data-id="${esc(r.id)}">${esc(x.label)}</button>`).join("")}</div>
-    </div>`).join("")}</div></div>`;
-  }
-  return "";
-}
-async function render(){
-  const v = await (await fetch(`/api/view?scene=${encodeURIComponent(scene)}&user=${encodeURIComponent(USER)}`)).json();
-  const hasSide = v.slots.some(s=>s.slot==="side" && s.blocks.length);
-  document.getElementById("root").innerHTML = `<div class="app scene-${esc(v.scene)} ${hasSide?"has-side":""}">${v.slots.map(s=>`<section class="slot-${s.slot}">${s.blocks.map(renderBlock).join("")}</section>`).join("")}</div>`;
-  const n = v.notifications || [];
-  const fresh = n.slice(seen); seen = n.length;
-  const t = document.getElementById("toast");
-  fresh.slice(-3).forEach(x=>{ const d=document.createElement("div"); d.textContent=`${x.rule}: ${x.text}`; t.appendChild(d); setTimeout(()=>d.remove(),5000); });
-}
-function go(s){ scene = s; render(); }
-document.addEventListener("click", async e=>{
-  const b = e.target.closest("[data-tap]"); if(!b) return;
-  const r = await post("/api/tap",{button:b.dataset.tap,on:b.dataset.on,id:b.dataset.id||null});
-  if(r.nav) go(r.nav); else render();
-});
-document.addEventListener("submit", async e=>{
-  e.preventDefault(); const f = e.target;
-  const values = Object.fromEntries(new FormData(f).entries());
-  for(const k in values) if(values[k]==="") delete values[k];
-  const r = await post("/api/submit",{input:f.dataset.input,values});
-  if(r.error){ document.getElementById("err").textContent = r.error; return; }
-  go("__HOME__");
-});
-new EventSource("/api/events").onmessage = () => render();
-render();
-</script></body></html>"""
+PAGE = open(__file__.replace("server.py", "page.html"), encoding="utf-8").read()
 
 
 def make_handler(app: App):
@@ -302,13 +457,15 @@ def make_handler(app: App):
         def log_message(self, *a):
             pass
 
-        def _json(self, obj, code=200):
-            body = json.dumps(obj, ensure_ascii=False).encode()
+        def _send(self, body: bytes, ctype: str, code=200):
             self.send_response(code)
-            self.send_header("content-type", "application/json; charset=utf-8")
+            self.send_header("content-type", ctype)
             self.send_header("content-length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
+
+        def _json(self, obj, code=200):
+            self._send(json.dumps(obj, ensure_ascii=False).encode(), "application/json; charset=utf-8", code)
 
         def _user(self, name):
             return app.eng.login(name or "me")
@@ -317,20 +474,21 @@ def make_handler(app: App):
             u = urlparse(self.path)
             q = {k: v[0] for k, v in parse_qs(u.query).items()}
             if u.path == "/":
-                title = app.home or "app"
-                page = PAGE.replace("__TITLE__", title).replace("__HOME__", app.home or "").replace("__CSS__", app.css())
-                body = page.encode()
-                self.send_response(200)
-                self.send_header("content-type", "text/html; charset=utf-8")
-                self.send_header("content-length", str(len(body)))
-                self.end_headers()
-                self.wfile.write(body)
+                lang = q.get("lang") or ("ja" if "ja" in app.words or not app.words else next(iter(app.words)))
+                page = (PAGE.replace("__TITLE__", app.title()).replace("__HOME__", app.home or "")
+                        .replace("__LANG__", lang).replace("/*__CSS__*/", app.css()))
+                self._send(page.encode(), "text/html; charset=utf-8")
             elif u.path == "/favicon.ico":
                 self.send_response(204)
                 self.end_headers()
             elif u.path == "/api/view":
                 user = self._user(q.get("user"))
-                v = app.view(q.get("scene") or app.home, user)
+                try:
+                    v = app.view(q.get("scene") or app.home, user, json.loads(q.get("state") or "{}"),
+                                 q.get("this"), q.get("origin"), q.get("lang") or "ja")
+                except Exception as e:    # 見せる途中で壊れても、理由を画面に出す
+                    self._json({"error": f"{type(e).__name__}: {e}", "slots": [], "states": {}}, 500)
+                    return
                 v["notifications"] = [n for n in app.eng.notifications if n["user"] in (None, user.name)]
                 self._json(v)
             elif u.path == "/api/events":
@@ -362,13 +520,31 @@ def make_handler(app: App):
             try:
                 if self.path == "/api/tap":
                     ctx = app.eng.tap(user, data["button"], data["on"], data.get("id"))
-                    self._json({"nav": ctx.nav})
+                    self._json({"nav": ctx.nav, "this": ctx.this.id if ctx.this is not None else None})
+                elif self.path == "/api/drag":
+                    box = next((t[data["id"]] for t in app.eng.boxes.values() if data["id"] in t), None)
+                    fld = app.state_field(box.thing) if box else None
+                    env = Env(user, "", {}, None, None, data.get("lang") or "ja")
+                    before = box.values.get(fld) if box else None
+                    try:
+                        app.eng.drag(user, data["id"], data["to"])
+                    except RuleError as e:
+                        if box is not None and "動けません" in str(e):   # 人が読める言い方にする
+                            raise RuleError(f"「{app.tr(before, env)}」から「{app.tr(data['to'], env)}」へは動かせません（flow にない流れです）")
+                        raise
+                    self._json({"ok": True})
                 elif self.path == "/api/submit":
                     thing = app.eng.input_thing(data["input"])
-                    values = data.get("values", {})
-                    for k, v in values.items():
+                    values = {}
+                    for k, v in data.get("values", {}).items():
+                        if v in ("", None):
+                            continue
                         if app.eng.fields[thing][k].type in ("monthday", "date"):
-                            parse_time(v, 2000)   # 形だけ確かめる
+                            m = re.match(r"^\d{4}-(\d{2})-(\d{2})T(\d{2}):(\d{2})$", v)
+                            if m:   # 日付の部品から来た形。monthday は年を持たない
+                                v = f"{int(m.group(1))}/{int(m.group(2))} {int(m.group(3))}:{m.group(4)}"
+                            parse_time(v, 2000)
+                        values[k] = v
                     app.eng.submit(user, data["input"], values)
                     self._json({"ok": True})
                 elif self.path == "/api/says":
@@ -377,7 +553,7 @@ def make_handler(app: App):
                 else:
                     self._json({"error": "not found"}, 404)
             except (RuleError, ValueError, KeyError) as e:
-                self._json({"error": str(e)}, 400)
+                self._json({"error": str(e).strip("'")}, 400)
     return H
 
 

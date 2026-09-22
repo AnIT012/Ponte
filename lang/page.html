@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="__LANG__"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>__TITLE__</title>
+<style>
+:root{
+  --bg:#F6F7F9;--panel:#FFFFFF;--panel-2:#F1F3F5;--text:#15171A;--muted:#6A717C;--line:#E4E7EB;
+  --main:#3E63DD;--main-soft:rgba(62,99,221,.10);--danger:#E5484D;--good:#30A46C;
+  --radius:14px;--font:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP","Segoe UI",sans-serif;
+  --shadow-1:0 1px 2px rgba(16,24,40,.04),0 2px 8px rgba(16,24,40,.06);
+  --shadow-2:0 8px 28px rgba(16,24,40,.14),0 2px 6px rgba(16,24,40,.06);
+  --reorder:220ms;
+}
+@media (prefers-color-scheme:dark){:root{--bg:#0F1012;--panel:#18191C;--panel-2:#202226;--text:#ECEDEF;--muted:#9BA1AA;--line:#2A2D32;--main-soft:rgba(110,140,255,.16);
+  --shadow-1:0 1px 2px rgba(0,0,0,.4);--shadow-2:0 12px 32px rgba(0,0,0,.5)}}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.55 var(--font);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes slide{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+.enter{animation:slide 260ms cubic-bezier(.2,.8,.2,1) both}
+
+/* 骨組み */
+.top{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:saturate(1.4) blur(12px);border-bottom:1px solid var(--line)}
+.top-in{max-width:1180px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.app{max-width:1180px;margin:0 auto;padding:20px 20px 96px;display:grid;gap:20px;grid-template-columns:1fr;grid-template-areas:"main" "side"}
+@media (min-width:960px){.app.has-side{grid-template-columns:minmax(0,1fr) 340px;grid-template-areas:"main side"}}
+.slot-main{grid-area:main;display:grid;gap:16px;align-content:start;min-width:0}
+.slot-side{grid-area:side;display:grid;gap:16px;align-content:start}
+.bottom{position:fixed;left:0;right:0;bottom:0;z-index:6;pointer-events:none}
+.bottom-in{max-width:1180px;margin:0 auto;padding:16px 20px calc(16px + env(safe-area-inset-bottom));display:flex;justify-content:flex-end;gap:10px}
+.bottom .btn{pointer-events:auto;box-shadow:var(--shadow-2);padding:12px 20px;border-radius:999px}
+@media (max-width:599px){.bottom-in{justify-content:stretch}.bottom .btn{flex:1}}
+
+/* 文字と部品 */
+.part{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.part-lines{display:grid}
+.role-top .part-lines div:first-child{font-size:20px;font-weight:750;letter-spacing:-.01em}
+.role-top .part-lines div+div{font-size:13px;color:var(--muted)}
+.text{color:var(--muted)}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 9px 3px 8px;border-radius:999px;background:color-mix(in srgb,var(--c) 13%,transparent);color:color-mix(in srgb,var(--c) 78%,var(--text));white-space:nowrap}
+.badge i{width:7px;height:7px;border-radius:50%;background:var(--c)}
+.badge.pill{font-weight:560;font-size:12.5px;white-space:normal;line-height:1.35;padding:4px 10px 4px 8px;max-width:100%}.badge.pill i{flex:none}
+
+/* ボタン */
+.btn{border:1px solid transparent;border-radius:10px;padding:7px 14px;font-weight:600;font-size:14px;cursor:pointer;transition:transform .08s,filter .15s,background .15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:active{transform:scale(.97)}.btn:focus-visible{outline:2px solid var(--main);outline-offset:2px}
+.btn.main{background:var(--main);color:#fff}.btn.main:hover{filter:brightness(1.08)}
+.btn.quiet{background:var(--panel-2);color:var(--text);border-color:var(--line)}.btn.quiet:hover{background:var(--line)}
+.btn.danger{background:color-mix(in srgb,var(--danger) 12%,transparent);color:var(--danger)}.btn.danger:hover{background:color-mix(in srgb,var(--danger) 20%,transparent)}
+.btn.good{background:color-mix(in srgb,var(--good) 13%,transparent);color:var(--good)}.btn.good:hover{background:color-mix(in srgb,var(--good) 22%,transparent)}
+.btn.sm{padding:5px 11px;font-size:13px;border-radius:8px}
+.btn:disabled{opacity:.38;cursor:not-allowed;transform:none;filter:none}
+.btns{display:flex;gap:6px;flex-wrap:wrap}
+
+/* タブ */
+.tabs{display:inline-flex;background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:3px;gap:2px;max-width:100%;overflow-x:auto}
+.tabs button{border:0;background:none;padding:6px 14px;border-radius:9px;font-weight:600;font-size:14px;color:var(--muted);cursor:pointer;white-space:nowrap}
+.tabs button.on{background:var(--panel);color:var(--text);box-shadow:var(--shadow-1)}
+
+/* 並べる */
+.block{min-width:0}
+.block-head{display:flex;align-items:baseline;justify-content:space-between;margin:0 2px 10px;font-size:13px;font-weight:650;color:var(--muted);letter-spacing:.02em}
+.rows{display:grid;gap:12px}
+.kind-cards .rows{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow-1);transition:box-shadow .2s,transform .2s,border-color .2s;position:relative}
+.card.tap{cursor:pointer}.card.tap:hover{box-shadow:var(--shadow-2);transform:translateY(-1px)}
+.card .head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.title{font-weight:680;font-size:16px;line-height:1.35;overflow-wrap:anywhere}
+.sub{color:var(--muted);font-size:13px}
+.kind-list .rows{gap:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-1);overflow:hidden}
+.kind-list .card{border:0;border-radius:0;box-shadow:none;border-bottom:1px solid var(--line);flex-direction:row;align-items:center;padding:12px 14px;gap:12px}
+.kind-list .card:last-child{border-bottom:0}.kind-list .card.tap:hover{background:var(--panel-2);transform:none;box-shadow:none}
+.kind-list .grow{flex:1;min-width:0}.kind-list .title{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:599px){.kind-list .card{flex-wrap:wrap}.kind-list .btns{width:100%;padding-left:0}}
+
+/* 空・読み込み */
+.empty{display:grid;place-items:center;gap:8px;padding:36px 16px;text-align:center;color:var(--muted);background:var(--panel);border:1px dashed var(--line);border-radius:var(--radius)}
+.empty svg{opacity:.5}
+.sk{height:84px;border-radius:var(--radius);background:linear-gradient(90deg,var(--panel-2) 0,var(--line) 50%,var(--panel-2) 100%);background-size:800px 100%;animation:shimmer 1.2s infinite linear}
+
+/* 表 */
+.table-wrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:auto;box-shadow:var(--shadow-1)}
+table{width:100%;border-collapse:collapse;font-size:14px}th{font-size:12px;color:var(--muted);font-weight:650;text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--panel-2)}
+td{padding:11px 14px;border-bottom:1px solid var(--line)}tr:last-child td{border-bottom:0}tr.tap{cursor:pointer}tr.tap:hover td{background:var(--panel-2)}
+
+/* カンバン */
+.board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(184px,1fr);gap:10px;overflow-x:auto;padding-bottom:6px}
+.col .card .head .badge{display:none}
+.col{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);padding:10px;display:flex;flex-direction:column;gap:10px;min-height:160px;transition:background .15s,border-color .15s}
+.col.over{background:var(--main-soft);border-color:var(--main)}
+.col-head{display:flex;justify-content:space-between;align-items:center;padding:2px 4px}
+.col-head .n{font-size:12px;color:var(--muted);font-weight:650}
+.col .card{padding:12px}.col .card[draggable=true]{cursor:grab}.col .card.dragging{opacity:.4}
+.col .none{color:var(--muted);font-size:13px;text-align:center;padding:18px 0;border:1px dashed var(--line);border-radius:10px}
+
+/* カレンダー */
+.cal{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-1);overflow:hidden}
+.cal-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--line)}
+.cal-head b{font-size:16px}.cal-nav{display:flex;gap:6px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.cal-dow{font-size:11px;font-weight:650;color:var(--muted);text-align:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.cal-day{min-height:92px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:6px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.cal-day:nth-child(7n){border-right:0}.cal-day.out{background:var(--panel-2);color:var(--muted)}
+.cal-day .d{font-size:12px;font-weight:600}.cal-day.today .d{background:var(--main);color:#fff;border-radius:999px;width:22px;height:22px;display:grid;place-items:center}
+.chip{font-size:11px;line-height:1.3;padding:3px 6px;border-radius:6px;background:color-mix(in srgb,var(--c) 14%,transparent);color:color-mix(in srgb,var(--c) 75%,var(--text));border-left:3px solid var(--c);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip.tap{cursor:pointer}
+@media (max-width:599px){.cal-day{min-height:64px;padding:4px}.chip{font-size:0;padding:0;height:6px;border-left:0;border-radius:3px;background:var(--c)}}
+
+/* グラフ */
+.chart{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow-1);display:grid;gap:12px}
+.chart-top{display:flex;justify-content:space-between;align-items:baseline}.chart-top b{font-size:28px;letter-spacing:-.02em}
+.bar{display:grid;grid-template-columns:72px 1fr 28px;align-items:center;gap:10px;font-size:13px}
+.bar .track{height:10px;background:var(--panel-2);border-radius:999px;overflow:hidden}
+.bar .fill{height:100%;border-radius:999px;background:var(--c);transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.bar .n{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.stack{display:flex;height:8px;border-radius:999px;overflow:hidden;background:var(--panel-2)}.stack span{background:var(--c);transition:flex-grow .5s}
+
+/* 詳しく */
+.detail{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-1);padding:22px;display:grid;gap:18px;max-width:640px}
+.detail .title{font-size:24px;letter-spacing:-.01em}
+.fields{display:grid;grid-template-columns:120px 1fr;gap:10px 16px;font-size:14px}.fields dt{color:var(--muted)}.fields dd{margin:0;overflow-wrap:anywhere}
+
+/* 入力 */
+.form{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-1);padding:24px;display:grid;gap:16px;max-width:520px}
+.form h2{margin:0;font-size:20px}
+.form label{display:grid;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}.form label>span{display:flex;gap:4px}
+.form label span.req{color:var(--danger)}
+.form input{font:inherit;font-size:15px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text);transition:border-color .15s,box-shadow .15s}
+.form input:focus{outline:0;border-color:var(--main);box-shadow:0 0 0 3px var(--main-soft)}
+.form .err{color:var(--danger);font-size:13px;min-height:1em}.form .act{display:flex;gap:8px;justify-content:flex-end}
+
+/* 小窓 */
+.veil{position:fixed;inset:0;background:rgba(10,12,16,.38);z-index:20;display:grid;place-items:center;animation:fade .15s both}
+.dialog{background:var(--panel);border-radius:18px;box-shadow:var(--shadow-2);padding:22px;min-width:280px;max-width:min(92vw,480px);animation:pop .18s both}
+.dialog .part-lines div:first-child{font-weight:700;font-size:18px;margin-bottom:6px}.dialog .part-lines div+div{color:var(--muted)}
+.veil.sheet{place-items:end center}.veil.sheet .dialog{border-radius:18px 18px 0 0;width:min(100%,640px);max-width:none;animation:slide .2s both}
+
+/* 通知 */
+.toasts{position:fixed;right:16px;top:16px;z-index:30;display:grid;gap:8px;width:min(360px,calc(100vw - 32px))}
+.toast{background:var(--text);color:var(--bg);padding:11px 14px;border-radius:12px;font-size:13px;box-shadow:var(--shadow-2);animation:slide .22s both;display:flex;gap:10px;align-items:flex-start}
+.toast b{font-weight:700}.toast.err{background:var(--danger);color:#fff}
+.toast.out{opacity:0;transform:translateY(-6px);transition:.25s}
+/*__CSS__*/
+</style></head><body>
+<header class="top"><div class="top-in" id="top"></div></header>
+<main id="root"><div class="app"><section class="slot-main"><div class="sk"></div><div class="sk"></div></section></div></main>
+<div class="bottom"><div class="bottom-in" id="bottom"></div></div>
+<div class="toasts" id="toasts"></div>
+<script>
+const Q = new URLSearchParams(location.search);
+const USER = Q.get("user") || "me", LANG = Q.get("lang") || "__LANG__", HOME = "__HOME__";
+const S = {scene: HOME, states: {}, thisId: null, origin: null, seen: -1, calShift: 0, last: null};
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const EMPTY_ICON = `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>`;
+
+async function post(path, body){
+  const r = await fetch(path, {method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({user:USER, ...body})});
+  const j = await r.json(); if(j.error) toast(j.error, true); return j;
+}
+function toast(text, err){
+  const t = document.createElement("div"); t.className = "toast" + (err ? " err" : "");
+  t.innerHTML = text; document.getElementById("toasts").appendChild(t);
+  setTimeout(() => { t.classList.add("out"); setTimeout(() => t.remove(), 300); }, err ? 4200 : 3600);
+}
+const badge = m => m ? `<span class="badge" style="--c:${esc(m.color)}"><i></i>${esc(m.label)}</span>` : "";
+const btn = (b, extra = {}) => {
+  const a = b.act ? `data-act="${b.act.kind}" data-state="${esc(b.act.state)}" data-value="${esc(b.act.value || "")}"` : `data-act="tap"`;
+  return `<button class="btn ${esc(b.tone)} ${extra.sm ? "sm" : ""}" ${b.disabled ? `disabled title="いまの状態からは動かせません"` : ""} ${a} data-button="${esc(b.id)}" data-on="${esc(extra.on || b.on)}" ${extra.id ? `data-id="${esc(extra.id)}"` : ""}>${esc(b.label)}</button>`;
+};
+// 印（mark）があって1行だけの部品は、その行を色付きの札にする
+const part = p => p.mark && p.lines.length === 1
+  ? `<span class="badge pill" style="--c:${esc(p.mark.color)}"><i></i>${esc(p.lines[0])}</span>`
+  : `<div class="part">${badge(p.mark)}<div class="part-lines">${p.lines.map(l => `<div>${esc(l)}</div>`).join("")}</div></div>`;
+const sub = s => !s ? "" : s.type === "part" ? `<div class="sub">${part(s)}</div>` : `<div class="sub">${esc(s.text)}</div>`;
+const empty = t => `<div class="empty">${EMPTY_ICON}<div>${esc(t)}</div></div>`;
+
+function card(r, b){
+  const tap = r.cardTap ? `tap" data-card="${esc(r.id)}" data-on="${esc(b.name)}` : "";
+  return `<div class="card ${tap}" data-key="${esc(r.id)}">
+    <div class="head"><div class="title">${esc(r.title)}</div>${badge(r.mark)}</div>${sub(r.sub)}
+    ${r.buttons.length ? `<div class="btns">${r.buttons.map(x => btn(x, {sm:1, on:b.name, id:r.id})).join("")}</div>` : ""}</div>`;
+}
+function listRow(r, b){
+  const tap = r.cardTap ? `tap" data-card="${esc(r.id)}" data-on="${esc(b.name)}` : "";
+  return `<div class="card ${tap}" data-key="${esc(r.id)}">${badge(r.mark)}<div class="grow"><div class="title">${esc(r.title)}</div>${sub(r.sub)}</div>
+    ${r.buttons.length ? `<div class="btns">${r.buttons.map(x => btn(x, {sm:1, on:b.name, id:r.id})).join("")}</div>` : ""}</div>`;
+}
+function calendar(b){
+  const base = new Date(b.today + "T00:00:00"); base.setDate(1); base.setMonth(base.getMonth() + S.calShift);
+  const y = base.getFullYear(), m = base.getMonth(), first = new Date(y, m, 1), start = new Date(first); start.setDate(1 - ((first.getDay() + 6) % 7));
+  const dows = ["月","火","水","木","金","土","日"], by = {};
+  b.items.forEach(i => (by[i.date] ||= []).push(i));
+  let cells = "";
+  for(let i = 0; i < 42; i++){
+    const d = new Date(start); d.setDate(start.getDate() + i);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    cells += `<div class="cal-day ${d.getMonth() !== m ? "out" : ""} ${key === b.today ? "today" : ""}"><span class="d">${d.getDate()}</span>${(by[key]||[]).map(it =>
+      `<div class="chip ${it.cardTap ? "tap" : ""}" style="--c:${esc(it.color)}" ${it.cardTap ? `data-card="${esc(it.id)}" data-on="${esc(b.name)}"` : ""} title="${esc(it.time + " " + it.title)}">${esc(it.time)} ${esc(it.title)}</div>`).join("")}</div>`;
+    if(i === 34 && start.getMonth() !== m && d.getMonth() !== m) break;
+  }
+  return `<div class="cal"><div class="cal-head"><b>${y}年 ${m+1}月</b><div class="cal-nav"><button class="btn quiet sm" data-act="cal" data-value="-1">‹</button><button class="btn quiet sm" data-act="cal" data-value="0">今月</button><button class="btn quiet sm" data-act="cal" data-value="1">›</button></div></div>
+    <div class="cal-grid">${dows.map(x => `<div class="cal-dow">${x}</div>`).join("")}${cells}</div></div>`;
+}
+function block(b){
+  switch(b.type){
+    case "text": return `<div class="text">${esc(b.text)}</div>`;
+    case "empty": return empty(b.text);
+    case "part": return part(b);
+    case "button": return btn(b);
+    case "tabs": return `<div class="tabs" role="tablist">${b.options.map(o => `<button role="tab" class="${o.value === b.current ? "on" : ""}" data-act="set" data-state="${esc(b.state)}" data-value="${esc(o.value)}">${esc(o.label)}</button>`).join("")}</div>`;
+    case "items":
+      if(!b.rows.length) return `<div class="block look-${esc(b.look)}">${empty(b.empty)}</div>`;
+      return `<div class="block look-${esc(b.look)} kind-${esc(b.kind)}"><div class="rows">${b.rows.map(r => b.kind === "list" ? listRow(r, b) : card(r, b)).join("")}</div></div>`;
+    case "table": return `<div class="block look-${esc(b.look)} table-wrap"><table><tr>${b.columns.map(c => `<th>${esc(c.label)}</th>`).join("")}</tr>${b.rows.map(r =>
+      `<tr ${r.cardTap ? `class="tap" data-card="${esc(r.id)}" data-on="${esc(b.name)}"` : ""} data-key="${esc(r.id)}">${b.columns.map(c => `<td>${c.key === "status" && r.mark ? badge(r.mark) : esc(r.values[c.key])}</td>`).join("")}</tr>`).join("")}</table></div>`;
+    case "board": return `<div class="block look-${esc(b.look)} board">${b.columns.map(c => `<div class="col" data-drop="${esc(c.state)}">
+      <div class="col-head">${badge({label:c.label, color:c.color})}<span class="n">${c.rows.length}</span></div>
+      ${c.rows.length ? c.rows.map(r => card(r, b).replace('class="card', `draggable="${b.draggable}" data-drag="${esc(r.id)}" class="card`)).join("") : `<div class="none">ここに動かす</div>`}</div>`).join("")}</div>`;
+    case "calendar": return `<div class="block look-${esc(b.look)}">${calendar(b)}</div>`;
+    case "chart": {
+      const max = Math.max(1, ...b.bars.map(x => x.count));
+      return `<div class="block chart"><div class="chart-top"><span class="block-head" style="margin:0">${esc(b.title)}</span><b>${b.total}</b></div>
+        <div class="stack">${b.bars.map(x => `<span style="--c:${esc(x.color)};flex-grow:${x.count}"></span>`).join("")}</div>
+        ${b.bars.map(x => `<div class="bar"><span>${esc(x.label)}</span><div class="track"><div class="fill" style="--c:${esc(x.color)};width:${x.count / max * 100}%"></div></div><span class="n">${x.count}</span></div>`).join("")}</div>`;
+    }
+    case "detail": return `<div class="detail"><div class="head" style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start"><div class="title">${esc(b.title)}</div>${badge(b.mark)}</div>${sub(b.sub)}
+      <dl class="fields">${b.fields.map(f => `<dt>${esc(f.label)}</dt><dd>${esc(f.value)}</dd>`).join("")}</dl>
+      ${b.buttons.length ? `<div class="btns">${b.buttons.map(x => btn(x, {on:b.on, id:b.id})).join("")}</div>` : ""}</div>`;
+    case "input": return `<form class="form" data-input="${esc(b.name)}" novalidate><h2>${esc(b.title)}</h2>${b.fields.map(f =>
+      `<label><span>${esc(f.label)}${f.required ? `<span class="req">*</span>` : ""}</span><input name="${esc(f.name)}" type="${esc(f.kind)}" ${f.required ? "required" : ""}></label>`).join("")}
+      <div class="err" id="err"></div><div class="act"><button type="button" class="btn quiet" data-act="nav" data-value="${HOME}">${esc(b.cancel)}</button><button type="submit" class="btn main">${esc(b.submit)}</button></div></form>`;
+    case "dialog": return `<div class="veil ${esc(b.kind)}" ${b.close ? `data-act="set" data-state="${esc(b.close.state)}" data-value="${esc(b.close.value)}"` : ""}><div class="dialog" data-stop>${b.blocks.map(block).join("")}</div></div>`;
+  }
+  return "";
+}
+async function render(){
+  const st = S.states[S.scene] || {};
+  const qs = new URLSearchParams({scene:S.scene, user:USER, lang:LANG, state:JSON.stringify(st)});
+  if(S.thisId) qs.set("this", S.thisId); if(S.origin) qs.set("origin", S.origin);
+  const v = await (await fetch("/api/view?" + qs)).json();
+  if(v.error){ toast("画面を出せませんでした: " + esc(v.error), true); if(S.scene !== HOME) go(HOME); return; }
+  S.states[S.scene] = Object.fromEntries(Object.entries(v.states || {}).map(([k, x]) => [k, x.current]));
+  // 前の位置（並び替えの動きに使う）
+  const before = {}; document.querySelectorAll("[data-key]").forEach(el => before[el.dataset.key] = el.getBoundingClientRect());
+  const known = new Set(Object.keys(before)), firstPaint = S.last === null;
+  const slot = n => (v.slots.find(s => s.slot === n) || {blocks: []}).blocks;
+  document.getElementById("top").innerHTML = `<div class="role-top" style="flex:1;min-width:200px">${slot("top").filter(b => b.type !== "tabs" && b.type !== "button").map(block).join("")}</div>${slot("top").filter(b => b.type === "tabs" || b.type === "button").map(block).join("")}`;
+  const hasSide = slot("side").length > 0;
+  document.getElementById("root").innerHTML = `<div class="app scene-${esc(v.scene)} ${hasSide ? "has-side" : ""}"><section class="slot-main">${slot("main").map(block).join("")}</section>${hasSide ? `<aside class="slot-side">${slot("side").map(block).join("")}</aside>` : ""}</div>${slot("over").map(block).join("")}`;
+  document.getElementById("bottom").innerHTML = slot("bottom").map(block).join("");
+  // 新しく出たものはふわっと、動いたものはするっと
+  document.querySelectorAll("[data-key]").forEach(el => {
+    const k = el.dataset.key, a = before[k];
+    if(!known.has(k)){ if(!firstPaint) el.classList.add("enter"); return; }
+    const b = el.getBoundingClientRect(), dx = a.left - b.left, dy = a.top - b.top;
+    if(dx || dy){ el.animate([{transform:`translate(${dx}px,${dy}px)`}, {transform:"none"}], {duration: parseInt(getComputedStyle(el).getPropertyValue("--reorder")) || 220, easing:"cubic-bezier(.2,.8,.2,1)"}); }
+  });
+  const n = v.notifications || [];
+  if(S.seen >= 0) n.slice(S.seen).slice(-3).forEach(x => toast(`<b>${esc(x.rule)}</b><span>${esc(x.text)}</span>`));
+  S.seen = n.length; S.last = v;
+  document.title = document.querySelector(".role-top .part-lines div")?.textContent || "__TITLE__";
+}
+function go(scene, thisId, origin){ S.scene = scene; S.thisId = thisId ?? null; S.origin = origin ?? null; S.calShift = 0; window.scrollTo({top:0}); render(); }
+
+document.addEventListener("click", async e => {
+  if(e.target.closest("[data-stop]") && !e.target.closest("[data-act]")) return;
+  const el = e.target.closest("[data-act]");
+  if(el){
+    e.stopPropagation();
+    const act = el.dataset.act, st = S.states[S.scene] ||= {};
+    if(el.classList.contains("veil") && e.target !== el) return;
+    if(act === "set"){ st[el.dataset.state] = el.dataset.value; return render(); }
+    if(act === "toggle"){ const vals = S.last?.states?.[el.dataset.state]?.values || []; const i = vals.indexOf(st[el.dataset.state]); st[el.dataset.state] = vals[(i + 1) % vals.length]; return render(); }
+    if(act === "cal"){ S.calShift = el.dataset.value === "0" ? 0 : S.calShift + parseInt(el.dataset.value); return render(); }
+    if(act === "nav") return go(el.dataset.value);
+    if(act === "tap"){
+      el.disabled = true;
+      const r = await post("/api/tap", {button: el.dataset.button, on: el.dataset.on, id: el.dataset.id || null});
+      if(r.nav) return go(r.nav, r.this || el.dataset.id, el.dataset.on);
+      return render();
+    }
+  }
+  const c = e.target.closest("[data-card]");
+  if(c){
+    const r = await post("/api/tap", {button:"card", on:c.dataset.on, id:c.dataset.card});
+    if(r.nav) go(r.nav, r.this || c.dataset.card, c.dataset.on);
+  }
+});
+document.addEventListener("submit", async e => {
+  e.preventDefault(); const f = e.target, err = f.querySelector("#err");
+  const missing = [...f.querySelectorAll("[required]")].filter(i => !i.value);
+  if(missing.length){ err.textContent = "必須の項目が空です: " + missing.map(i => i.closest("label").firstChild.firstChild.textContent.trim()).join("、"); missing[0].focus(); return; }
+  const r = await post("/api/submit", {input: f.dataset.input, values: Object.fromEntries(new FormData(f).entries())});
+  if(r.error){ err.textContent = r.error; return; }
+  toast("保存しました"); go(HOME);
+});
+let dragId = null;
+document.addEventListener("dragstart", e => { const c = e.target.closest("[data-drag]"); if(c){ dragId = c.dataset.drag; c.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; } });
+document.addEventListener("dragend", e => { document.querySelectorAll(".dragging,.over").forEach(x => x.classList.remove("dragging", "over")); });
+document.addEventListener("dragover", e => { const col = e.target.closest("[data-drop]"); if(col && dragId){ e.preventDefault(); document.querySelectorAll(".over").forEach(x => x !== col && x.classList.remove("over")); col.classList.add("over"); } });
+document.addEventListener("drop", async e => { const col = e.target.closest("[data-drop]"); if(col && dragId){ e.preventDefault(); const id = dragId; dragId = null; await post("/api/drag", {id, to: col.dataset.drop, lang: LANG}); render(); } });
+new EventSource("/api/events").onmessage = () => render();
+render();
+</script></body></html>

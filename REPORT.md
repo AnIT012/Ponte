@@ -90,3 +90,19 @@ python experiment/score.py          # EXPERIMENT.md を上書き
 - `spec/hub.lang` は仕様書の付録そのまま。**tbd だけで止まる**（狙いどおり）。`spec/hub_ready.lang` は公開の検査まで通る。
 - `tests/cases/` に壊した／直したペア34組。壊した方はそのコードだけで止まることも確認した。テストは v0.1 分と合わせて全部通る。
 - 仕様に無い判定は `QUESTIONS_v0.2.md` に9件。特に V1（action の else と relate の else の関係）は仕様の矛盾に近い。
+
+## v0.2：実行エンジン（最初のゴール達成）
+
+**spec だけで就活Hubがブラウザで動く。** 依存は Python の標準機能だけ（Go も外部ライブラリも無し）。
+
+- `lang/runtime.py`: 箱ごとのロック（同じ箱は1つずつ、箱をまたぐ rule は並列）、flow と `>`、list（within は暦日）、match、rule（時間・発言・タップ・データの変化・外から届いたもの）、relate（then / then no / before / > / else）、who、データの保存（1ファイルに書き足すログ、起動時に読み直す）。
+- `lang/examples.py` と `python -m lang test`: rule の example（given / 出来事 / expect）を実行エンジンで流す。付録と hub_app の example は全部通る。
+- `lang/server.py` と `python -m lang run`: scene / look / part / input / style を読んで画面を出す。箱が変わると開いている画面が自動で変わる（Server-Sent Events）。時間の出来事は1分ごとに見る。
+- 実際にブラウザ（Chromium）で操作して確認した: 応募を3件足す → 20日後のものは「締切が近い」に出ない → 提出した → 通過 → 不合格で failed（`failed > passed`）→ スマホ幅で1列。
+- テスト: 実行エンジンと画面で11件追加。全体で135件通過。
+
+**まだ無いもの**
+- action の中身（by ai）をAIに書かせるループ。今は中身が無ければ else に進む。
+- do の中身の実行（shape、`名前 = 式`）。
+- 画面の状態（toggle / set）、calendar / board / chart などの見せ方、画面の移動のアニメーション。
+- 仮で決めた動きは `QUESTIONS_v0.2.md` の R 節に7件。

@@ -197,15 +197,19 @@ def test_server_end_to_end():
         page = opener.open(base + "/").read().decode()
         assert 'id="root"' in page and "--main:#4F46E5" in page          # style theme の色が効いている
         v = view()
-        assert [b["type"] for b in blocks(v, "top")] == ["part", "tabs", "button"]
-        assert blocks(v, "main")[0]["type"] == "items" and blocks(v, "main")[0]["rows"] == []   # 空 → empty の文
-        assert blocks(v, "main")[0]["empty"].startswith("3日以内")
+        assert [b["type"] for b in blocks(v, "top")] == ["part", "tabs", "notices", "button"]
+        assert [o["icon"] for o in blocks(v, "top")[1]["options"]] == ["clock", "list", "board", "calendar"]
+        assert blocks(v, "main")[0]["type"] == "items" and blocks(v, "main")[0]["rows"] == []   # 空 → empty の文とボタン
+        assert blocks(v, "main")[0]["empty"]["text"].startswith("3日以内")
+        assert blocks(v, "main")[0]["empty"]["button"]["icon"] == "plus"
         assert post("/api/tap", {"user": "me", "button": "add", "on": "Home"})["nav"] == "AddApplication"
         assert blocks(view("AddApplication"), "top")[0]["name"] == "Header"
         assert post("/api/submit", {"user": "me", "input": "AddApplication",
                                     "values": {"company": "Web", "deadline": "2026-09-23T10:00"}})["ok"]
         row = blocks(view(), "main")[0]["rows"][0]
         assert row["title"] == "Web" and row["mark"]["label"] == "下書き"
+        assert row["mark"]["color"] == "#F76B15" and row["mark"]["icon"] == "draft"     # 色の match と icon の match は別々に効く
+        assert row["lead"]["text"] == "W"
         assert row["sub"]["lines"] == ["9/23 10:00 ・ あと2日"] and row["sub"]["mark"]["value"] == "soon"
         # タブ（画面の状態）で見せ方が変わる
         assert blocks(view(state=json.dumps({"tab": "board"})), "main")[0]["type"] == "board"
@@ -215,7 +219,15 @@ def test_server_end_to_end():
         r = post("/api/tap", {"user": "me", "button": "card", "on": "Mine", "id": row["id"]})
         assert r["nav"] == "Detail"
         d = blocks(view("Detail", this=row["id"], origin="Mine"), "main")[0]
-        assert [(b["label"], bool(b.get("disabled"))) for b in d["buttons"]] == [("提出した", False), ("通過", True), ("不合格", True)]
+        assert [(b["label"], bool(b.get("disabled"))) for b in d["buttons"]] == [("提出した", False), ("通過", True), ("不合格", True), ("編集", False)]
+        assert d["buttons"][2]["confirm"] == "不合格にしますか？" and d["buttons"][2]["tone"] == "quiet"
+        # 編集: with this で開いた input は、その1件の値が入っている。状態は書き換えられない
+        ed = blocks(view("EditApplication", this=row["id"]), "main")[0]
+        assert ed["this"] == row["id"] and ed["fields"][0]["value"] == "Web" and ed["fields"][1]["value"] == "2026-09-23T10:00"
+        assert post("/api/submit", {"user": "me", "input": "EditApplication", "this": row["id"], "values": {"memo": "一次面接"}})["edited"]
+        assert "flow" not in json.dumps(post("/api/submit", {"user": "me", "input": "EditApplication", "this": row["id"], "values": {"memo": "x"}}))
+        all_ = blocks(view(state=json.dumps({"tab": "all"})), "main")[0]
+        assert all_["search"]["fields"] == ["company", "memo"] and [g["value"] for g in all_["groups"]] == ["draft"]
         # board で動かす: flow に無い流れは人の言葉で断る
         bad = post("/api/drag", {"user": "me", "id": row["id"], "to": "passed"})
         assert "「下書き」から「通過」へは動かせません" in bad["error"]
@@ -223,6 +235,7 @@ def test_server_end_to_end():
         assert blocks(view(), "main")[0]["rows"] == []                  # DueSoon から抜けた
         assert "error" in post("/api/submit", {"user": "me", "input": "AddApplication", "values": {"company": "X", "deadline": "来週"}})
         en = view(lang="en", state=json.dumps({"tab": "all"}))
-        assert blocks(en, "main")[0]["rows"][0]["mark"]["label"] == "Submitted"
+        assert blocks(en, "main")[0]["groups"][0]["label"] == "Submitted"
+        assert blocks(view(lang="en"), "main")[0]["empty"]["text"] == "Nothing due in the next 3 days"   # 引用符の鍵で訳す
     finally:
         httpd.shutdown()

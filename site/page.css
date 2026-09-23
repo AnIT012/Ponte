@@ -31,6 +31,7 @@
 /* ---- tagline ---- */
 .tagline{text-align:center;padding-block:26px 30px;font-family:var(--pop);font-size:clamp(17px,2.3vw,21px);line-height:1.7;max-width:34em;margin:0 auto}
 .tagline a{color:var(--sky);text-decoration:none;white-space:nowrap}
+.tagline a + a{margin-left:1.2em}
 
 /* ---- columns ---- */
 .cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;padding-bottom:30px}

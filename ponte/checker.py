@@ -230,7 +230,15 @@ def check_when_is_event(spec: Spec, opt: Options) -> list[Finding]:
             if later:
                 out.append(Finding("E07", w.line, f"rule {r.name}: `{later}` はまだ実行エンジンが起こしません（書いても動かないので止めます）"))
             elif not is_event(w.text):
-                out.append(Finding("E07", w.line, f"rule {r.name}: when は出来事だけです。「{w.text}」は状態なので where に書いてください"))
+                t = w.text.strip()
+                if re.match(r"^(every|at|user)\b|^[A-Z]\w*\s+(is|moves|gives)\b", t):   # 出来事のつもりで、書き方が違う
+                    import difflib
+                    forms = [f[1] for f in WHEN_FORMS if f[4]]
+                    near = difflib.get_close_matches(t, forms + [f[3] for f in WHEN_FORMS if f[4]], n=1, cutoff=0.3)
+                    hint = f"。近い書き方: `{near[0]}`" if near else f"（書ける形: {' / '.join(forms)}）"
+                    out.append(Finding("E07", w.line, f"rule {r.name}: when の書き方が分かりません: 「{t}」{hint}"))
+                else:
+                    out.append(Finding("E07", w.line, f"rule {r.name}: when は出来事だけです。「{w.text}」は状態なので where に書いてください"))
     return out
 
 

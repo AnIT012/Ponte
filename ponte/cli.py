@@ -28,8 +28,14 @@ def shape_path(spec_path: str) -> str:
     return spec_path + ".shape.json"
 
 
+def data_base(spec_path: str) -> str:
+    """データ・ログインの人のファイルの置き場所。PONTE_DATA_DIR があればそこ（.pyz は自分の隣を指す）"""
+    d = os.environ.get("PONTE_DATA_DIR")
+    return os.path.join(d, os.path.basename(spec_path)) if d else spec_path
+
+
 def users_path(spec_path: str) -> str:
-    return spec_path + ".users.json"
+    return data_base(spec_path) + ".users.json"
 
 
 def cmd_check(args) -> int:
@@ -173,7 +179,7 @@ def cmd_run(args) -> int:
     spec = _load_checked(args.spec)
     if spec is None:
         return 1
-    store = args.data or (args.spec + ".data.jsonl")
+    store = args.data or (data_base(args.spec) + ".data.jsonl")
     auth = None
     if args.login or args.signup:
         from .auth import Users
@@ -255,7 +261,7 @@ def cmd_role(args) -> int:
     spec = _load_checked(args.spec)
     if spec is None:
         return 1
-    store = args.data or (args.spec + ".data.jsonl")
+    store = args.data or (data_base(args.spec) + ".data.jsonl")
     try:
         Engine(spec, store=store).set_role(args.name, args.role)
     except RuleError as e:
@@ -410,7 +416,7 @@ def cmd_data(args) -> int:
     spec = _load_checked(args.spec)
     if spec is None:
         return 1
-    store = args.data or (args.spec + ".data.jsonl")
+    store = args.data or (data_base(args.spec) + ".data.jsonl")
     if not os.path.exists(store) and args.action != "import":
         print(f"データがありません: {store}")
         return 1

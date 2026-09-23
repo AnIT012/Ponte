@@ -111,3 +111,20 @@ def test_new_from_sample(tmp_path, monkeypatch, capsys):
     assert main(["check", "rental.ponte"]) == 0
     assert main(["new", "x", "--from", "nope"]) == 1
     assert "lend" in capsys.readouterr().out
+
+
+def test_pyz_keeps_data_next_to_itself(tmp_path):
+    """1つのファイル（.pyz）: 一時フォルダではなく、自分の隣にデータとログインの人を残す（動かし直しても消えない）"""
+    import os
+    import subprocess
+    import sys
+    out = tmp_path / "app.pyz"
+    assert main(["build", "spec/todo.ponte", "-o", str(out)]) == 0
+    env = {**os.environ, "PONTE_PASSWORD": "long-enough"}
+    env.pop("PONTE_DATA_DIR", None)
+    run = lambda *a: subprocess.run([sys.executable, str(out), *a], capture_output=True, text=True, env=env, cwd=tmp_path, timeout=60)
+    assert run("check").returncode == 0
+    r = run("user", "add", "taro")
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert (tmp_path / "todo.ponte.users.json").exists()
+    assert "taro" in run("user", "list").stdout

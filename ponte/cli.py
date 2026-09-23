@@ -409,7 +409,16 @@ def cmd_data(args) -> int:
             f.write(json.dumps({"t": "create", "thing": b.thing, "id": b.id, "values": b.values}, ensure_ascii=False) + "\n")
     os.replace(store, store + ".bak")
     os.replace(tmp, store)
-    print(f"{before}行 → {len(boxes)}行に詰めました（前のものは {store}.bak。動かしている間はしないでください）")
+    gone = 0
+    files = store + ".files"
+    if os.path.isdir(files):                  # どの箱からも指されていない画像（消した箱の写真）を消す
+        used = {v[5:] for b in boxes for v in b.values.values() if isinstance(v, str) and v.startswith("file:")}
+        for name in os.listdir(files):
+            if name not in used:
+                os.remove(os.path.join(files, name))
+                gone += 1
+    print(f"{before}行 → {len(boxes)}行に詰めました（前のものは {store}.bak。動かしている間はしないでください）"
+          + (f"。使われていない画像を {gone}枚消しました" if gone else ""))
     return 0
 
 

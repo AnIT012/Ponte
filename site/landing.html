@@ -47,7 +47,15 @@ section{padding-block:56px}
 .btn.alt{background:var(--panel);color:var(--ink)}
 .btn:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--line)}
 .btn:focus-visible{outline:3px dashed var(--tomato);outline-offset:4px}
-.meaning{font-size:14px;color:var(--muted)}
+.story{display:grid;gap:14px;margin-top:26px;max-width:640px}
+.bubble{padding:14px 18px;font-size:15.5px;max-width:92%}
+.bubble .who{display:block;font-family:var(--pop);font-size:12px;margin-bottom:2px}
+.bubble.me{background:var(--lemon);color:#1B1F3B;justify-self:start;border-bottom-left-radius:6px}
+.bubble.ai{background:var(--mint);color:#0D2B28;justify-self:end;border-bottom-right-radius:6px}
+.bubble.fact{background:var(--panel);justify-self:start}
+.bubble.fact b{color:var(--err);font-weight:500}
+.aside{max-width:40em;margin-top:18px;color:var(--muted)}
+.name-note{text-align:center;color:var(--muted);font-size:14px;padding-block:8px 0}
 
 /* ---- stop ---- */
 .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;margin-top:24px}
@@ -131,18 +139,29 @@ footer .word{font-size:34px}
     </svg>
   </div>
   <h1 class="word" aria-label="Ponte"><span>P</span><span>o</span><span>n</span><span>t</span><span>e</span></h1>
-  <p class="tag">人は決めて、AIが書いて、言語が守る。</p>
-  <p class="lead">決めたことを書くと、そのまま動くアプリになる言語。決めてないことがあれば、動かす前に止まる。だからAIに渡しても、勝手に決められない。</p>
+  <p class="tag">AIに、勝手に決めさせない。</p>
+  <p class="lead">アプリの「決まり」を書くと、そのまま動く言語。<br>決めてないことがあると、動く前に「ここ決まってないよ」って止まる。</p>
   <div class="cta">
     <a class="btn" href="https://github.com/AnIT012/nameless-lang">GitHub で見る</a>
-    <a class="btn alt" href="#start">はじめる</a>
+    <a class="btn alt" href="#start">3行で試す</a>
   </div>
-  <p class="meaning">ponte ＝ イタリア語で「橋」。人とAIの間に、決まりの橋をかける。</p>
 </header>
 
 <section>
-  <p class="eyebrow">決めてないことは、動かない</p>
-  <h2>打ち間違いも、決め忘れも、動かす前に止まる。</h2>
+  <p class="eyebrow">ほんとにあった話</p>
+  <h2>「3日以内」って頼んだら、<br>AIは5回とも「72時間」で数えた。</h2>
+  <div class="story">
+    <div class="bubble me sticker"><span class="who">わたし</span>締切が3日以内の応募があったら、夜9時に知らせて。<br>たとえば 9/21 の夜なら、9/24 締切のはお知らせしてね。</div>
+    <div class="bubble ai sticker"><span class="who">AI</span>できました！</div>
+    <div class="bubble fact sticker"><span class="who">実際は</span>9/21 21:00 から 9/24 23:59 まで、およそ75時間。AIは「3日＝72時間」で数えたから、<b>このお知らせは来なかった</b>。5回頼んで、5回とも。</div>
+  </div>
+  <p class="aside">AIが悪いわけじゃない。「3日」って、日付で数えるのか時間で数えるのか、誰も決めてなかった。決めてないことを、AIは黙って決める。しかも、それっぽく動く。だから気づけない。</p>
+</section>
+
+<section>
+  <p class="eyebrow">Ponte だと</p>
+  <h2>決めてないなら、動かない。</h2>
+  <p class="aside">Ponte では「3日以内」は最初から「日付で3日」と決まってる。言語が決めてないことを書いたら、動かす前に止まる。打ち間違いも同じ。</p>
   <div class="two">
     <div>
       <p class="caption">todo.ponte（抜粋）</p>
@@ -181,59 +200,62 @@ footer .word{font-size:34px}
 <span class="good">example 4件中 4件通過</span></pre>
     </div>
   </div>
+  <p class="aside">しかも「ちゃんと確かめてない所」まで言ってくる。テストが通っても、安心しきれないあの感じがなくなる。</p>
 </section>
 
 <section>
-  <p class="eyebrow">しくみ</p>
-  <h2>いちばん上は、いつも Ponte。</h2>
+  <p class="eyebrow">どういう分担？</p>
+  <h2>あなたは決める。AIは書く。<br>Ponte は見張る。</h2>
   <div class="layers">
-    <div class="layer l1 sticker"><b>人 ＋ AI</b><p>何が欲しいか・何がダメか・まだ決めてないこと。2人で一緒にいじる。</p></div>
-    <div class="layer l2 sticker"><b>.ponte</b><p>データ・状態の流れ・誰が何をできるか・ルール・画面・約束（例と禁止）。<small>書いたことだけが動く。書いてないことは誰もできない。</small></p></div>
-    <div class="layer l3 sticker"><b>Python（裏）</b><p>Ponte が読んで、その通りに動かす。写真やメールのような細かい作業も、約束の中だけで。<small>見なくていい。依存は Python の標準機能だけ。</small></p></div>
+    <div class="layer l1 sticker"><b>あなた ＋ AI</b><p>何が欲しい？何はダメ？まだ決めてないことは？ここだけ考えればいい。AIと相談しながらでもいい。</p></div>
+    <div class="layer l2 sticker"><b>.ponte</b><p>決めたことを書く紙。データの形、状態の流れ、誰が何をできるか、画面まで。<small>書いたことはそのまま動く。書いてないことは、誰にもできない。</small></p></div>
+    <div class="layer l3 sticker"><b>Python（裏）</b><p>Ponte を動かしてる本体。あなたは触らなくていい。<small>インストールするものは Python だけ。ほかに何もいらない。</small></p></div>
   </div>
 </section>
 
 <section>
-  <p class="eyebrow">比べてみた</p>
-  <h2>同じアプリを、日本語で頼む vs Ponte で頼む。</h2>
+  <p class="eyebrow">16回ずつ試した</p>
+  <h2>同じアプリを、日本語で頼むか、Ponte で頼むか。</h2>
   <div class="nums">
-    <div class="num sticker"><div class="big">6/6</div><p>隠しテストを全部通った</p><p class="vs">日本語で頼むと 1/6（Haiku）</p></div>
-    <div class="num sticker"><div class="big">0 個</div><p>AIが勝手に決めた所</p><p class="vs">日本語だと 1回あたり約6個</p></div>
-    <div class="num sticker"><div class="big">1/8</div><p>AIが書く量（約20行）</p><p class="vs">日本語だと 約170行</p></div>
+    <div class="num sticker"><div class="big">6/6</div><p>Ponte で頼んだら、隠しテストを全部クリア</p><p class="vs">日本語だと 1/6</p></div>
+    <div class="num sticker"><div class="big">0 個</div><p>AIが勝手に決めたところ</p><p class="vs">日本語だと 毎回6個くらい</p></div>
+    <div class="num sticker"><div class="big">1/8</div><p>AIが書く量。約20行ですむ</p><p class="vs">日本語だと 約170行</p></div>
   </div>
-  <p class="note">各条件16回（Sonnet と Haiku）。Ponte の数字は、言語が返したエラーを見てAIが1回直した後のもの。弱い所も含めて、全部 EXPERIMENT.md に書いてある。</p>
+  <p class="note">いちばん上の数字は Haiku での結果（Sonnet でも同じ向き）。Ponte のほうは、エラーを見せてAIに1回直してもらった後の数字。うまくいかなかった回も、全部そのまま載せてる（EXPERIMENT.md）。</p>
 </section>
 
 <section>
-  <p class="eyebrow">見本のアプリ</p>
+  <p class="eyebrow">作ってみた</p>
   <h2>ぜんぶ .ponte だけで動いてる。</h2>
   <div class="apps">
-    <article class="app sticker"><img src="{{IMG:todo}}" alt="やることアプリの画面"><div><h3>やること</h3><p>入門で1歩ずつ作る、一番小さいアプリ。</p><code>spec/todo.ponte</code></div></article>
-    <article class="app sticker"><img src="{{IMG:lend_home}}" alt="備品かしだしの画面"><div><h3>備品かしだし</h3><p>管理者と役割、借りる・返す、返し忘れのお知らせ。</p><code>spec/lend.ponte</code></div></article>
-    <article class="app sticker"><img src="{{IMG:kakeibo}}" alt="家計メモの画面"><div><h3>家計メモ</h3><p>「ランチ 1,200円」から金額を拾って合計。std/money を使うだけ。</p><code>spec/kakeibo.ponte</code></div></article>
+    <article class="app sticker"><img src="{{IMG:todo}}" alt="やることアプリの画面"><div><h3>やること</h3><p>いちばん小さいアプリ。入門で、エラーを見ながら1歩ずつ作れる。</p><code>spec/todo.ponte</code></div></article>
+    <article class="app sticker"><img src="{{IMG:lend_home}}" alt="備品かしだしの画面"><div><h3>備品かしだし</h3><p>カメラを借りて、返す。返し忘れたら次の朝に知らせる。管理者も決められる。</p><code>spec/lend.ponte</code></div></article>
+    <article class="app sticker"><img src="{{IMG:kakeibo}}" alt="家計メモの画面"><div><h3>家計メモ</h3><p>「ランチ 1,200円」と書くだけで金額を拾って、合計してくれる。</p><code>spec/kakeibo.ponte</code></div></article>
   </div>
 </section>
 
 <section id="start">
-  <p class="eyebrow">はじめる</p>
-  <h2>Python があれば、3行で動く。</h2>
+  <p class="eyebrow">試してみる</p>
+  <h2>3行で、手元で動く。</h2>
   <div class="steps">
     <div class="step sticker"><span class="n">1</span><pre id="cmd1">git clone https://github.com/AnIT012/nameless-lang &amp;&amp; cd nameless-lang</pre><button class="copy" type="button" data-copy="cmd1">コピー</button></div>
     <div class="step sticker"><span class="n">2</span><pre id="cmd2">pip install -e .</pre><button class="copy" type="button" data-copy="cmd2">コピー</button></div>
     <div class="step sticker"><span class="n">3</span><pre id="cmd3">ponte run spec/todo.ponte</pre><button class="copy" type="button" data-copy="cmd3">コピー</button></div>
   </div>
-  <p class="note">ブラウザで http://127.0.0.1:8000/ を開くと、やることアプリが動く。続きは docs/入門.md。</p>
+  <p class="note">ブラウザで http://127.0.0.1:8000/ を開けば、やることアプリが動いてる。自分のを作るなら <code>ponte new myapp</code>。</p>
 </section>
 
 <section>
-  <p class="eyebrow">正直に</p>
-  <h2>まだできないこと。</h2>
+  <p class="eyebrow">正直に言うと</p>
+  <h2>まだ、ここはダメ。</h2>
   <div class="limits">
-    <div class="limit sticker"><b>ログインが仮</b>今は URL の名前で誰にでもなれる。人に使ってもらう前に、本当のログインが要る。</div>
-    <div class="limit sticker"><b>道具はまだ少ない</b>曜日・日付の足し算・json などは「まだ無い道具」。書くとエラーになる。</div>
-    <div class="limit sticker"><b>向いてないもの</b>ゲームや凝った画面は範囲の外。決まりの多い業務アプリが得意。</div>
+    <div class="limit sticker"><b>ログインがまだ仮</b>今はURLに名前を書けば誰にでもなれちゃう。人に使ってもらう前に直す。</div>
+    <div class="limit sticker"><b>道具が少なめ</b>曜日とか、日付の足し算とかはまだ無い。書くとちゃんとエラーになる。</div>
+    <div class="limit sticker"><b>ゲームは作れない</b>得意なのは、決まりが多いアプリ。貸し借り、申請、記録、管理みたいなもの。</div>
   </div>
 </section>
+
+<p class="name-note">Ponte（ポンテ）はイタリア語で「橋」。人とAIのあいだにかける橋のつもりで名前をつけた。</p>
 
 <footer>
   <div class="word" aria-hidden="true"><span>P</span><span>o</span><span>n</span><span>t</span><span>e</span></div>

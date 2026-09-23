@@ -1246,6 +1246,8 @@ def check_notify_recipient(spec: Spec, opt: Options) -> list[Finding]:
 # ---------------------------------------------------------------------------
 
 STEPS = ("given", "adds", "at", "says", "taps", "gets", "expect")
+WHO_VERBS = ("see", "change", "create", "remove", "move", "do")
+SLOTS = ("top", "main", "side", "bottom", "over")
 CLAUSES = {"rule": ("why", "when", "where", "do", "example"),
            "list": ("of", "where", "sort"),
            "action": ("in", "out", "example", "never", "else", "by", "ask", "how", "do"),
@@ -1257,6 +1259,23 @@ def check_example_values(spec: Spec, opt: Options) -> list[Finding]:
     from .values import _DUR, parse_time, unquote
     out = []
     ths_all, list_names = things(spec), {l.name for l in spec.decls("list")}
+    # who の行の打ち間違い（読めない行は黙って無視され、書いたつもりの権利が無くなる）
+    for w in spec.decls("who"):
+        for c in w.children:
+            m = re.match(r"^(\w+)\s+(\w+)\s+(\w+)\s+(\w+)(?:\s+where\s+.+)?$", c.raw.strip())
+            if not m or m.group(2) != "can":
+                word = m.group(2) if m else ""
+                out.append(Finding("E28", c.line, f"who: 読めません: '{c.raw.strip()}'（`user can see Task where owner is me` の形）{did_you_mean(word, ['can']) if word else ''}"))
+                continue
+            if m.group(3) not in WHO_VERBS:
+                out.append(Finding("E28", c.line, f"who: 「{m.group(3)}」はできることの名前ではありません（{' / '.join(WHO_VERBS)}）{did_you_mean(m.group(3), WHO_VERBS)}"))
+    # 画面の置き場所の打ち間違い（`mian` だと、その部品が黙って出ない）
+    for sc in spec.decls("scene"):
+        for c in sc.children:
+            if c.text.startswith("["):
+                continue
+            if c.keyword not in SLOTS:
+                out.append(Finding("E28", c.line, f"scene {sc.name}: 「{c.keyword}」という置き場所はありません（{' / '.join(SLOTS)}）{did_you_mean(c.keyword, SLOTS)}"))
     # 節の打ち間違い（`wher status is todo` が黙って無視されると、条件の無い rule になってしまう）
     for kind, allowed in CLAUSES.items():
         for d in spec.decls(kind):

@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from .forms import DO_FORMS as _DO_DOC, VALUE_FORMS, WHEN_FORMS
 from .icons import ICONS
 from .parser import (
-    Node, Spec, flow_parts, flow_states, match_arms, parse_button, relate_lines, states_of,
+    Node, ParseError, Spec, flow_parts, flow_states, match_arms, parse_button, relate_lines, states_of,
     thing_fields, words_entries,
 )
 
@@ -116,7 +116,8 @@ def match_domain(spec: Spec, node: Node, subject: str) -> list[str] | None:
 def match_result_states(node: Node) -> list[str] | None:
     """`kind[a | b] = match ...` の [a | b]。`[found monthday | missing]` は状態の名前 found / missing として読む"""
     if node.text.startswith("["):
-        return [x.split()[0] for x in states_of(node.text)]
+        states = states_of(node.text) or []          # `[` だけで閉じていない時は、形の検査が別に止める
+        return [x.split()[0] for x in states if x.split()] or None
     return None
 
 
@@ -387,6 +388,8 @@ def parse_out(text: str, known_types: set[str]) -> list[tuple[str | None, str | 
     alts = []
     for alt in [a.strip() for a in text.split("|")]:
         words = alt.split()
+        if not words:                 # `found |` のような空の選択肢は、呼ぶ側が形の違いとして見つける
+            continue
         if len(words) == 1:
             alts.append((None, words[0]) if words[0] in known_types else (words[0], None))
         else:
@@ -849,6 +852,8 @@ def check_undefined(spec: Spec, opt: Options) -> list[Finding]:
         of = l.child("of")
         if of is not None:
             need(of.text.strip(), ths | lists, of.line, f"list {l.name}")
+        else:
+            out.append(Finding("E28", l.line, f"list {l.name}: 何の一覧かがありません（`of Task` のように書く）"))
         so = l.child("sort")
         if so is not None:
             w = so.text.split()
@@ -907,7 +912,10 @@ def check_undefined(spec: Spec, opt: Options) -> list[Finding]:
         seen = set()
         while name in lists and name not in seen:
             seen.add(name)
-            name = spec.find("list", name).child("of").text.strip()
+            of = spec.find("list", name).child("of")
+            if of is None:
+                break
+            name = of.text.strip()
         return name
     for lk in spec.decls("look"):
         flds = fields_of.get(thing_of(lk.name), set())
@@ -1133,6 +1141,9 @@ def check_types(spec: Spec, opt: Options) -> list[Finding]:
     for r in rules(spec).values():
         this = this_of[r.name]
         for w in r.children_of("where"):
+            if not w.text.split():
+                out.append(Finding("E31", w.line, f"rule {r.name}: where の中身がありません（`where status is todo` のように書く）"))
+                continue
             f = w.text.split()[0]
             if f != "it" and this and f not in fields.get(this, {}):
                 out.append(Finding("E32", w.line, f"rule {r.name}: {this} に「{f}」という項目はありません（{', '.join(fields[this])}）"))
@@ -1206,6 +1217,89 @@ def check_notify_recipient(spec: Spec, opt: Options) -> list[Finding]:
 
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# example の中の値（動かす前に分かるもの）と、ログインに要る User.name
+# ---------------------------------------------------------------------------
+
+STEPS = ("given", "adds", "at", "says", "taps", "gets", "expect")
+
+
+def check_example_values(spec: Spec, opt: Options) -> list[Finding]:
+    """動かす前に分かる、行の形の間違い（example の手順・flow・list の where と sort・notify each of）"""
+    from .values import _DUR, parse_time, unquote
+    out = []
+    ths_all, list_names = things(spec), {l.name for l in spec.decls("list")}
+    for f in spec.decls("flow"):
+        if f.name == "scene":
+            continue
+        try:
+            edges, _ = flow_parts(f)
+        except ParseError:
+            continue
+        if not edges:
+            out.append(Finding("E28", f.line, f"flow {f.name}: 矢印（`a -> b`）が1つもありません"))
+        elif any(not a or not b for a, b in edges):
+            out.append(Finding("E28", f.line, f"flow {f.name}: 矢印の片側が空です（`a -> b` の両側に状態を書く）"))
+    for l in spec.decls("list"):
+        so = l.child("sort")
+        if so is not None and not so.text.split():
+            out.append(Finding("E28", so.line, f"list {l.name}: sort の後ろに項目がありません（`sort deadline`）"))
+        for w in l.children_of("where"):
+            m = re.match(r"^\w+ within (.+)$", w.text.strip())
+            if m and not _DUR.match(m.group(1).strip()):
+                out.append(Finding("E32", w.line, f"list {l.name}: 期間が読めません: {m.group(1)}（`3 days` / `12 hours` のように書く）"))
+    for r in rules(spec).values():
+        for d in r.children_of("do"):
+            m = re.match(r"^notify \w+ each of (\w+)$", d.text.strip())
+            if m and m.group(1) not in list_names:
+                out.append(Finding("E28", d.line, f"rule {r.name}: each of の「{m.group(1)}」という list がありません"))
+    for r in rules(spec).values():
+        for ex in r.children_of("example"):
+            for c in ex.children:
+                t = c.text.strip()
+                bad = None
+                if c.keyword not in STEPS:
+                    bad = f"example に「{c.keyword}」という手順はありません（{' / '.join(STEPS)}）"
+                elif c.keyword in ("given", "adds") and (not t or t.split()[0] not in ths_all):
+                    bad = f"{c.keyword} の後ろには thing の名前を書きます: '{c.raw.strip()}'"
+                elif c.keyword == "taps" and not re.match(r"^\S+ on \w+$", t):
+                    bad = f"taps は `taps ボタン on Thing` と書きます: '{c.raw.strip()}'"
+                elif c.keyword == "says" and not re.fullmatch(r'"[^"]*"', t):
+                    bad = f'says は `says "文"` と書きます: \'{c.raw.strip()}\''
+                elif c.keyword == "gets" and not re.match(r'^(\w+) (.+?) "(.*)"$', t):
+                    bad = f'gets は `gets Gmail new message "本文"` と書きます: \'{c.raw.strip()}\''
+                elif c.keyword == "expect" and not t:
+                    bad = "expect の後ろに、確かめることを書きます"
+                if bad:
+                    out.append(Finding("E31", c.line, f"rule {r.name}: {bad}"))
+    ths = things(spec)
+    if "User" in ths and "name" not in {f.name for f in thing_fields(ths["User"])}:
+        out.append(Finding("E28", ths["User"].line, "thing User: ログインした人の名前を入れる `name text` が要ります"))
+    fields = {n: {f.name: f for f in thing_fields(t)} for n, t in ths.items()}
+    for d in rules(spec).values():
+        for ex in d.children_of("example"):
+            for c in ex.children:
+                if c.keyword == "at":
+                    try:
+                        parse_time(unquote(c.text), 2000)
+                    except ValueError:
+                        out.append(Finding("E32", c.line, f"rule {d.name}: at の日時が読めません: {c.text.strip()}（`at \"9/21 21:00\"` のように書く）"))
+                    continue
+                if c.keyword not in ("given", "adds", "taps", "expect"):
+                    continue
+                words = c.text.split()
+                thing = words[2] if c.keyword == "taps" and len(words) >= 3 else (words[0] if words else "")
+                for v in c.children:
+                    f = fields.get(thing, {}).get(v.keyword)
+                    if f is None or f.type not in ("date", "monthday") or not v.text.strip():
+                        continue
+                    try:
+                        parse_time(unquote(v.text), 2000)
+                    except ValueError:
+                        out.append(Finding("E32", v.line, f"rule {d.name}: {thing}.{v.keyword} は {f.type} ですが、日時として読めません: {v.text.strip()}"))
+    return out
+
+
 ALL_CHECKS = [
     check_match_else, check_until_limit, check_examples, check_else, check_tbd,
     check_blocking, check_when_is_event, check_move_narrowed, check_flow_coverage,
@@ -1214,6 +1308,7 @@ ALL_CHECKS = [
     check_double_else, check_match_states, check_who, check_gone, check_change,
     check_ask_ai_limit, check_connect_fallback, check_scene_move, check_words,
     check_a11y, check_money, check_undefined, check_single_do, check_do_form, check_roles, check_types, check_notify_recipient,
+    check_example_values,
 ]
 
 
@@ -1221,6 +1316,10 @@ def check(spec: Spec, opt: Options | None = None) -> list[Finding]:
     opt = opt or Options()
     found: list[Finding] = []
     for fn in ALL_CHECKS:
-        found.extend(fn(spec, opt))
+        try:
+            found.extend(fn(spec, opt))
+        except ParseError as e:           # 行が読めない（`sub` だけの項目など）。同じ行は1回だけ出す
+            if not any(f.line == e.line and f.message == e.message for f in found):
+                found.append(Finding("E31", e.line, e.message))
     found.sort(key=lambda f: (f.line, f.code))
     return found

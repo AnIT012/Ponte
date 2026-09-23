@@ -12,6 +12,7 @@
 - VS Code: 保存するとエラーの行に波線（`editor/vscode/extension.js`。依存なし）
 - ホームページに「入門」と「道具とエラー」のページ（docs と実装から作る。ずれたらテストが落ちる）
 - 道具: `avg of` / `abs` / `date of`（年月日の当たりを "2026/10/15" に）
+- **壊れた仕様で落ちない**: でたらめに壊した仕様を何万通りも流して、Python のエラーで落ちる所と「check は通るのに動かすと止まる」所を塞いだ（`tests/test_fuzz_checker.py` に残した）。見つかったもの: example の手順の打ち間違い（`expekt`）が黙って無視され、確かめていないのに通っていた / 読めない期間（`within 3 dys`）/ 空の sort / 矢印の片側が空の flow / 無い list への `each of` / 読めない日時の example / `name` の無い User / check の途中で読めない行があると check そのものが落ちていた
 - `round` を本当の四捨五入に（2.5 → 3。前は Python の round で 2 になっていた）
 
 ## 洗練（2026-09-23）

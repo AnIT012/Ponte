@@ -166,6 +166,17 @@ def cmd_fmt(args) -> int:
     return rc
 
 
+def cmd_build(args) -> int:
+    from .build import build
+    spec = _load_checked(args.spec)
+    if spec is None:
+        return 1
+    out = args.out or (os.path.splitext(os.path.basename(args.spec))[0] + ".pyz")
+    build(args.spec, out)
+    print(f"1つのファイルにしました: {out}（python {out} で動く / python {out} check / python {out} test）")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m lang", description="人とAIの間の言語（名前未定）v0.2")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -190,6 +201,10 @@ def main(argv: list[str] | None = None) -> int:
     fm.add_argument("spec", nargs="+")
     fm.add_argument("--check", action="store_true", help="書き換えず、整形が要るかだけ見る")
     fm.set_defaults(fn=cmd_fmt)
+    bd = sub.add_parser("build", help="spec と中身と実行エンジンを1つの .pyz にまとめる")
+    bd.add_argument("spec")
+    bd.add_argument("-o", "--out")
+    bd.set_defaults(fn=cmd_build)
     r = sub.add_parser("run", help="動かす（ブラウザで開く）")
     r.add_argument("spec")
     r.add_argument("--port", type=int, default=8000)

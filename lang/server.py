@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import json
+import pkgutil
 import re
 import threading
 import time
@@ -509,7 +510,7 @@ class App:
         return self.home or "app"
 
 
-PAGE = open(__file__.replace("server.py", "page.html"), encoding="utf-8").read()
+PAGE = pkgutil.get_data(__package__, "page.html").decode("utf-8")   # .pyz の中からでも読める
 
 
 def make_handler(app: App):

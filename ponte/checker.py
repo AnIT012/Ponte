@@ -806,7 +806,7 @@ def check_undefined(spec: Spec, opt: Options) -> list[Finding]:
 
     def need(name, kinds, line, where):
         if name not in kinds:
-            out.append(Finding("E28", line, f"{where}: 「{name}」がどこにも定義されていません"))
+            out.append(Finding("E28", line, f"{where}: 「{name}」がどこにも定義されていません{did_you_mean(name, kinds, '（もしかして {}？）')}"))
 
     def slot(text, line, where):
         text = text.strip()
@@ -1312,6 +1312,27 @@ ALL_CHECKS = [
 ]
 
 
+def did_you_mean(name: str, candidates, form: str = "。もしかして {}？") -> str:
+    """打ち間違いらしい時だけ、近い名前を1つ出す（大文字小文字の違い・1〜2文字の違い）"""
+    import difflib
+    cands = [c for c in candidates if c and c != name]
+    same = [c for c in cands if c.lower() == name.lower()]
+    hit = same or difflib.get_close_matches(name, cands, n=1, cutoff=0.75)
+    return form.format(hit[0]) if hit else ""
+
+
+_NAMED = re.compile(r"「([^」]+)」という(?:状態|項目)はありません（([^）]*)）")
+
+
+def _with_suggestion(f: Finding) -> Finding:
+    """「X」という状態／項目はありません（a / b）に、近い名前があれば「もしかして」を足す"""
+    m = _NAMED.search(f.message)
+    if not m:
+        return f
+    hint = did_you_mean(m.group(1), re.split(r"\s*/\s*|,\s*", m.group(2)))
+    return Finding(f.code, f.line, f.message + hint) if hint else f
+
+
 def check(spec: Spec, opt: Options | None = None) -> list[Finding]:
     opt = opt or Options()
     found: list[Finding] = []
@@ -1321,5 +1342,6 @@ def check(spec: Spec, opt: Options | None = None) -> list[Finding]:
         except ParseError as e:           # 行が読めない（`sub` だけの項目など）。同じ行は1回だけ出す
             if not any(f.line == e.line and f.message == e.message for f in found):
                 found.append(Finding("E31", e.line, e.message))
+    found = [_with_suggestion(f) for f in found]
     found.sort(key=lambda f: (f.line, f.code))
     return found

@@ -37,3 +37,12 @@ def test_version_matches_pyproject():
     import re as _re
     from ponte import __version__
     assert _re.search(r'version = "([^"]+)"', open("pyproject.toml", encoding="utf-8").read()).group(1) == __version__
+
+
+def test_typos_get_a_suggestion():
+    from ponte.checker import check
+    from ponte.parser import parse
+    src = open("tests/cases/E32_unknown_state/broken.ponte", encoding="utf-8").read()
+    assert any("もしかして submitted？" in f.message for f in check(parse(src)))
+    far = src.replace("move this to submited", "move this to banana")
+    assert not any("もしかして" in f.message for f in check(parse(far)))

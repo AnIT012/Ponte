@@ -8,22 +8,22 @@ thing Application
   status[draft | submitted | passed | failed]
 
 thing User
-  name  text
+  name text
 
 flow Application.status
   draft -> submitted -> passed | failed
   failed > passed
 
 who
-  user   can see    Application where owner is me
-  user   can change Application where owner is me
-  user   can see    User where it is me
+  user  can see    Application where owner is me
+  user  can change Application where owner is me
+  user  can see    User where it is me
 
 list DueSoon
-  of    Application
-  where status is draft
-  where deadline within 3 days
-  sort  deadline
+  of     Application
+  where  status is draft
+  where  deadline within 3 days
+  sort   deadline
 
 match Application.status to color
   draft     -> red
@@ -36,15 +36,15 @@ connect Gmail
   needs  key GMAIL_TOKEN
 
 action ExtractDeadline
-  in      mail text
-  out     found monthday | missing
-  example "10/15(木)12:00まで"            -> found 10/15 12:00
-  example "【締切9/24 23:59】"            -> found 9/24 23:59
-  example "来週中にご提出ください"        -> missing
-  example "9/24 23:59 または 9/30 23:59"  -> missing
-  never   guess the year
-  else    ask user
-  by      ai
+  in       mail text
+  out      found monthday | missing
+  example  "10/15(木)12:00まで"            -> found 10/15 12:00
+  example  "【締切9/24 23:59】"            -> found 9/24 23:59
+  example  "来週中にご提出ください"        -> missing
+  example  "9/24 23:59 または 9/30 23:59"  -> missing
+  never    guess the year
+  else     ask user
+  by       ai
 
 rule ReadMail
   why   メールの締切を自動で拾うため
@@ -74,18 +74,18 @@ relate
 scene Home
   top     Header
   main    match count of DueSoon
-            0    -> EmptyNote
-            else -> DueSoon as cards
+    0    -> EmptyNote
+    else -> DueSoon as cards
   bottom  button add named 追加
 
 flow scene
   Home -> AddApplication
 
 part Header
-  show  text "就活Hub"
+  show text "就活Hub"
 
 part EmptyNote
-  show  text "3日以内に締切の下書きはありません"
+  show text "3日以内に締切の下書きはありません"
 
 look DueSoon as cards
   title   company

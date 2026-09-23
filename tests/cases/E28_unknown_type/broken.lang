@@ -3,7 +3,7 @@
 thing Application
   company   text
   deadline  monthday
-  owner     User   gone[remove too]
+  owner     Usr    gone[remove too]
   status[draft | submitted | passed | failed]
 
 thing User
@@ -43,9 +43,7 @@ action ExtractDeadline
   example  "9/24 23:59 または 9/30 23:59"  -> missing
   never    guess the year
   else     ask user
-  by      ai
-  how
-    repeat check until found
+  by       ai
 
 rule ReadMail
   why   メールの締切を自動で拾うため

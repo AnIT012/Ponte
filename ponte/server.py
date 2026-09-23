@@ -568,6 +568,29 @@ class App:
 PAGE = pkgutil.get_data(__package__, "page.html").decode("utf-8")   # .pyz の中からでも読める
 
 
+_STR_KEYS = ("user", "button", "on", "id", "input", "this", "text", "to", "lang")
+
+
+def read_request(raw: bytes) -> dict | None:
+    """POST の中身。JSON の object で、名前の値は文字、values は「文字 → 文字」だけ受け付ける"""
+    try:
+        data = json.loads(raw or b"{}")
+    except (ValueError, UnicodeDecodeError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    for k in _STR_KEYS:
+        if k in data and data[k] is not None and not isinstance(data[k], str):
+            return None
+    for k in ("values", "year_answers"):
+        v = data.get(k)
+        if v is None:
+            continue
+        if not isinstance(v, dict) or not all(isinstance(x, str) and (y is None or isinstance(y, str)) for x, y in v.items()):
+            return None
+    return data
+
+
 def make_handler(app: App):
     class H(BaseHTTPRequestHandler):
         def log_message(self, *a):
@@ -680,7 +703,17 @@ def make_handler(app: App):
             elif u.path == "/api/view":
                 user = self._user(q.get("user"))
                 try:
-                    v = app.view(q.get("scene") or app.home, user, json.loads(q.get("state") or "{}"),
+                    state = json.loads(q.get("state") or "{}")
+                except ValueError:
+                    state = None
+                if not isinstance(state, dict):
+                    self._json({"error": "state が読めません", "slots": [], "states": {}}, 400)
+                    return
+                if (q.get("scene") or app.home) not in app.scenes:
+                    self._json({"error": f"画面がありません: {q.get('scene')}", "slots": [], "states": {}}, 404)
+                    return
+                try:
+                    v = app.view(q.get("scene") or app.home, user, state,
                                  q.get("this"), q.get("origin"), q.get("lang") or "ja")
                 except Exception as e:    # 見せる途中で壊れても、理由を画面に出す
                     self._json({"error": f"{type(e).__name__}: {e}", "slots": [], "states": {}}, 500)
@@ -719,7 +752,10 @@ def make_handler(app: App):
             raw = self.rfile.read(n)
             if app.auth and self._auth_post(self.path, raw):
                 return
-            data = json.loads(raw or b"{}")
+            data = read_request(raw)
+            if data is None:
+                self._json({"error": "リクエストが読めません"}, 400)
+                return
             user = self._user(data.get("user"))
             try:
                 if self.path == "/api/tap":
@@ -794,6 +830,8 @@ def make_handler(app: App):
                     self._json({"error": "not found"}, 404)
             except (RuleError, ValueError, KeyError) as e:
                 self._json({"error": str(e).strip("'")}, 400)
+            except (StopIteration, TypeError, AttributeError, IndexError, RecursionError) as e:   # 無い名前・変な形の値
+                self._json({"error": f"リクエストが読めません（{type(e).__name__}）"}, 400)
     return H
 
 

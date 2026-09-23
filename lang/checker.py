@@ -113,9 +113,9 @@ def match_domain(spec: Spec, node: Node, subject: str) -> list[str] | None:
 
 
 def match_result_states(node: Node) -> list[str] | None:
-    """`kind[a | b] = match ...` の [a | b]"""
+    """`kind[a | b] = match ...` の [a | b]。`[found monthday | missing]` は状態の名前 found / missing として読む"""
     if node.text.startswith("["):
-        return states_of(node.text)
+        return [x.split()[0] for x in states_of(node.text)]
     return None
 
 

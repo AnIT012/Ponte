@@ -33,10 +33,15 @@ do に書けるのは次の2つだけ。if・for・ループ・再帰・書き�
 
 決まり:
 - 行の順番は関係ない。名前の依存で決まる。同じ名前を2回書けない。
-- 答えは「他のどの行からも使われていない行」。ちょうど1つにする。
+- 答えは「他のどの行からも使われていない行」。ちょうど1つにする。答えの行に `[...]` は付けなくていい（形は out に書いてある）。
+- 状態の名前（`kind[one | none | many]` の one など）は、値を持たない名前だけ。`found 値` のように値を持つのは out の状態だけ。
 - match の中に match は書けない。一度名前を付けて、別の行で match する。
 - 入力は `in` に書かれた名前で使える。
 - 答えは out の形にする。out が `found monthday | missing` なら、`found 値` か `missing`。
+
+契約の never のうち、機械が確かめるもの:
+- `never guess the year`: 答えに年（4桁の数）を入れない
+- `never depend on width`: 全角と半角で答えを変えない（全角にした例も同じ答えになるか確かめる。normalize を使うとよい）
 
 使える道具:
 - 文字: normalize X（全角→半角など） / trim X / lower X / upper X / split X by "," / join X by "," / replace "a" with "b" in X
@@ -166,10 +171,32 @@ def verify(spec: Spec, action: Node, code: str) -> Verdict:
     return Verdict(not problems, problems, mini_src)
 
 
+def to_fullwidth(text: str) -> str:
+    """半角の英数字と記号を全角にする（never depend on width の確かめに使う）"""
+    return "".join(chr(ord(c) + 0xFEE0) if "!" <= c <= "~" else c for c in text)
+
+
+MACHINE_NEVERS = {"guess the year", "depend on width"}
+
+
 def check_nevers(a: Node, body, in_name: str) -> list[str]:
     """never を機械で確かめられるものだけ確かめる。確かめられないものは確かめない（正直な限界）。"""
     out = []
     for n in a.children_of("never"):
+        if n.text.strip() == "depend on width":
+            for ex in a.children_of("example"):
+                src = unquote(ex.text.split("->", 1)[0])
+                wide = to_fullwidth(src)
+                if wide == src:
+                    continue
+                try:
+                    got, got_w = body.run({in_name: src}), body.run({in_name: wide})
+                except Exception as e:     # noqa: BLE001
+                    out.append(f"never depend on width: 全角にした「{wide}」で止まりました: {e}")
+                    continue
+                if str(got) != str(got_w):
+                    out.append(f"never depend on width: 「{src}」は {got} なのに、全角の「{wide}」は {got_w} でした")
+            continue
         if "year" in n.text:
             probes = [unquote(ex.text.split("->", 1)[0]) for ex in a.children_of("example")]
             probes += ["締切は10/15です", "3/1 9:00 締切", "12/31 23:59まで"]

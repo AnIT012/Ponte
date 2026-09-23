@@ -128,7 +128,10 @@ class Body:
             name = m.group(1)
             if name in self.steps or name in inputs:
                 raise BodyError(c.line, f"{name} はもう使われています（書き換えはできません）")
-            self.steps[name] = Step(name, m.group(3).strip(), c, states_of(m.group(2)) if m.group(2) else None)
+            declared = states_of(m.group(2)) if m.group(2) else None
+            if declared:     # `answer[found monthday | missing]` のように out の形で書いたら、状態の名前（found / missing）として読む
+                declared = [d.split()[0] if d.split()[0] in out_states else d for d in declared]
+            self.steps[name] = Step(name, m.group(3).strip(), c, declared)
         if not self.steps and single_result:
             raise BodyError(do.line, "do が空です")
         self.result = None

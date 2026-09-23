@@ -33,6 +33,8 @@ TOOLS = [
     ("数", "a + b / a - b", "足す / 引く（一番弱くつなぐ）", "count of split t by \",\" + 10", "a,b", 12),
     ("文字", 'X contains "a"', "入っているか。答えは yes / no（match で分ける）", 't contains "締切"', "締切は明日", "yes"),
     ("文字", 'X starts with "a"', "で始まるか。答えは yes / no", 't starts with "Re:"', "Fw: 件名", "no"),
+    ("集まり", '["a", "b", "c"]', "その場のリスト（do の中だけ。データとして残すものは thing に）", 'count of ["朝", "昼", "夜"]', "", 3),
+    ("集まり", 'X contains "a"（リスト）', "リストにその値が入っているか。答えは yes / no", '["朝", "昼", "夜"] contains "昼"', "", "yes"),
     ("集まり", "sort X / sort X desc", "並べる（数は数の順）/ 逆に", 'sort split t by ","', "b,a,c", ["a", "b", "c"]),
     ("集まり", "take 3 of X", "先頭から3つ", 'take 2 of split t by ","', "a,b,c", ["a", "b"]),
     ("集まり", "unique of X", "同じものを1つに（順番はそのまま）", 'unique of split t by ","', "a,b,a", ["a", "b"]),
@@ -285,6 +287,12 @@ class Body:
         ev = lambda x: self._eval(x, st, memo, path, line)
         if re.fullmatch(r'"[^"]*"', e):
             return e[1:-1]
+        if e.startswith("[") and e.endswith("]"):      # その場のリスト: ["朝", "昼", "夜"]（do の中だけ）
+            inner = e[1:-1].strip()
+            if not inner:
+                return []
+            parts = re.findall(r'\s*("[^"]*"|[^,]+)\s*(?:,|$)', inner)
+            return [ev(x.strip()) for x in parts]
         if re.fullmatch(r"-?\d+", e):
             return int(e)
         # 状態（out の状態 / 自分で宣言した状態）
@@ -389,8 +397,12 @@ class Body:
             return int(round(v))
         m = re.fullmatch(r'(.+) (contains|starts with) "([^"]*)"', e)
         if m:                                          # 答えは yes / no（状態の名前として match で分ける）
-            v = str(ev(m.group(1)))
-            hit = m.group(3) in v if m.group(2) == "contains" else v.startswith(m.group(3))
+            v = ev(m.group(1))
+            if isinstance(v, list):                    # リストなら「その値が入っているか」
+                hit = m.group(3) in [str(x) for x in v] if m.group(2) == "contains" else bool(v) and str(v[0]).startswith(m.group(3))
+            else:
+                v = str(v)
+                hit = m.group(3) in v if m.group(2) == "contains" else v.startswith(m.group(3))
             return "yes" if hit else "no"
         m = re.fullmatch(r"(\w+) of (.+)", e)          # shape で名前を付けた部分・当たった文字（text of X）
         if m:

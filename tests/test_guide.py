@@ -104,3 +104,11 @@ def test_rules_guide_lists_everything():
     from ponte.guide import rules_guide
     g = rules_guide()
     assert all(f[1] in g for f in DO_FORMS) and all(f[1] in g for f in WHEN_FORMS)
+
+
+def test_list_literal_in_do():
+    assert run("sum of [1, 2, 3]", "") == 6
+    assert run('[t, "b"]', "a") == ["a", "b"]
+    assert run('take 1 of sort ["c", "a", "b"]', "") == ["a"]
+    assert run('["朝", "昼"] contains "夜"', "") == "no"
+    assert run("count of []", "") == 0

@@ -642,6 +642,13 @@ def make_handler(app: App):
         def log_message(self, *a):
             pass
 
+        def end_headers(self):
+            # よそのページに埋め込ませない・型を当て推量させない・行き先に URL を渡さない
+            self.send_header("x-frame-options", "DENY")
+            self.send_header("x-content-type-options", "nosniff")
+            self.send_header("referrer-policy", "same-origin")
+            super().end_headers()
+
         def _send(self, body: bytes, ctype: str, code=200):
             self.send_response(code)
             self.send_header("content-type", ctype)

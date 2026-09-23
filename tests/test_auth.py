@@ -117,3 +117,9 @@ def test_lang_in_url_cannot_inject(tmp_path):
         assert st == 200 and "alert(1)" not in body
     finally:
         httpd.shutdown()
+
+
+def test_security_headers(site):
+    port, _ = site
+    _, h, _ = req(port, "GET", "/login")
+    assert h["x-frame-options"] == "DENY" and h["x-content-type-options"] == "nosniff"

@@ -819,6 +819,27 @@ def check_undefined(spec: Spec, opt: Options) -> list[Finding]:
             for _, right, arm in match_arms(m):
                 if right not in ICONS:
                     out.append(Finding("E28", arm.line, f"アイコン「{right}」はありません"))
+    # 項目の型（組み込みの型・thing・connect が持ってくる型のどれか）
+    conn_types = set()
+    for c in spec.decls("connect"):
+        for g in c.children:
+            if g.keyword in ("gives", "does"):
+                conn_types |= set(re.findall(r"\b[A-Z]\w*\b", g.text))
+    known_types = BUILTIN_TYPES | ths | conn_types
+    for t in things(spec).values():
+        for f in thing_fields(t):
+            if f.states:
+                continue
+            base = f.type[len("list of "):] if f.type.startswith("list of ") else f.type
+            base = base.split()[0]
+            if base not in known_types:
+                out.append(Finding("E28", f.line, f"{t.name}.{f.name}: 型「{base}」がどこにも定義されていません（{', '.join(sorted(BUILTIN_TYPES))} か thing の名前）"))
+    for a in actions(spec).values():
+        i = a.child("in")
+        if i is not None and len(i.text.split()) >= 2:
+            base = i.text.split()[1]
+            if base not in known_types:
+                out.append(Finding("E28", i.line, f"action {a.name}: in の型「{base}」がどこにも定義されていません"))
     # look の項目名
     fields_of = {n: {f.name for f in thing_fields(t)} for n, t in things(spec).items()}
     def thing_of(name):

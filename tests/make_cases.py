@@ -4,6 +4,7 @@
 """
 import json
 import os
+import re
 import shutil
 import sys
 
@@ -16,9 +17,18 @@ base = open(os.path.join(ROOT, "spec/hub_ready.lang"), encoding="utf-8").read()
 
 
 def rep(old, new, s=None):
+    """old を探して new に置き換える。空白の数の違い（整形のゆれ）は気にしない"""
     s = base if s is None else s
-    assert old in s, old
-    return s.replace(old, new, 1)
+    pat = re.sub(r"(?: )+", lambda m: " +" if len(m.group(0)) > 1 or True else " ", re.escape(old).replace("\\ ", " "))
+    m = re.search(pat, s)
+    assert m, old
+    lead_old = len(old) - len(old.lstrip(" "))
+    if lead_old:                                     # 置き換える行の字下げは、見つけた行の字下げに合わせる
+        lead_found = len(m.group(0)) - len(m.group(0).lstrip(" "))
+        new = "\n".join((" " * (lead_found - lead_old) + l) if l.strip() and lead_found > lead_old
+                         else (l[lead_old - lead_found:] if l.strip() and lead_found < lead_old else l)
+                         for l in new.split("\n"))
+    return s[:m.start()] + new + s[m.end():]
 
 
 act_by = "  by      ai\n"
@@ -75,6 +85,7 @@ cases["E28_undefined_list"] = (rep("  side    ", "  side    ") if False else rep
 cases["E28_undefined_relate"] = (base + "\nrelate\n  Remind > Remindd\n", base)
 cases["E28_unknown_icon"] = (rep("  button  submitted-button named 提出した\n", "  button  submitted-button named 提出した icon sendd\n"),
                              rep("  button  submitted-button named 提出した\n", "  button  submitted-button named 提出した icon send\n"))
+cases["E28_unknown_type"] = (rep("  owner     User   gone[remove too]\n", "  owner     Usr    gone[remove too]\n"), base)
 cases["E28_unknown_field"] = (rep("  title   company\n", "  title   compny\n"), base)
 cases["E28_bad_button"] = (rep("  button  submitted-button named 提出した\n", "  button  submitted-button named 提出した blink\n"), base)
 cases["E25_words_quoted"] = (base + '\nwords ja\n  "提出した"  提出した\n\nwords en\n  draft  Draft\n', base + '\nwords ja\n  "提出した"  提出した\n\nwords en\n  "提出した"  Submit\n')

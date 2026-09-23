@@ -5,7 +5,6 @@ Python があればどこでも `python hub.pyz`（= run）/ `python hub.pyz che
 """
 from __future__ import annotations
 
-import os
 import shutil
 import tempfile
 import zipapp

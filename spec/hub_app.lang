@@ -19,6 +19,7 @@ who
   user  can see    Application where owner is me
   user  can change Application where owner is me
   user  can see    User where it is me
+  user  can remove  Application where owner is me
 
 list DueSoon
   of     Application
@@ -142,6 +143,21 @@ rule OpenEdit
       company "Osaka Gas"
     expect scene EditApplication
 
+rule RemoveApplication
+  why   間違えて足した応募を消せるように
+  when  user taps delete-button on Application
+  do    remove this
+  example
+    given Application
+      company  "Osaka Gas"
+      status   draft
+    taps delete-button on Application
+      company "Osaka Gas"
+    expect scene Home
+
+rule GoHome
+  do go Home
+
 rule Back
   when  user taps back on Detail
   do    go Home
@@ -151,6 +167,7 @@ rule Back
 
 relate
   MarkSubmitted > Remind
+  RemoveApplication then GoHome
 
 # ---- 画面 ----
 
@@ -246,10 +263,11 @@ look Application as detail
   button  passed-button    named pass icon trophy tone good
   button  failed-button    named reject icon x tone danger confirm reject-confirm
   button  edit-button      named edit icon edit tone quiet
+  button  delete-button  named delete icon trash tone danger confirm delete-confirm
 
 input AddApplication
   company   required
-  deadline  required
+  deadline  required, from now
   memo
 
 input EditApplication
@@ -308,6 +326,9 @@ words ja
   search           さがす
   save             保存
   cancel           キャンセル
+  more             もっと見る
+  delete           消す
+  delete-confirm   この応募を消しますか？
 
 words en
   draft            Draft
@@ -350,3 +371,6 @@ words en
   search           Search
   save             Save
   cancel           Cancel
+  more             Show more
+  delete           Delete
+  delete-confirm   Delete this application?

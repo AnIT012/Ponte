@@ -42,7 +42,8 @@ def cmd_check(args) -> int:
     if errors:
         print(f"渡せません（{len(errors)}件）")
         for f in errors:
-            print(f"  {args.spec}:{f.line}  {f.code}  {f.message}")
+            path, line = spec.where(f.line)
+            print(f"  {path}:{line}  {f.code}  {f.message}")
     else:
         print("決めてないことなし。AIに渡せます")
         if args.save_shape:
@@ -52,7 +53,8 @@ def cmd_check(args) -> int:
     if warnings:
         print(f"注意（{len(warnings)}件）")
         for f in warnings:
-            print(f"  {args.spec}:{f.line}  {f.code}  {f.message}")
+            path, line = spec.where(f.line)
+            print(f"  {path}:{line}  {f.code}  {f.message}")
     return 1 if errors else 0
 
 

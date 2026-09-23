@@ -66,6 +66,15 @@ class Spec:
     roots: list[Node]
     lines: list[str]
     blocking: list[tuple[int, str]]   # (行番号, ## の後ろ)。行まるごと ## のもの
+    line_map: list = field(default_factory=list)   # use で取り込んだ時の (始まりの行, ファイル, ずらした数)
+
+    def where(self, line: int) -> tuple[str, int]:
+        """行番号 → (ファイル, そのファイルでの行)"""
+        best = (1, self.path, 0)
+        for start, f, off in self.line_map or [(1, self.path, 0)]:
+            if start <= line and start >= best[0]:
+                best = (start, f, off)
+        return best[1], line - best[2]
 
     def walk(self):
         for r in self.roots:
@@ -167,9 +176,33 @@ def parse(source: str, path: str = "<string>") -> Spec:
     return Spec(path=path, roots=roots, lines=lines, blocking=blocking)
 
 
-def parse_file(path: str) -> Spec:
+def parse_file(path: str, _seen: set | None = None) -> Spec:
+    """ファイルを読む。`use "other.lang"` があれば、その見出しも取り込む（同じ場所からの相対パス）。
+    取り込んだ行は元のファイルの後ろに続けた行番号になり、Spec.where(行) で元のファイルと行に戻せる。"""
+    import os
+    seen = _seen if _seen is not None else set()
+    seen.add(os.path.abspath(path))
     with open(path, encoding="utf-8") as f:
-        return parse(f.read(), path)
+        spec = parse(f.read(), path)
+    spec.line_map = [(1, path, 0)]
+    for u in [d for d in spec.roots if d.keyword == "use"]:
+        m = re.match(r'^"([^"]+)"$', u.text.strip())
+        if not m:
+            raise ParseError(u.line, f'use は `use "ファイル.lang"` で書きます: {u.raw!r}')
+        other = os.path.join(os.path.dirname(path), m.group(1))
+        if os.path.abspath(other) in seen:
+            continue
+        if not os.path.exists(other):
+            raise ParseError(u.line, f"use のファイルがありません: {m.group(1)}")
+        sub = parse_file(other, seen)
+        offset = len(spec.lines)
+        for n in sub.walk():
+            n.line += offset
+        spec.roots += sub.roots
+        spec.blocking += [(ln + offset, t) for ln, t in sub.blocking]
+        spec.line_map += [(start + offset, f, off + offset) for start, f, off in sub.line_map]
+        spec.lines += sub.lines
+    return spec
 
 
 # ---------------------------------------------------------------------------

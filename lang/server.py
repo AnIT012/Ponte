@@ -81,6 +81,7 @@ class App:
                 if this_id in t:
                     this = t[this_id]
         env = Env(user, scene, dict(state), this, origin, lang)
+        self._viewer = user.name if user is not None else "me"
         if scene in self.inputs:
             top = []  # noqa
             if self.home in self.scenes:
@@ -198,6 +199,10 @@ class App:
             if w is None or not re.match(rf"^user taps {re.escape(bid)} on ({re.escape(on)}|{re.escape(box.thing)})$", w.text.strip()):
                 continue
             for d in r.children_of("do"):
+                if d.text.strip() == "remove this":         # 消すボタンは、who で消せる時だけ押せる
+                    if not self.eng.can(self.eng.login(self._viewer), "remove", box.thing, box):
+                        return False
+                    continue
                 m = re.match(r"^move this to (\w+)$", d.text.strip())
                 if not m:
                     continue
@@ -606,6 +611,12 @@ def make_handler(app: App):
                                 v = f"{int(m.group(1))}/{int(m.group(2))} {int(m.group(3))}:{m.group(4)}"
                             parse_time(v, 2000)
                         values[k] = v
+                    for c in app.inputs[data["input"]].children:       # input の決まり（required / from now）はサーバーでも守る
+                        v = values.get(c.keyword)
+                        if "required" in c.text and not v:
+                            raise ValueError(f"{app.tr(c.keyword, Env(user, '', {}, None, None, data.get('lang') or 'ja'))} は必須です")
+                        if "from now" in c.text and v and parse_time(v, app.eng.clock().year) < app.eng.clock():
+                            raise ValueError(f"{c.keyword} は今より後にしてください（from now）")
                     box = next((t[data["this"]] for t in app.eng.boxes.values() if data.get("this") in t), None) if data.get("this") else None
                     if box is not None:
                         app.eng.update(box, values, user)

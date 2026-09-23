@@ -219,13 +219,14 @@ def test_server_end_to_end():
         r = post("/api/tap", {"user": "me", "button": "card", "on": "Mine", "id": row["id"]})
         assert r["nav"] == "Detail"
         d = blocks(view("Detail", this=row["id"], origin="Mine"), "main")[0]
-        assert [(b["label"], bool(b.get("disabled"))) for b in d["buttons"]] == [("提出した", False), ("通過", True), ("不合格", True), ("編集", False)]
+        assert [(b["label"], bool(b.get("disabled"))) for b in d["buttons"]] == [("提出した", False), ("通過", True), ("不合格", True), ("編集", False), ("消す", False)]
         assert d["buttons"][2]["confirm"] == "不合格にしますか？" and d["buttons"][2]["tone"] == "quiet"
         # 編集: with this で開いた input は、その1件の値が入っている。状態は書き換えられない
         ed = blocks(view("EditApplication", this=row["id"]), "main")[0]
         assert ed["this"] == row["id"] and ed["fields"][0]["value"] == "Web" and ed["fields"][1]["value"] == "2026-09-23T10:00"
-        assert post("/api/submit", {"user": "me", "input": "EditApplication", "this": row["id"], "values": {"memo": "一次面接"}})["edited"]
-        assert "flow" not in json.dumps(post("/api/submit", {"user": "me", "input": "EditApplication", "this": row["id"], "values": {"memo": "x"}}))
+        full = {"company": "Web", "deadline": "2026-09-23T10:00"}
+        assert post("/api/submit", {"user": "me", "input": "EditApplication", "this": row["id"], "values": {**full, "memo": "一次面接"}})["edited"]
+        assert "必須" in post("/api/submit", {"user": "me", "input": "EditApplication", "this": row["id"], "values": {"memo": "x"}})["error"]   # サーバーでも required を守る
         all_ = blocks(view(state=json.dumps({"tab": "all"})), "main")[0]
         assert all_["search"]["fields"] == ["company", "memo"] and [g["value"] for g in all_["groups"]] == ["draft"]
         # board で動かす: flow に無い流れは人の言葉で断る

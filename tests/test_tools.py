@@ -13,7 +13,7 @@ def test_build_single_file_runs_check_and_test(tmp_path):
     for cmd in (["check"], ["test"]):
         r = subprocess.run([sys.executable, str(out), *cmd], capture_output=True, text=True, cwd=tmp_path)
         assert r.returncode == 0, r.stdout + r.stderr
-    assert "15件通過" in r.stdout
+    assert "失敗" not in r.stdout and "件通過" in r.stdout
 
 
 def test_editor_grammar_is_valid():

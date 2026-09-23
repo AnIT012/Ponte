@@ -399,3 +399,23 @@ def test_torn_last_line_is_dropped_but_broken_middle_stops(tmp_path, capsys):
     store.write_text('{"broken\n' + good, encoding="utf-8")
     with pytest.raises(RuleError):
         Engine(spec, store=str(store))
+
+
+def test_events_stream_says_changed():
+    """画面は /api/events で「変わった」を受け取って描き直す（リアルタイム）"""
+    import http.client
+    import threading as _t
+    from ponte.server import serve
+    spec = parse_file("spec/todo.ponte")
+    eng = Engine(spec)
+    httpd = serve(spec, eng, port=0, ticker=False)
+    _t.Thread(target=httpd.serve_forever, daemon=True).start()
+    try:
+        c = http.client.HTTPConnection("127.0.0.1", httpd.server_address[1], timeout=5)
+        c.request("GET", "/api/events")
+        r = c.getresponse()
+        assert r.status == 200 and r.getheader("content-type") == "text/event-stream"
+        _t.Timer(0.2, lambda: eng.submit(eng.login("taro"), "AddTask", {"title": "牛乳"})).start()
+        assert r.fp.readline() == b"data: changed\n"
+    finally:
+        httpd.shutdown()

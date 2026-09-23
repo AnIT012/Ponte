@@ -2,8 +2,8 @@
 action FindDeadline
   in       mail text
   out      found monthday | missing
-  example  "10/15(木)12:00まで"      -> found 10/15 12:00
-  example  "来週中にご提出ください"  -> missing
+  example  "10/15まで"     -> found 10/15
+  example  "来週中に提出"  -> missing
   never    guess the year
   never    fail
   else     ask user

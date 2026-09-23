@@ -188,6 +188,8 @@ def verify(spec: Spec, action: Node, code: str) -> Verdict:
         try:
             got = body.run({in_name: unquote(left)})
         except (BodyError, Exception) as e:
+            if isinstance(e, BodyError) and any(str(e) in p for p in problems):
+                continue                     # 同じ行の同じ間違いは1回だけ言う（どの例でも同じなので）
             problems.append(f"example L{ex.line}: {left} で止まりました: {e}")
             continue
         if not same(got, want):

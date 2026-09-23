@@ -199,7 +199,6 @@ class App:
             w = r.child("when")
             if w is None or not re.match(rf"^user taps {re.escape(bid)} on ({re.escape(on)}|{re.escape(box.thing)})$", w.text.strip()):
                 continue
-            from .runtime import Ctx
             if not self.eng.applies(r, Ctx(self.eng.login(self._viewer), this=box)):   # rule の where に合わない
                 return False
             for d in r.children_of("do"):

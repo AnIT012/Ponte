@@ -199,9 +199,9 @@ const icon = n => n && ICONS[n] ? `<svg class="ic" viewBox="0 0 24 24"><path d="
 const lead = l => l ? `<span class="lead" style="--c:${esc(l.color)}">${esc(l.text)}</span>` : "";
 const EMPTY_ICON = `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>`;
 
-async function post(path, body){
+async function post(path, body, quiet){          // quiet: エラーは呼んだ側が出す（入力のエラーはフォームの中に）
   const r = await fetch(path, {method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({user:USER, ...body})});
-  const j = await r.json(); if(j.login){ location.href = "/login"; return j; } if(j.error) toast(esc(j.error), true); return j;
+  const j = await r.json(); if(j.login){ location.href = "/login"; return j; } if(j.error && !quiet) toast(esc(j.error), true); return j;
 }
 function trimToasts(){ const box = document.getElementById("toasts"); while(box.children.length > 2) box.firstElementChild.remove(); }   // 積み上げない（古いものから消す）
 function toast(text, err){
@@ -426,10 +426,10 @@ document.addEventListener("submit", async e => {
       values[k] = await new Promise((ok, ng) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = ng; r.readAsDataURL(v); });
     } else values[k] = v;
   }
-  let r = await post("/api/submit", {input: f.dataset.input, this: f.dataset.this || null, values, lang: LANG});
+  let r = await post("/api/submit", {input: f.dataset.input, this: f.dataset.this || null, values, lang: LANG}, true);
   while(r.ask){                                   // 年の無い日付が今日より前 → 来年か聞く
     year_answers[r.ask.field] = (await ask(r.ask.text)) ? "next" : "this";
-    r = await post("/api/submit", {input: f.dataset.input, this: f.dataset.this || null, values, year_answers, lang: LANG});
+    r = await post("/api/submit", {input: f.dataset.input, this: f.dataset.this || null, values, year_answers, lang: LANG}, true);
   }
   if(r.error){ err.textContent = r.error; return; }
   toast(r.edited ? "書き換えました" : "保存しました"); goBack();

@@ -995,7 +995,7 @@ def make_handler(app: App):
                             images[k] = v
                             continue
                         if fl is not None and fl.states and v not in fl.states:
-                            raise ValueError(f"{app.tr(k, Env(user, '', {}, None, None, data.get('lang') or 'ja'))} は {' / '.join(fl.states)} のどれかです")
+                            raise ValueError(f"{app.tr(k, Env(user, '', {}, None, None, data.get('lang') or 'ja'))}は {' / '.join(fl.states)} のどれかです")
                         if fl is not None and fl.states and (thing, k) in app.eng.flows:
                             raise ValueError(f"{k} は flow の通りに動く状態なので、入力では選べません（ボタンの rule で move する）")
                         if app.eng.fields[thing][k].type in ("monthday", "date"):
@@ -1009,7 +1009,7 @@ def make_handler(app: App):
                         if "required" in c.text and not v:
                             raise ValueError(f"{app.tr(c.keyword, Env(user, '', {}, None, None, data.get('lang') or 'ja'))} は必須です")
                         if "from now" in c.text and v and parse_time(v, app.eng.clock().year) < app.eng.clock():
-                            raise ValueError(f"{app.tr(c.keyword, Env(user, '', {}, None, None, data.get('lang') or 'ja'))} は今より後にしてください")
+                            raise ValueError(f"{app.tr(c.keyword, Env(user, '', {}, None, None, data.get('lang') or 'ja'))}は、今より後にしてください")
                     now = app.eng.clock()
                     for k, v in list(values.items()):              # 年の無い月日が今日より前 → 来年かどうかを人に聞く（推測しない）
                         if app.eng.fields[thing][k].type == "monthday" and not re.match(r"^\d{4}", v):

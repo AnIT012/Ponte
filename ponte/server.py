@@ -77,10 +77,22 @@ class App:
     IMAGE_KINDS = {b"\x89PNG\r\n\x1a\n": ("png", "image/png"), b"\xff\xd8\xff": ("jpg", "image/jpeg"),
                    b"GIF87a": ("gif", "image/gif"), b"GIF89a": ("gif", "image/gif")}
 
-    def save_image(self, data_url: str) -> str:
-        """画面から来た画像（data:...;base64,...）を確かめて残す。中身の頭で種類を見る（名前や申告は信じない）"""
+    def check_image(self, data_url: str) -> None:
+        self._decode_image(data_url)
+
+    def remove_image(self, value: str) -> None:
+        import os
+        name = str(value)[5:]
+        if self.eng.store:
+            try:
+                os.remove(os.path.join(self.eng.store + ".files", name))
+            except OSError:
+                pass
+        else:
+            self._mem_files.pop(name, None)
+
+    def _decode_image(self, data_url: str) -> tuple[bytes, tuple[str, str]]:
         import base64
-        import secrets
         m = re.match(r"^data:[\w/+.-]*;base64,([A-Za-z0-9+/=\s]+)$", data_url)
         if not m:
             raise ValueError("画像が読めません")
@@ -92,6 +104,12 @@ class App:
             kind = ("webp", "image/webp")
         if kind is None:
             raise ValueError("画像は png / jpg / gif / webp だけです")
+        return raw, kind
+
+    def save_image(self, data_url: str) -> str:
+        """画面から来た画像（data:...;base64,...）を確かめて残す。中身の頭で種類を見る（名前や申告は信じない）"""
+        import secrets
+        raw, kind = self._decode_image(data_url)
         name = f"{secrets.token_hex(16)}.{kind[0]}"
         if self.eng.store:
             import os
@@ -700,7 +718,7 @@ def read_request(raw: bytes) -> dict | None:
     """POST の中身。JSON の object で、名前の値は文字、values は「文字 → 文字」だけ受け付ける"""
     try:
         data = json.loads(raw or b"{}")
-    except (ValueError, UnicodeDecodeError):
+    except (ValueError, UnicodeDecodeError, RecursionError):
         return None
     if not isinstance(data, dict):
         return None
@@ -718,6 +736,7 @@ def read_request(raw: bytes) -> dict | None:
 
 def make_handler(app: App):
     class H(BaseHTTPRequestHandler):
+        timeout = 60                                  # 送るのが遅い相手に、ずっと待たされない
         def log_message(self, *a):
             pass
 
@@ -773,9 +792,8 @@ def make_handler(app: App):
                     page = login_page(app.title(), signup=path == "/signup", allow_signup=app.auth.signup)
                     self._send(page.encode(), "text/html; charset=utf-8")
                 return True
-            if path == "/logout":
-                app.auth.sessions.end(cookie_token(self.headers.get("cookie")))
-                self._redirect("/login", self._cookie("", 0))
+            if path == "/logout":                     # ログアウトは POST だけ（よそのページのリンクで切らせない）
+                self._json({"error": "POST で送ってください"}, 405)
                 return True
             if self._session() is None:
                 if path == "/":
@@ -786,7 +804,7 @@ def make_handler(app: App):
             return False
 
         def _auth_post(self, path, raw: bytes) -> bool:
-            if path not in ("/login", "/signup"):
+            if path not in ("/login", "/signup", "/logout"):
                 if self._session() is None:
                     self._json({"error": "ログインしてください", "login": True}, 401)
                     return True
@@ -794,6 +812,14 @@ def make_handler(app: App):
                     self._json({"error": "json で送ってください"}, 415)     # よそのページのフォームから押させない
                     return True
                 return False
+            origin = self.headers.get("origin")
+            if origin and urlparse(origin).netloc != self.headers.get("host"):   # よそのページからログインさせない
+                self._json({"error": "よそのページからは受け付けません"}, 403)
+                return True
+            if path == "/logout":
+                app.auth.sessions.end(cookie_token(self.headers.get("cookie")))
+                self._redirect("/login", self._cookie("", 0))
+                return True
             f = {k: v[0] for k, v in parse_qs(raw.decode("utf-8", "replace")).items()}
             name, pw = f.get("name", "").strip(), f.get("password", "")
             ip = self.client_address[0]
@@ -805,8 +831,8 @@ def make_handler(app: App):
             elif signup and not app.auth.allow_signup(ip):
                 err = "登録が多すぎます。しばらくしてからやり直してください"
             elif signup:
-                if app.auth.users.exists(name):
-                    err = "その名前はもう使われています"
+                if app.auth.users.exists(name) or any(b.values.get("name") == name for b in app.eng.boxes.get("User", {}).values()):
+                    err = "その名前はもう使われています"            # データや役割のある名前を、あとから登録して名乗らせない
                 else:
                     try:
                         app.auth.users.add(name, pw)
@@ -834,7 +860,8 @@ def make_handler(app: App):
                     lang = "ja"
                 acct = ""
                 if app.auth:
-                    acct = f'<div class="acct">{_html.escape(self._session() or "")} ・ <a href="/logout">ログアウト</a></div>'
+                    acct = (f'<div class="acct">{_html.escape(self._session() or "")} ・ '
+                            '<form method="post" action="/logout" style="display:inline"><button class="linkish">ログアウト</button></form></div>')
                 page = (PAGE.replace("<!--__ACCOUNT__-->", acct).replace('"__TITLE__"', json.dumps(app.title(), ensure_ascii=False).replace("</", "<\\/"))
                         .replace("__TITLE__", _html.escape(app.title())).replace("__HOME__", app.home or "")
                         .replace("__LANG__", lang).replace("/*__CSS__*/", app.css()))
@@ -941,6 +968,8 @@ def make_handler(app: App):
                     self._json({"ok": True})
                 elif self.path == "/api/drag":
                     box = next((t[data["id"]] for t in app.eng.boxes.values() if data["id"] in t), None)
+                    if box is None or not app.eng.can(user, "see", box.thing, box):
+                        raise RuleError("見つかりません")
                     fld = app.state_field(box.thing) if box else None
                     env = Env(user, "", {}, None, None, data.get("lang") or "ja")
                     before = box.values.get(fld) if box else None
@@ -953,13 +982,17 @@ def make_handler(app: App):
                     self._json({"ok": True})
                 elif self.path == "/api/submit":
                     thing = app.eng.input_thing(data["input"])
-                    values = {}
+                    allowed = {c.keyword for c in app.inputs[data["input"]].children}
+                    values, images = {}, {}
                     for k, v in data.get("values", {}).items():
                         if v in ("", None):
                             continue
+                        if k not in allowed:                             # input に書いた項目だけ（持ち主などを勝手に決めさせない）
+                            raise ValueError(f"{k} は、この入力にはありません")
                         fl = app.eng.fields[thing].get(k)
-                        if fl is not None and fl.type == "image":        # 画像は画面から来た中身だけ受け取る（file:… を直接書かせない）
-                            values[k] = app.save_image(v)
+                        if fl is not None and fl.type == "image":        # 画像は画面から来た中身だけ。残すのは全部確かめた後
+                            app.check_image(v)
+                            images[k] = v
                             continue
                         if fl is not None and fl.states and v not in fl.states:
                             raise ValueError(f"{k} は {' / '.join(fl.states)} のどれかです")
@@ -990,10 +1023,18 @@ def make_handler(app: App):
                                 if ans == "next":
                                     values[k] = f"{now.year + 1}/{t.month}/{t.day} {t.hour}:{t.minute:02d}"
                     box = next((t[data["this"]] for t in app.eng.boxes.values() if data.get("this") in t), None) if data.get("this") else None
-                    if box is not None:
-                        app.eng.update(box, values, user)
-                    else:
-                        app.eng.submit(user, data["input"], values)
+                    if data.get("this") and (box is None or box.thing != thing or not app.eng.can(user, "see", box.thing, box)):
+                        raise RuleError("見つかりません")
+                    saved = {k: app.save_image(v) for k, v in images.items()}
+                    try:
+                        if box is not None:
+                            app.eng.update(box, {**values, **saved}, user)
+                        else:
+                            app.eng.submit(user, data["input"], {**values, **saved})
+                    except Exception:
+                        for v in saved.values():                         # 保存できなかったら、画像も残さない
+                            app.remove_image(v)
+                        raise
                     self._json({"ok": True, "edited": box is not None})
                 elif self.path == "/api/says":
                     ctx = app.eng.says(user, data["text"])
@@ -1015,8 +1056,15 @@ class Auth:
         self.signups: dict[str, list[float]] = {}
         self.lock = threading.Lock()
 
+    def _prune(self) -> None:
+        if len(self.fails) + len(self.signups) > 5000:           # 来なくなった所の記録を捨てる
+            cut = time.time() - 3600
+            self.fails = {k: v for k, v in self.fails.items() if v and v[-1] > cut}
+            self.signups = {k: v for k, v in self.signups.items() if v and v[-1] > cut}
+
     def allow(self, ip: str) -> bool:
         with self.lock:
+            self._prune()
             recent = [t for t in self.fails.get(ip, []) if t > time.time() - 600]
             self.fails[ip] = recent
             return len(recent) < 10

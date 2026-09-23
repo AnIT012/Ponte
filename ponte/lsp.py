@@ -149,10 +149,17 @@ def serve(inp=None, out=None) -> int:
                      "params": {"uri": uri, "diagnostics": diagnostics(docs[uri], _path(uri))}})
 
     while True:
-        msg = _read(inp)
+        try:
+            msg = _read(inp)
+        except (ValueError, UnicodeDecodeError, RecursionError):   # 読めない1通は捨てて続ける
+            continue
         if msg is None:
             return 0
+        if not isinstance(msg, dict):
+            continue
         method, mid, p = msg.get("method"), msg.get("id"), msg.get("params") or {}
+        if not isinstance(p, dict):
+            p = {}
         try:
             if method == "initialize":
                 _write(out, {"jsonrpc": "2.0", "id": mid, "result": {

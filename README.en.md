@@ -14,6 +14,8 @@ No dependencies: Python 3.11 standard library only. (The documentation and error
 
 ## 30 seconds
 
+An excerpt of [spec/todo.ponte](spec/todo.ponte):
+
 ```
 thing Task
   title   text
@@ -42,7 +44,7 @@ rule Finish
       title   "buy milk"
 ```
 
-Typos and forgotten decisions stop before anything runs — with a suggestion:
+Typos and forgotten decisions stop before anything runs (close misspellings also get a "did you mean …?"):
 
 ```
 $ python -m ponte check todo.ponte

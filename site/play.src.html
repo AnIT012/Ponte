@@ -290,7 +290,63 @@ let shared = null;
 try { const m = location.hash.match(/^#code=([\w-]+)$/); if (m) shared = unb64(m[1]); } catch (e) {}
 try { src.value = shared ?? localStorage.getItem("ponte-play") ?? SAMPLES.todo; } catch (e) { src.value = shared ?? SAMPLES.todo; }
 
-function paintPlain() { hl.textContent = src.value + "\n"; }
+// 色分け（highlight.py と同じ決め方。Python の読み込みを待たずに、すぐ色が付く）
+const HL = (() => {
+  const w = s => new Set(s.split(" "));
+  const HEAD = w("thing flow list match rule relate action group tbd scene look part style input words who change connect use shape");
+  const CLAUSE = w("of where sort when do why in out example by ask how given at says taps gets expect adds title sub mark button lead heading empty search take top main side bottom over");
+  const GUARD = w("never else tbd gone limit confirm");
+  const TYPES = w("text number count money percent date monthday duration file image pdf");
+  const TOKEN = /"[^"]*"|->|\||>|\[|\]|\d+(?:[:/.]\d+)*(?:\s+(?:days?|hours?|minutes?|seconds?|weeks?))?|[A-Za-z_][\p{L}\p{N}_-]*|\s+|./gu;
+  const e = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const span = (c, t) => `<span class="${c}">${e(t)}</span>`;
+  function line(src, inFields, states) {
+    if (src.trimStart().startsWith("##")) return span("block", src);
+    let code = src, comment = "";
+    const k = src.indexOf(" #");
+    if (k >= 0 && src.slice(0, k).slice(-1) !== '"') { code = src.slice(0, k); comment = src.slice(k + 2); }
+    if (src.trimStart().startsWith("#")) return span("c", src);
+    const out = []; let first = true, gb = false; const ind = src[0] === " ";
+    for (const m of code.matchAll(TOKEN)) {
+      const t = m[0]; let c = null;
+      if (!t.trim()) { out.push(t); continue; }
+      if (first && !ind && HEAD.has(t)) c = GUARD.has(t) ? "guard" : "head";
+      else if (first && ind && GUARD.has(t)) c = "guard";
+      else if (first && ind && inFields && /^[a-z_][\p{L}\p{N}_]*$/u.test(t)) c = "field";
+      else if (first && ind && CLAUSE.has(t)) c = "clause";
+      else if (t === "[" && out.length && out[out.length - 1].endsWith(">gone</span>")) { c = "guard"; gb = true; }
+      else if (gb) { c = "guard"; gb = t !== "]"; }
+      else if (GUARD.has(t) || t === ">") c = "guard";
+      else if (["[", "]", "->", "|"].includes(t)) c = "op";
+      else if (states.has(t)) c = "val";
+      else if (TYPES.has(t)) c = "type";
+      else if (t[0] === '"' || /^\d/.test(t)) c = "val";
+      else if (/^[A-Z][\p{L}\p{N}_]*$/u.test(t)) c = "name";
+      out.push(c ? span(c, t) : e(t)); first = false;
+    }
+    if (comment) out.push(span("c", " #" + comment));
+    return out.join("");
+  }
+  function statesIn(src) {
+    const n = new Set();
+    for (const m of src.matchAll(/[\p{L}\p{N}_]+\[([^\]]*)\]/gu)) if (!m[0].startsWith("gone[")) m[1].split("|").forEach(x => n.add(x.trim()));
+    for (const m of src.matchAll(/^\s+([\p{L}\p{N}_].*->.*)$/gmu)) (m[1].match(/[a-z_][\p{L}\p{N}_]*/gu) || []).forEach(x => n.add(x));
+    return n;
+  }
+  return function highlight(src) {
+    const states = statesIn(src), rows = []; let inF = false, rec = null;
+    for (const l of src.replace(/\n+$/, "").split("\n")) {
+      const ind = l.length - l.replace(/^ +/, "").length;
+      if (l && l[0] !== " " && !l.startsWith("#")) inF = ["thing", "input"].includes(l.split(/\s+/)[0]);
+      if (rec !== null && l.trim() && ind < rec) rec = null;
+      rows.push(line(l, inF || (rec !== null && ind >= rec), states));
+      const ws = l.trim().split(/\s+/);
+      if (["given", "taps", "expect", "adds"].includes(ws[0]) || (ws[0] === "do" && ws[1] === "create")) rec = ind + 2;
+    }
+    return rows.join("\n");
+  };
+})();
+function paintPlain() { hl.innerHTML = HL(src.value) + "\n"; }
 function sync() { hl.scrollTop = src.scrollTop; hl.scrollLeft = src.scrollLeft; }
 function gotoLine(n) {
   const lines = src.value.split("\n"); let pos = 0;
@@ -311,12 +367,12 @@ function showCheck(r) {
 async function run() {
   const my = ++seq, text = src.value;
   try { localStorage.setItem("ponte-play", text); } catch (e) {}
-  if (!py) { paintPlain(); return; }
-  hl.innerHTML = py.globals.get("run_highlight")(text) + "\n";
+  paintPlain();
+  if (!py) return;
   const r = JSON.parse(py.globals.get("run_check")(text));
   if (my === seq) showCheck(r);
 }
-src.addEventListener("input", () => { paintPlain(); if (py) hl.innerHTML = py.globals.get("run_highlight")(src.value) + "\n"; clearTimeout(timer); timer = setTimeout(run, 350); });
+src.addEventListener("input", () => { paintPlain(); clearTimeout(timer); timer = setTimeout(run, 350); });
 src.addEventListener("scroll", sync);
 src.addEventListener("keydown", e => {
   if (e.key === "Tab") { e.preventDefault(); const s = src.selectionStart; src.setRangeText("  ", s, src.selectionEnd, "end"); src.dispatchEvent(new Event("input")); }

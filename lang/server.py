@@ -60,11 +60,14 @@ class App:
 
     # ------------------------------------------------------------------
     BUILTIN = {"search": "さがす", "save": "保存", "cancel": "キャンセル", "none": "まだありません", "more": "もっと見る", "undo": "取り消す",
-               "next-year": "来年（{year}年）の締切ですか？ いいえなら、もう過ぎた締切として保存します"}   # 言語が出す文字（words で訳せる）
+               "next-year": "来年（{year}年）の締切ですか？ いいえなら、もう過ぎた締切として保存します", "total-of": "{x}の合計"}   # 言語が出す文字（words で訳せる）
+    BUILTIN_EN = {"search": "Search", "save": "Save", "cancel": "Cancel", "none": "Nothing yet", "more": "Show more", "undo": "Undo",
+                  "total-of": "Total {x}"}
 
     def tr(self, key, env: Env) -> str:
         key = "" if key is None else str(key)
-        return self.words.get(env.lang, {}).get(key, self.BUILTIN.get(key, key))
+        builtin = self.BUILTIN_EN if env.lang == "en" else self.BUILTIN
+        return self.words.get(env.lang, {}).get(key, builtin.get(key, self.BUILTIN.get(key, key)))
 
     def scene_states(self, scene: Node) -> dict:
         out = {}
@@ -140,6 +143,8 @@ class App:
             return [self.button(pb, env, main=(node.keyword == "bottom"), on=env.scene)] if self.can_open(pb["id"], env.scene) else []
         if text == "notices":
             return [{"type": "notices"}]
+        if text.startswith("stats "):    # stats Late, MyLoans, sum price of Orders … 件数と合計を並べる
+            return [{"type": "stats", "items": [self.stat(x.strip(), env) for x in text[6:].split(",")]}]
         m = re.match(r"^(\w+) as (\w+)$", text)
         if m:
             name, kind = m.group(1), m.group(2)
@@ -193,6 +198,21 @@ class App:
                     if str(value) in lefts or "else" in lefts:
                         return right
         return None
+
+    def stat(self, item: str, env: Env) -> dict:
+        """`一覧` → 件数 / `sum 項目 of 一覧` → 合計（見えるものだけ数える）"""
+        m = re.fullmatch(r"sum (\w+) of (\w+)", item)
+        name = m.group(2) if m else item
+        rows = self.eng.list_items(name, env.ctx)
+        if not m:
+            return {"label": self.tr(name, env), "value": f"{len(rows):,}", "list": name}
+        total = 0
+        for b in rows:
+            v = str(b.values.get(m.group(1), "")).replace(",", "")
+            n = re.match(r"-?\d+(?:\.\d+)?", v)
+            total += float(n.group(0)) if n else 0
+        total = int(total) if total == int(total) else round(total, 2)
+        return {"label": self.tr("total-of", env).replace("{x}", self.tr(m.group(1), env)), "value": f"{total:,}", "list": name}
 
     def can_open(self, bid: str, on: str) -> bool:
         """画面のボタンが入力（input）を開くなら、その thing を作れる人にだけ見せる（押しても保存できないので）"""
@@ -252,6 +272,8 @@ class App:
         if f is not None and f.type in self.eng.fields and v:
             ub = self.eng.boxes.get(f.type, {}).get(v)
             return ub.values.get("name", v) if ub else v
+        if f is not None and f.type in ("number", "money") and re.fullmatch(r"-?\d+", str(v)):
+            return f"{int(v):,}"                       # 数は3けたごとに区切る
         return self.tr(v, env) if f is not None and f.states else v
 
     def has_card_rule(self, name: str) -> bool:

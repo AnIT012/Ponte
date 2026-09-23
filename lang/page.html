@@ -56,6 +56,9 @@ button{font:inherit;color:inherit}
 .btns{display:flex;gap:6px;flex-wrap:wrap}
 
 /* タブ */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius,14px);padding:12px 14px}
+.stat .n{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em}.stat .l{font-size:12px;color:var(--muted);margin-top:2px}
 .tabs{display:inline-flex;background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:3px;gap:2px;max-width:100%;overflow-x:auto}
 .tabs button{border:0;background:none;padding:6px 14px;border-radius:9px;font-weight:600;font-size:14px;color:var(--muted);cursor:pointer;white-space:nowrap}
 .tabs button.on{background:var(--panel);color:var(--text);box-shadow:var(--shadow-1)}
@@ -259,6 +262,7 @@ function block(b){
         : `<div class="rows">${b.rows.map(one).join("")}</div>`;
       return `<div class="block look-${esc(b.look)} kind-${esc(b.kind)}" data-block="${esc(b.name)}">${head}${search}${body}${moreBtn}<div class="nores hidden">見つかりません</div></div>`;
     }
+    case "stats": return `<div class="stats">${b.items.map(x => `<div class="stat"><div class="n">${esc(x.value)}</div><div class="l">${esc(x.label)}</div></div>`).join("")}</div>`;
     case "notices": return `<button class="btn quiet bell" data-act="notices" aria-label="お知らせ">${icon("bell")}${S.unread ? `<span class="dot">${S.unread}</span>` : ""}</button>`;
     case "table": return `<div class="block look-${esc(b.look)} table-wrap"><table><tr>${b.columns.map(c => `<th>${esc(c.label)}</th>`).join("")}</tr>${b.rows.map(r =>
       `<tr ${r.cardTap ? `class="tap" data-card="${esc(r.id)}" data-on="${esc(b.name)}"` : ""} data-key="${esc(r.id)}">${b.columns.map(c => `<td>${c.key === "status" && r.mark ? badge(r.mark) : esc(r.values[c.key])}</td>`).join("")}</tr>`).join("")}</table></div>`;

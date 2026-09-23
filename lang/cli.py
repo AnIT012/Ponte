@@ -84,7 +84,9 @@ def cmd_test(args) -> int:
     bad = [r for r in results if not r.ok]
     for r in results:
         kind = "action" if r.rule in {a.name for a in spec.decls("action")} else "rule"
-        print(f"  {'通過' if r.ok else '失敗'}  {kind} {r.rule}（L{r.line}）{'' if r.ok else ': ' + r.message}")
+        path, line = spec.where(r.line)
+        at = f"L{line}" if path == spec.path else f"{os.path.relpath(path)}:{line}"
+        print(f"  {'通過' if r.ok else '失敗'}  {kind} {r.rule}（{at}）{'' if r.ok else ': ' + r.message}")
     print(f"example {len(results)}件中 {len(results) - len(bad)}件通過")
     from .examples import holes
     hs = holes(spec, results)

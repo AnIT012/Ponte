@@ -12,6 +12,7 @@ group の中だけは、字下げした所に見出しを書ける。
 """
 from __future__ import annotations
 
+import os
 import re
 from dataclasses import dataclass, field
 
@@ -176,10 +177,12 @@ def parse(source: str, path: str = "<string>") -> Spec:
     return Spec(path=path, roots=roots, lines=lines, blocking=blocking)
 
 
+STD_DIR = os.path.join(os.path.dirname(__file__), "std")   # use std/名前 で読む標準ライブラリ
+
+
 def parse_file(path: str, _seen: set | None = None) -> Spec:
     """ファイルを読む。`use "other.lang"` があれば、その見出しも取り込む（同じ場所からの相対パス）。
     取り込んだ行は元のファイルの後ろに続けた行番号になり、Spec.where(行) で元のファイルと行に戻せる。"""
-    import os
     seen = _seen if _seen is not None else set()
     seen.add(os.path.abspath(path))
     with open(path, encoding="utf-8") as f:
@@ -187,9 +190,16 @@ def parse_file(path: str, _seen: set | None = None) -> Spec:
     spec.line_map = [(1, path, 0)]
     for u in [d for d in spec.roots if d.keyword == "use"]:
         m = re.match(r'^"([^"]+)"$', u.text.strip())
-        if not m:
-            raise ParseError(u.line, f'use は `use "ファイル.lang"` で書きます: {u.raw!r}')
-        other = os.path.join(os.path.dirname(path), m.group(1))
+        ms = re.match(r"^std/(\w+)$", u.text.strip())       # 標準ライブラリ（言語についてくる .lang）
+        if ms:
+            other = os.path.join(STD_DIR, ms.group(1) + ".lang")
+            if not os.path.exists(other):
+                have = sorted(f[:-5] for f in os.listdir(STD_DIR) if f.endswith(".lang"))
+                raise ParseError(u.line, f"std/{ms.group(1)} はありません（あるのは {', '.join('std/' + h for h in have)}）")
+        elif not m:
+            raise ParseError(u.line, f'use は `use "ファイル.lang"` か `use std/名前` で書きます: {u.raw!r}')
+        else:
+            other = os.path.join(os.path.dirname(path), m.group(1))
         if os.path.abspath(other) in seen:
             continue
         if not os.path.exists(other):

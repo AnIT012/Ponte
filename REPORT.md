@@ -207,3 +207,12 @@ python experiment/score.py          # EXPERIMENT.md を上書き
 - まだ無いもの: 本当のログイン（今は `?user=名前`。仕様どおり connect に任せる所で、まだ作っていない）。
 
 - テスト208件通過。
+
+## 標準ライブラリと計算（完了）
+
+- `use std/date`・`std/money`・`std/contact`。action 4つ（FindMonthDay / FindYen / FindEmail / FindPhone）。中身もこの言語で書き、example 29個と never で守る。
+- 足した道具: 項目の書き換え `set 項目 to 値` / `do 部品 with 項目` / `result` / 画面の件数と合計 `stats` / example の `adds` と `expect 箱` / shape の `word with` / `名前 of X`。
+- 作りながら見つけた言語の粗: `count of a + count of b` が `count of (a + ...)` と読まれていた（+ を一番弱く）/ 状態の名前と行の名前が同じだと黙って状態が勝つ（エラーに）/ word が日本語も拾うのでメールの前の日本語までくっつく（ASCII に）。
+- 3つ目のアプリ `spec/kakeibo.lang`（家計メモ）: メモから金額を拾って合計。AIが中身を書く行は0（std の FindYen、中身27行＋契約13行をそのまま使う）。穴さがしが「メモを書いたら金額を拾う」の example が無いことを見つけた → adds を足して書いた。
+- 就活Hub の ExtractDeadline は std に置き換えなかった。AIに中身を書かせる実験の題材で、テストと実験がそのまま使っているため。
+- テスト221件通過。ブラウザで 3件・3,880円 の合計まで確かめた。

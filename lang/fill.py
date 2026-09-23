@@ -371,7 +371,7 @@ def load_body(spec: Spec, action: Node):
         return None
     m = re.match(r'^code\s+"([^"]+)"$', by.text.strip())
     if m:
-        path = os.path.join(os.path.dirname(spec.path), m.group(1))
+        path = os.path.join(os.path.dirname(spec.where(action.line)[0]), m.group(1))   # use で読んだ action は、そのファイルから
     elif by.text.strip() == "ai":
         path = os.path.join(ai_dir(spec), f"{action.name}.lang")
     else:

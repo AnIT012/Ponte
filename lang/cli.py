@@ -27,7 +27,7 @@ def cmd_check(args) -> int:
         spec = parse_file(args.spec)
     except ParseError as e:
         print("読めません（1件）")
-        print(f"  - {e}")
+        print(f"  {args.spec}:{e.line}  {e.message}")
         return 2
     except FileNotFoundError:
         print(f"ファイルがありません: {args.spec}")
@@ -42,7 +42,7 @@ def cmd_check(args) -> int:
     if errors:
         print(f"渡せません（{len(errors)}件）")
         for f in errors:
-            print(f"  - {f}")
+            print(f"  {args.spec}:{f.line}  {f.code}  {f.message}")
     else:
         print("決めてないことなし。AIに渡せます")
         if args.save_shape:
@@ -52,7 +52,7 @@ def cmd_check(args) -> int:
     if warnings:
         print(f"注意（{len(warnings)}件）")
         for f in warnings:
-            print(f"  - {f}")
+            print(f"  {args.spec}:{f.line}  {f.code}  {f.message}")
     return 1 if errors else 0
 
 
@@ -144,6 +144,28 @@ def cmd_fill(args) -> int:
     return 1 if bad else 0
 
 
+def cmd_fmt(args) -> int:
+    from .fmt import FormatError, format_source
+    rc = 0
+    for path in args.spec:
+        src = open(path, encoding="utf-8").read()
+        try:
+            new = format_source(src)
+        except (FormatError, ParseError) as e:
+            print(f"  {path}: 整形できません: {e}")
+            rc = 2
+            continue
+        if new == src:
+            print(f"  {path}: そのまま")
+        elif args.check:
+            print(f"  {path}: 整形が要ります")
+            rc = max(rc, 1)
+        else:
+            open(path, "w", encoding="utf-8").write(new)
+            print(f"  {path}: 整形しました")
+    return rc
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m lang", description="人とAIの間の言語（名前未定）v0.2")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -164,6 +186,10 @@ def main(argv: list[str] | None = None) -> int:
     fl.add_argument("--tries", type=int, default=5)
     fl.add_argument("--again", action="store_true", help="もう中身があっても書き直す")
     fl.set_defaults(fn=cmd_fill)
+    fm = sub.add_parser("fmt", help="誰が書いても同じ見た目に整える")
+    fm.add_argument("spec", nargs="+")
+    fm.add_argument("--check", action="store_true", help="書き換えず、整形が要るかだけ見る")
+    fm.set_defaults(fn=cmd_fmt)
     r = sub.add_parser("run", help="動かす（ブラウザで開く）")
     r.add_argument("spec")
     r.add_argument("--port", type=int, default=8000)

@@ -36,12 +36,15 @@ class Result:
 
 def run_example(spec: Spec, rule: Node, ex: Node) -> Result:
     now = [datetime(EXAMPLE_YEAR, 1, 1, 0, 0)]
-    for c in ex.children:
-        if c.keyword == "at":
-            now[0] = parse_time(unquote(c.text), EXAMPLE_YEAR)
-    eng = Engine(spec, clock=lambda: now[0], parallel=False)
-    me = eng.login("me")
-    ctx = Ctx(me)
+    try:
+        for c in ex.children:
+            if c.keyword == "at":
+                now[0] = parse_time(unquote(c.text), EXAMPLE_YEAR)
+        eng = Engine(spec, clock=lambda: now[0], parallel=False)
+        me = eng.login("me")
+        ctx = Ctx(me)
+    except Exception as e:   # 動かす前の準備で止まっても、失敗として返す（check が先に止めるはず）
+        return Result(rule.name, ex.line, False, f"{type(e).__name__}: {e}")
     try:
         for c in ex.children:
             k, t = c.keyword, c.text.strip()
@@ -71,7 +74,8 @@ def run_example(spec: Spec, rule: Node, ex: Node) -> Result:
                 boxes = eng.find(thing, _refs(eng, thing, vals))
                 if not boxes:
                     return Result(rule.name, c.line, False, f"taps の対象が見つかりません: {m.group(2)} {vals}")
-                on = re.search(r"\bon (\w+)$", rule.child("when").text)
+                when = rule.child("when")               # when の無い rule（relate の then で動くもの）でも押せる
+                on = re.search(r"\bon (\w+)$", when.text) if when is not None else None
                 ctx = eng.tap(me, m.group(1), on.group(1) if on else thing, boxes[0].id)
             elif k == "gets":
                 m = re.match(r'^(\w+) (.+?) "(.*)"$', t)

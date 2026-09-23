@@ -6,6 +6,7 @@
   python -m lang test  spec/hub_app.lang           rule の example を全部流す（確かめていない所も出す。--strict で失敗に）
   python -m lang fill  spec/hub_app.lang           by ai の action の中身をAIに書かせる
   python -m lang run   spec/hub_app.lang           動かす（ブラウザで http://127.0.0.1:8000/）
+  python -m lang guide                            AIに渡す書き方の説明（実装から作る。--spec で仕様書の表も）
   python -m lang role  spec/lend.lang taro admin   最初の管理者を決める（2人目からは画面で）
 """
 from __future__ import annotations
@@ -132,6 +133,16 @@ def cmd_role(args) -> int:
     return 0
 
 
+def cmd_guide(args) -> int:
+    from .guide import do_guide, write_spec
+    if args.spec:
+        changed = write_spec(args.spec_path)
+        print(f"{args.spec_path} の道具の表を{'書き直しました' if changed else '確かめました（変わりなし）'}")
+        return 0
+    print(do_guide())
+    return 0
+
+
 def cmd_fill(args) -> int:
     from .fill import AnthropicHTTP, FileAI, fill_action, load_body
     spec = _load_checked(args.spec)
@@ -242,6 +253,10 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--host", default="127.0.0.1")
     r.add_argument("--data", help="データを残すファイル（既定は <spec>.data.jsonl）")
     r.set_defaults(fn=cmd_run)
+    g = sub.add_parser("guide", help="AIに渡す書き方の説明を出す（実装から作る）")
+    g.add_argument("--spec", action="store_true", help="仕様書 10章の道具の表を書き直す")
+    g.add_argument("--spec-path", default="docs/言語仕様_v0.3.md")
+    g.set_defaults(fn=cmd_guide)
     ro = sub.add_parser("role", help="最初の管理者を決める（例: role spec/lend.lang taro admin）")
     ro.add_argument("spec")
     ro.add_argument("name")

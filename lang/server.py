@@ -52,7 +52,8 @@ class App:
         self.home = next(iter(self.scenes), None)
         self.part_bodies = {}
         for name, p in self.parts.items():
-            lines = [c for c in p.children if re.match(r"^\w+\s*(\[[^\]]*\])?\s*=", c.raw)]
+            do = p.child("do")                                   # 部品の中の計算は do の下（action と同じ）
+            lines = list(do.children) if do is not None else []
             in_ = p.child("in")
             self.part_bodies[name] = Body(p, {}, [in_.text.split()[0]] if in_ else [], {}, single_result=False, lines=lines)
         self.tones = {}
@@ -391,7 +392,7 @@ class App:
                 st = c.text.strip()
                 v = vals.get(st)
                 mt = self.eng.matches.get(f"{part.name}.{st} to color")
-                decl = next((x for x in part.children if x.keyword == st and x.text.startswith("[")), None)
+                decl = next((x for x in part.walk() if x.keyword == st and x.text.startswith("[")), None)
                 opts = states_of(decl.text) if decl else []
                 idx = opts.index(v) if v in opts else 0
                 mark = {"label": self.tr(v, env), "value": v, "color": color_of(self.eng.match(mt.text, v) if mt else None, idx)}

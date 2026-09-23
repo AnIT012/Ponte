@@ -20,7 +20,7 @@ def test_number_ranges_in_match():
 def test_part_computes_days_and_urgency():
     spec = parse_file("spec/hub_app.lang")
     p = spec.find("part", "DeadlineBadge")
-    lines = [c for c in p.children if "=" in c.raw]
+    lines = list(p.child("do").children)
     body = Body(p, {}, ["deadline"], {}, single_result=False, lines=lines)
     now = datetime(2026, 9, 21, 21, 0)
     for d, want in [("9/20 10:00", "over"), ("9/21 23:59", "today"), ("9/24 9:00", "soon"), ("10/1 9:00", "later")]:

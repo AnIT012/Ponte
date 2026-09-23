@@ -51,6 +51,8 @@ cases["E11_list_cycle"] = (base + "\nlist A\n  of    B\n  where status is draft\
 old_given = base.replace("    given   Application\n      company   \"Osaka Gas\"\n      deadline  \"9/24 23:59\"\n      status    draft\n", "    given   Application(company \"Osaka Gas\", deadline \"9/24 23:59\", status draft)\n")
 assert old_given != base
 cases["E12_example_parentheses"] = (old_given, base)
+cases["E12_part_calc_outside_do"] = (base + "\npart Badge\n  in    deadline monthday\n  left = days until deadline\n  show  text \"{left}\"\n",
+                                     base + "\npart Badge\n  in    deadline monthday\n  do\n    left = days until deadline\n  show  text \"{left}\"\n")
 cases["E12_nesting_and"] = (rep("  where status is draft\n  where deadline within 3 days\n", "  where status is draft and deadline within 3 days\n"), base)
 cases["E12_nesting_do_where"] = (rep("  do    move this to submitted\n", "  do    move this to submitted\n    where company is \"x\"\n"), base)
 cases["E12_nesting_match_in_match"] = (rep("            else -> DueSoon as cards\n", "            else -> match count of Application\n"), base)

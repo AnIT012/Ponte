@@ -42,6 +42,8 @@ do に書けるのは次の2つだけ。if・for・ループ・再帰・書き�
 契約の never のうち、機械が確かめるもの:
 - `never guess the year`: 答えに年（4桁の数）を入れない
 - `never depend on width`: 全角と半角で答えを変えない（全角にした例も同じ答えになるか確かめる。normalize を使うとよい）
+- `never return empty`: 値が空の答えを返さない
+- `never fail`: どんな入力でも止まらない（おかしな入力でも missing などを返す）
 
 使える道具:
 - 文字: normalize X（全角→半角など） / trim X / lower X / upper X / split X by "," / join X by "," / replace "a" with "b" in X
@@ -199,7 +201,8 @@ def to_fullwidth(text: str) -> str:
     return "".join(chr(ord(c) + 0xFEE0) if "!" <= c <= "~" else c for c in text)
 
 
-MACHINE_NEVERS = {"guess the year", "depend on width"}
+MACHINE_NEVERS = {"guess the year", "depend on width", "return empty", "fail"}
+FUZZ = ["", " ", "あ", "12:00", "13/45 99:99", "1/1", "締切", "0/0 0:00", "🙂" * 30, "x" * 2000, "\n\t", "９／９ ９：００"]
 
 
 def check_nevers(a: Node, body, in_name: str) -> list[str]:
@@ -219,6 +222,25 @@ def check_nevers(a: Node, body, in_name: str) -> list[str]:
                     continue
                 if str(got) != str(got_w):
                     out.append(f"never depend on width: 「{src}」は {got} なのに、全角の「{wide}」は {got_w} でした")
+            continue
+        if n.text.strip() == "return empty":
+            for p_in in [unquote(ex.text.split("->", 1)[0]) for ex in a.children_of("example")] + FUZZ:
+                try:
+                    got = body.run({in_name: p_in})
+                except Exception:          # noqa: BLE001  止まるのは never fail の方で見る
+                    continue
+                v = got.value if isinstance(got, Tagged) else got
+                if (isinstance(got, Tagged) and got.value is not None and str(v).strip() == "") or (not isinstance(got, Tagged) and str(v).strip() == ""):
+                    out.append(f"never return empty: 「{p_in[:20]}」で空の答え {got!r} を返しました")
+                    break
+            continue
+        if n.text.strip() == "fail":
+            for p_in in FUZZ:
+                try:
+                    body.run({in_name: p_in})
+                except Exception as e:     # noqa: BLE001
+                    out.append(f"never fail: 「{p_in[:20]}」で止まりました（{e}）。止まらずに else の状態（missing など）を返す")
+                    break
             continue
         if "year" in n.text:
             probes = [unquote(ex.text.split("->", 1)[0]) for ex in a.children_of("example")]

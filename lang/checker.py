@@ -789,6 +789,7 @@ def check_money(spec: Spec, opt: Options) -> list[Finding]:
 
 # ---------------------------------------------------------------------------
 # 28. 定義されていない名前（v0.2 の相談で追加）
+# （list の sort の項目名と向きもここで見る）
 # ---------------------------------------------------------------------------
 
 def check_undefined(spec: Spec, opt: Options) -> list[Finding]:
@@ -839,6 +840,11 @@ def check_undefined(spec: Spec, opt: Options) -> list[Finding]:
         of = l.child("of")
         if of is not None:
             need(of.text.strip(), ths | lists, of.line, f"list {l.name}")
+        so = l.child("sort")
+        if so is not None:
+            w = so.text.split()
+            if len(w) > 2 or (len(w) == 2 and w[1] not in ("asc", "desc")):
+                out.append(Finding("E28", so.line, f"list {l.name}: sort は `sort 項目` か `sort 項目 desc` です: '{so.raw}'"))
     for a, rel, b, line in relate_lines(spec):
         if rel != "before":          # before の左は E16 が見る
             need(a, callables, line, "relate")

@@ -56,6 +56,7 @@ action ExtractDeadline
   example  "9/24 23:59 または 9/30 23:59"  -> missing
   never    guess the year
   never    depend on width
+  never    fail
   else     ask user
   by       ai
 
@@ -228,6 +229,7 @@ look DueSoon as cards
   empty    due-empty button add named add-application icon plus
 
 look Mine as list
+  take    20
   search  company, memo
   group   by status
   lead    company

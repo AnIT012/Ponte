@@ -168,7 +168,7 @@ td{padding:11px 14px;border-bottom:1px solid var(--line)}tr:last-child td{border
 .form textarea{font:inherit;font-size:15px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text);min-height:96px;resize:vertical}
 .form textarea:focus{outline:0;border-color:var(--main);box-shadow:0 0 0 3px var(--main-soft)}
 main#root{animation:fade .18s both}
-.empty .btn{margin-top:6px}
+.empty .btn{margin-top:6px}.btn.more{margin:12px auto 0;display:flex}
 /*__CSS__*/
 </style></head><body>
 <header class="top"><div class="top-in" id="top"></div></header>
@@ -179,7 +179,7 @@ main#root{animation:fade .18s both}
 <script>
 const Q = new URLSearchParams(location.search);
 const USER = Q.get("user") || "me", LANG = Q.get("lang") || "__LANG__", HOME = "__HOME__";
-const S = {scene: HOME, states: {}, thisId: null, origin: null, seen: -1, calShift: 0, last: null, search: {}, unread: 0, notes: [], history: [], panel: false};
+const S = {scene: HOME, states: {}, thisId: null, origin: null, seen: -1, calShift: 0, last: null, search: {}, more: {}, unread: 0, notes: [], history: [], panel: false};
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const ICONS = {"plus": "M12 5v14M5 12h14", "check": "M5 12.5l4.5 4.5L19 7.5", "x": "M6 6l12 12M18 6L6 18", "send": "M4 12l16-8-6 16-2.5-6.5z M11.5 13.5L20 4", "trophy": "M8 4h8v4a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 12v4M9 20h6M10 16h4", "calendar": "M4 6h16v14H4zM4 10h16M8 3v4M16 3v4", "list": "M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01", "board": "M4 4h5v16H4zM10 4h4v10h-4zM15 4h5v7h-5z", "clock": "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2", "bell": "M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0", "menu": "M4 7h16M4 12h16M4 17h16", "back": "M15 5l-7 7 7 7", "edit": "M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4", "search": "M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4", "flag": "M5 21V4M5 4h11l-2 4 2 4H5", "mail": "M3 6h18v12H3zM3 7l9 6 9-6", "star": "M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z", "trash": "M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13", "alert": "M12 4l9 16H3zM12 10v4M12 17h.01", "draft": "M6 3h8l4 4v14H6zM14 3v4h4M9 13h6M9 17h4", "chart": "M4 20V10M10 20V4M16 20v-7M22 20H2", "home": "M4 11l8-7 8 7v9h-5v-6H9v6H4z", "user": "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0", "sparkle": "M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"};
 const icon = n => n && ICONS[n] ? `<svg class="ic" viewBox="0 0 24 24"><path d="${ICONS[n]}"/></svg>` : "";
@@ -248,11 +248,15 @@ function block(b){
       const one = r => b.kind === "list" ? listRow(r, b) : card(r, b);
       const q = (S.search[b.name] || "");
       const search = b.search ? `<label class="search">${icon("search")}<input data-search-for="${esc(b.name)}" value="${esc(q)}" placeholder="${esc(b.search.placeholder)}" autocomplete="off"></label>` : "";
+      const limit = b.take ? (S.more[b.name] || b.take) : Infinity;
+      const shownIds = new Set(b.rows.slice(0, limit).map(r => r.id));
+      const moreBtn = b.rows.length > limit ? `<button class="btn quiet more" data-act="more" data-value="${esc(b.name)}" data-step="${b.take}">${esc(b.more)}（${b.rows.length - limit}）</button>` : "";
+      b = {...b, rows: b.rows.filter(r => shownIds.has(r.id)), groups: b.groups && b.groups.map(g => ({...g, ids: g.ids.filter(id => shownIds.has(id))})).filter(g => g.ids.length)};
       const byId = Object.fromEntries(b.rows.map(r => [r.id, r]));
       const body = b.groups
         ? b.groups.map(g => `<div class="group"><div class="group-head">${badge({label:g.label, color:g.color, icon:g.icon})}<span class="n">${g.ids.length}</span></div><div class="rows">${g.ids.map(id => one(byId[id])).join("")}</div></div>`).join("")
         : `<div class="rows">${b.rows.map(one).join("")}</div>`;
-      return `<div class="block look-${esc(b.look)} kind-${esc(b.kind)}" data-block="${esc(b.name)}">${head}${search}${body}<div class="nores hidden">見つかりません</div></div>`;
+      return `<div class="block look-${esc(b.look)} kind-${esc(b.kind)}" data-block="${esc(b.name)}">${head}${search}${body}${moreBtn}<div class="nores hidden">見つかりません</div></div>`;
     }
     case "notices": return `<button class="btn quiet bell" data-act="notices" aria-label="お知らせ">${icon("bell")}${S.unread ? `<span class="dot">${S.unread}</span>` : ""}</button>`;
     case "table": return `<div class="block look-${esc(b.look)} table-wrap"><table><tr>${b.columns.map(c => `<th>${esc(c.label)}</th>`).join("")}</tr>${b.rows.map(r =>
@@ -355,6 +359,7 @@ document.addEventListener("click", async e => {
     if(act === "cal"){ S.calShift = el.dataset.value === "0" ? 0 : S.calShift + parseInt(el.dataset.value); return render(); }
     if(act === "nav") return go(el.dataset.value);
     if(act === "back") return goBack();
+    if(act === "more"){ const n = el.dataset.value; S.more[n] = (S.more[n] || parseInt(el.dataset.step)) + parseInt(el.dataset.step); return render(); }
     if(act === "notices"){ S.panel = !S.panel; S.unread = 0; paintBell(); return paintPanel(); }
     if(act === "tap"){
       if(el.dataset.confirm && !(await ask(el.dataset.confirm))) return;

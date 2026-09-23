@@ -83,6 +83,14 @@ def _expect(eng: Engine, t: str, ctx: Ctx) -> str | None:
     m = re.match(r"^scene (\w+)$", t)
     if m:
         return None if ctx.nav == m.group(1) else f"scene {m.group(1)} のはずが {ctx.nav}"
+    m = re.match(r"^(\w+) shows (\d+) (cards?|rows?|items?)$", t)
+    if m:
+        from .server import App
+        app = App(eng.spec, eng)
+        me = eng.login("me")
+        v = app.view(m.group(1), me, {}, None, None, "ja")
+        rows = sum(len(b.get("rows", [])) for s in v["slots"] for b in s["blocks"])
+        return None if rows == int(m.group(2)) else f"{m.group(1)} に {m.group(2)} 件のはずが {rows} 件"
     if t == "nothing":
         return None if not eng.notifications else f"何も起きないはずが {eng.notifications}"
     return f"expect の書き方が分かりません: '{t}'"

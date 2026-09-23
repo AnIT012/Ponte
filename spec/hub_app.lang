@@ -9,22 +9,22 @@ thing Application
   status[draft | submitted | passed | failed]
 
 thing User
-  name  text
+  name text
 
 flow Application.status
   draft -> submitted -> passed | failed
   failed > passed
 
 who
-  user   can see    Application where owner is me
-  user   can change Application where owner is me
-  user   can see    User where it is me
+  user  can see    Application where owner is me
+  user  can change Application where owner is me
+  user  can see    User where it is me
 
 list DueSoon
-  of    Application
-  where status is draft
-  where deadline within 3 days
-  sort  deadline
+  of     Application
+  where  status is draft
+  where  deadline within 3 days
+  sort   deadline
 
 list Mine
   of    Application
@@ -48,16 +48,16 @@ connect Gmail
   needs  key GMAIL_TOKEN
 
 action ExtractDeadline
-  in      mail text
-  out     found monthday | missing
-  example "10/15(木)12:00まで"            -> found 10/15 12:00
-  example "【締切9/24 23:59】"            -> found 9/24 23:59
-  example "来週中にご提出ください"        -> missing
-  example "9/24 23:59 または 9/30 23:59"  -> missing
-  never   guess the year
-  never   depend on width
-  else    ask user
-  by      ai
+  in       mail text
+  out      found monthday | missing
+  example  "10/15(木)12:00まで"            -> found 10/15 12:00
+  example  "【締切9/24 23:59】"            -> found 9/24 23:59
+  example  "来週中にご提出ください"        -> missing
+  example  "9/24 23:59 または 9/30 23:59"  -> missing
+  never    guess the year
+  never    depend on width
+  else     ask user
+  by       ai
 
 rule ReadMail
   why   メールの締切を自動で拾うため
@@ -140,15 +140,15 @@ scene Home
   top     notices
   top     button menu-button named メニュー icon menu toggle menu
   main    match tab
-            soon     -> DueSoon as cards
-            all      -> Mine as list
-            board    -> Mine as board
-            calendar -> Mine as calendar
+    soon     -> DueSoon as cards
+    all      -> Mine as list
+    board    -> Mine as board
+    calendar -> Mine as calendar
   side    Mine as chart
   bottom  button add named 応募を追加 icon plus
   over    match menu
-            open   -> Menu as sheet
-            closed -> nothing
+    open   -> Menu as sheet
+    closed -> nothing
 
 scene Detail
   top   Header
@@ -176,17 +176,17 @@ part Menu
 
 part DeadlineBadge
   in    deadline monthday
-  left  = days until deadline
+  left = days until deadline
   urgency[over | today | soon | later] = match left
-                                           ..-1  -> over
-                                           0     -> today
-                                           1..3  -> soon
-                                           else  -> later
+    ..-1 -> over
+    0    -> today
+    1..3 -> soon
+    else -> later
   label = match urgency
-            over  -> "締切を過ぎました"
-            today -> "今日が締切"
-            soon  -> "あと{left}日"
-            later -> "あと{left}日"
+    over  -> "締切を過ぎました"
+    today -> "今日が締切"
+    soon  -> "あと{left}日"
+    later -> "あと{left}日"
   show  text "{deadline} ・ {label}"
   mark  urgency
 
@@ -197,13 +197,13 @@ match DeadlineBadge.urgency to color
   later -> blue
 
 look DueSoon as cards
-  heading "3日以内に締切"
-  lead    company
-  title   company
-  sub     DeadlineBadge of deadline
-  mark    color of status
-  button  submitted-button named 提出した icon send
-  empty   "3日以内に締切の下書きはありません" button add named 応募を追加 icon plus
+  heading  "3日以内に締切"
+  lead     company
+  title    company
+  sub      DeadlineBadge of deadline
+  mark     color of status
+  button   submitted-button named 提出した icon send
+  empty    "3日以内に締切の下書きはありません" button add named 応募を追加 icon plus
 
 look Mine as list
   search  company, memo
@@ -234,8 +234,8 @@ input EditApplication
   memo
 
 style theme
-  color main  #4F46E5
-  radius 14
+  color   main  #4F46E5
+  radius  14
 
 style DueSoon
   card     pad 18
@@ -249,79 +249,79 @@ style Application
   edit-button    tone quiet
 
 words ja
-  draft           下書き
-  submitted       提出済み
-  passed          通過
-  failed          不合格
-  soon            締切が近い
-  all             すべて
-  board           ボード
-  calendar        カレンダー
-  company         会社
-  deadline        締切
-  memo            メモ
-  owner           担当
-  status          状態
-  Mine            選考のようす
-  AddApplication  応募を追加
-  EditApplication 応募を編集
-  over            期限切れ
-  today           今日
-  later           まだ先
-  "提出した"          提出した
-  "通過"              通過
-  "不合格"            不合格
-  "編集"              編集
-  "戻る"              戻る
-  "メニュー"          メニュー
-  "応募を追加"        応募を追加
-  "3日以内に締切"     3日以内に締切
+  draft                下書き
+  submitted            提出済み
+  passed               通過
+  failed               不合格
+  soon                 締切が近い
+  all                  すべて
+  board                ボード
+  calendar             カレンダー
+  company              会社
+  deadline             締切
+  memo                 メモ
+  owner                担当
+  status               状態
+  Mine                 選考のようす
+  AddApplication       応募を追加
+  EditApplication      応募を編集
+  over                 期限切れ
+  today                今日
+  later                まだ先
+  "提出した"               提出した
+  "通過"                 通過
+  "不合格"                不合格
+  "編集"                 編集
+  "戻る"                 戻る
+  "メニュー"               メニュー
+  "応募を追加"              応募を追加
+  "3日以内に締切"            3日以内に締切
   "3日以内に締切の下書きはありません"  3日以内に締切の下書きはありません
-  "まだ応募がありません"  まだ応募がありません
-  "不合格にしますか？"  不合格にしますか？
-  "締切を過ぎました"  締切を過ぎました
-  "今日が締切"        今日が締切
-  "あと{left}日"      あと{left}日
-  "締切と選考をひとつに"  締切と選考をひとつに
-  "さがす"            さがす
-  "保存"              保存
-  "キャンセル"        キャンセル
+  "まだ応募がありません"         まだ応募がありません
+  "不合格にしますか？"          不合格にしますか？
+  "締切を過ぎました"           締切を過ぎました
+  "今日が締切"              今日が締切
+  "あと{left}日"          あと{left}日
+  "締切と選考をひとつに"         締切と選考をひとつに
+  "さがす"                さがす
+  "保存"                 保存
+  "キャンセル"              キャンセル
 
 words en
-  draft           Draft
-  submitted       Submitted
-  passed          Passed
-  failed          Rejected
-  soon            Due soon
-  all             All
-  board           Board
-  calendar        Calendar
-  company         Company
-  deadline        Deadline
-  memo            Memo
-  owner           Owner
-  status          Status
-  Mine            Pipeline
-  AddApplication  New application
-  EditApplication Edit application
-  over            Overdue
-  today           Today
-  later           Later
-  "提出した"          Mark submitted
-  "通過"              Passed
-  "不合格"            Rejected
-  "編集"              Edit
-  "戻る"              Back
-  "メニュー"          Menu
-  "応募を追加"        New application
-  "3日以内に締切"     Due within 3 days
+  draft                Draft
+  submitted            Submitted
+  passed               Passed
+  failed               Rejected
+  soon                 Due soon
+  all                  All
+  board                Board
+  calendar             Calendar
+  company              Company
+  deadline             Deadline
+  memo                 Memo
+  owner                Owner
+  status               Status
+  Mine                 Pipeline
+  AddApplication       New application
+  EditApplication      Edit application
+  over                 Overdue
+  today                Today
+  later                Later
+  "提出した"               Mark submitted
+  "通過"                 Passed
+  "不合格"                Rejected
+  "編集"                 Edit
+  "戻る"                 Back
+  "メニュー"               Menu
+  "応募を追加"              New application
+  "3日以内に締切"            Due within 3 days
   "3日以内に締切の下書きはありません"  Nothing due in the next 3 days
-  "まだ応募がありません"  No applications yet
-  "不合格にしますか？"  Mark as rejected?
-  "締切を過ぎました"  Overdue
-  "今日が締切"        Due today
-  "あと{left}日"      {left} days left
-  "締切と選考をひとつに"  Deadlines and pipeline in one place
-  "さがす"            Search
-  "保存"              Save
-  "キャンセル"        Cancel
+  "まだ応募がありません"         No applications yet
+  "不合格にしますか？"          Mark as rejected?
+  "締切を過ぎました"           Overdue
+  "今日が締切"              Due today
+  "あと{left}日"          {left} days left
+  "締切と選考をひとつに"         Deadlines and pipeline in one place
+  "さがす"                Search
+  "保存"                 Save
+  "キャンセル"              Cancel

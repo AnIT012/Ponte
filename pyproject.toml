@@ -16,4 +16,4 @@ build-backend = "setuptools.build_meta"
 include = ["ponte*"]
 
 [tool.setuptools.package-data]
-ponte = ["page.html", "std/*.ponte", "std/body/*.ponte"]
+ponte = ["page.html", "std/*.ponte", "std/body/*.ponte", "templates/*.ponte"]

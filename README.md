@@ -90,6 +90,7 @@ pip install -e .                           # 入れると `ponte run spec/todo.p
 
 | コマンド | すること |
 |---|---|
+| `python -m ponte new myapp` | ひな形から新しいアプリを作る（最初から check も test も通る） |
 | `python -m ponte check 仕様.ponte` | 決めてないこと・間違いを探す（エラー32種） |
 | `python -m ponte test 仕様.ponte` | example と never を全部流す。確かめていない所（穴）も出す。`--strict` で穴も失敗に |
 | `python -m ponte run 仕様.ponte` | 動かす（ブラウザの画面つき） |
@@ -135,6 +136,7 @@ pip install -e .                           # 入れると `ponte run spec/todo.p
 | `spec/` | 見本のアプリ |
 | `tests/` | テスト（270件ほど） |
 | `docs/` | 仕様書・入門・仕組み・決めごと・画面の写真 |
+| `site/` | ホームページ（`python site/build.py` で作る。main に入ると GitHub Pages へ） |
 | `experiment/` | 比較実験（プロンプト・AIの返事・採点） |
 | `editor/vscode/` | エディタの色分け |
 | `archive/v01/` | 最初の版（当時のまま） |

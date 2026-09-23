@@ -8,6 +8,8 @@
 - 拡張子 `.lang` → `.ponte`、パッケージ `lang/` → `ponte/`、コマンド `python -m ponte`（`pip install -e .` で `ponte` だけでも）
 - エディタの色分けも Ponte に
 - 実験の記録（experiment/v2/runs*・prompts）と archive は、当時のまま `.lang` で残した
+- ホームページ（`site/`）と、GitHub Pages に出す仕組み
+- `ponte new`: ひな形から新しいアプリを作る
 
 ## v0.3（2026-09-23）
 

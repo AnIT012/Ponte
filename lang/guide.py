@@ -1,6 +1,7 @@
 """AIに渡す「書き方の説明」を、実装から作る（手で書かない。実装とずれないように）。
 
   python -m lang guide              action の中身（do）の書き方を出す（AIに渡すのと同じもの）
+  python -m lang guide --rules      rule の書き方（when / do / 値）を出す
   python -m lang guide --spec       仕様書 10章の道具の表を、今の実装に合わせて書き直す
 
 元になるもの:
@@ -14,6 +15,7 @@ import os
 import re
 
 from .body import SHAPE_PARTS, TOOLS
+from .forms import DO_FORMS, VALUE_FORMS, WHEN_FORMS
 from .parser import STD_DIR
 
 RULES = """\
@@ -100,3 +102,43 @@ def write_spec(path: str) -> bool:
     if new != text:
         open(path, "w", encoding="utf-8").write(new)
     return new != text
+
+
+def rules_guide() -> str:
+    """rule の書き方（spec を書く人・AI向け）。lang/forms.py から作る"""
+    when = "\n".join(f"| `{f[1]}` | {f[2]} |" for f in WHEN_FORMS if f[4])
+    later = " / ".join(f"`{f[1]}`" for f in WHEN_FORMS if not f[4])
+    do = "\n".join(f"| `{f[1]}` | {f[2]} |" for f in DO_FORMS)
+    val = "\n".join(f"| `{f[1]}` | {f[2]} |" for f in VALUE_FORMS)
+    return f"""# rule の書き方
+
+```
+rule 名前
+  why    なぜ（任意）
+  when   きっかけ（出来事だけ）
+  where  押された1件の条件（任意。合わなければ静かに起きない）
+  do     やること（1つだけ。2つなら rule を分けて relate の then）
+  example
+    ...
+```
+
+when に書ける出来事（これ以外は書けない）:
+
+| 書き方 | 意味 |
+|---|---|
+{when}
+
+書き方は決まっているが、まだ起きない（check で止まる）: {later}
+
+do に書ける形（これ以外は check で E31）:
+
+| 書き方 | 意味 |
+|---|---|
+{do}
+
+値（create の「項目 値」と set）:
+
+| 書き方 | 意味 |
+|---|---|
+{val}
+"""

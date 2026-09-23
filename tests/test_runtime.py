@@ -366,3 +366,17 @@ def test_other_peoples_boxes_cannot_be_viewed_or_tapped():
     assert "ひみつ商事" in str(app.view("Detail", taro, {}, b.id, None, "ja"))
     with pytest.raises(NotAllowed):
         eng.tap(hana, "card", "Application", b.id)
+
+
+def test_notices_without_recipient_only_reach_admins():
+    from ponte.server import App
+    spec = parse_file("spec/lend.ponte")
+    eng = Engine(spec)
+    app = App(spec, eng)
+    eng.notify("X", "だれ宛てでもない", None)
+    eng.notify("Y", "taro 宛て", eng.login("taro"))
+    taro, hana = eng.login("taro"), eng.login("hanako")
+    eng.set_role("boss", "admin")
+    boss = eng.login("boss")
+    seen = lambda u: [n["text"] for n in eng.notifications if app.can_read_notice(n, u)]
+    assert seen(taro) == ["taro 宛て"] and seen(hana) == [] and seen(boss) == ["だれ宛てでもない"]

@@ -14,9 +14,41 @@ from dataclasses import dataclass
 from .parser import Node, match_arms, states_of
 
 
-TOOLS_HINT = ("（使える道具: normalize X / trim X / lower X / upper X / split X by \",\" / join X by \",\" / "
-              "replace \"a\" with \"b\" in X / find all 形 in X / count of X / first of X / last of X / "
-              "monthday of X / number of X / a + b / a - b）")
+# do で使える道具の一覧。ここが元で、AIへの説明（lang guide）・エラーの一言・仕様書 10章の表を、ここから作る。
+# 1つずつ「動く例」を持つ（tests/test_guide.py が全部流して確かめる）。例の入力は t、shape は D（数字 n）と M（月日）。
+TOOLS = [
+    # (種類, 書き方, 意味, 例の式, 例の入力 t, 答え)
+    ("文字", "normalize X", "全角を半角に（数字・英字・記号）", "normalize t", "１２／３", "12/3"),
+    ("文字", "trim X", "前後の空白を取る", "trim t", "  a  ", "a"),
+    ("文字", "lower X / upper X", "小文字に / 大文字に", "lower t", "AbC", "abc"),
+    ("文字", 'split X by ","', "区切って集まりに", 'split t by ","', "a,b", ["a", "b"]),
+    ("文字", 'join X by ","', "集まりをつないで文字に", 'join split t by "," by "-"', "a,b", "a-b"),
+    ("文字", 'replace "a" with "b" in X', "置き換える", 'replace "," with "" in t', "1,980", "1980"),
+    ("形", "find all 形 in X", "shape に当たったものを全部、集まりで", "count of find all D in t", "1 と 22", 2),
+    ("形", "名前 of X", "当たりの中の、shape で名前を付けた部分", "n of first of find all D in t", "a12b", "12"),
+    ("形", "text of X", "当たった文字そのもの", "text of last of find all D in t", "1 と 22", "22"),
+    ("集まり", "count of X", "数（length of X も同じ）", "count of split t by \",\"", "a,b,c", 3),
+    ("集まり", "first of X / last of X", "最初 / 最後（空なら止まる。先に count で分ける）", "last of split t by \",\"", "a,b,c", "c"),
+    ("数", "number of X", "文字を数に", "number of t", "42", 42),
+    ("数", "a + b / a - b", "足す / 引く（一番弱くつなぐ）", "count of split t by \",\" + 10", "a,b", 12),
+    ("日時", "monthday of X", "月・日（・時・分）を取り出した当たりを \"10/15 12:00\" に", "monthday of first of find all M in t", "締切10/15まで", "10/15"),
+    ("日時", "days until X", "今日から X まで何日（part の中で。今の時刻が要る）", None, None, None),
+]
+
+# shape の部品（正規表現の代わり）
+SHAPE_PARTS = [
+    ('"文字"', "そのままの文字"),
+    ("space", "空白（1つ以上）"),
+    ("digits 1..2 / digits 4", "数字（範囲か、ちょうどの数）"),
+    ("letters 1..10", "文字（日本語も入る）"),
+    ("word 1..10", "文字・数字・_（日本語も入る）"),
+    ('word with "._-" 1..64', "英数字（ASCII）と書いた記号だけ（メールなど）"),
+    ("any 1", "何でも1文字"),
+    ("名前 digits 1..2", "取り出す部分に名前を付ける（`名前 of 当たり` で使う）"),
+    ("maybe ...", "あっても無くてもいい（行の残りまで）"),
+]
+
+TOOLS_HINT = "（使える道具: " + " / ".join(t[1] for t in TOOLS) + "）"
 
 # 他の言語のクセで書いた時に、この言語での書き方を教える（AIは見たことのない文法なので）
 _HABITS = [

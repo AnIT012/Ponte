@@ -121,5 +121,6 @@ def explain(code: str) -> str | None:
 
 def errors_table() -> str:
     rows = ["| コード | 何が起きたか | なぜ止めるか | どう直すか |", "|---|---|---|---|"]
-    rows += [f"| {c} | {t} | {w} | {f} |" for c, t, w, f in ERRORS]
+    esc = lambda x: x.replace("|", "\\|")            # 表の中の | は区切りにしない
+    rows += [f"| {c} | {esc(t)} | {esc(w)} | {esc(f)} |" for c, t, w, f in ERRORS]
     return "\n".join(rows)

@@ -2,7 +2,7 @@
 
   python site/make.py && python site/build.py
 
-site/landing.html・learn.src.html・reference.src.html（中身。make.py が作る）から:
+site/landing.html と *.src.html（中身。make.py が作る）から:
   site/index.html        … GitHub Pages 用（learn.html・reference.html も。写真は site/img/ を見る）
   site/artifact.html     … トップの1ファイル版（写真を埋め込む。git には入れない）
 """
@@ -13,7 +13,8 @@ from pathlib import Path
 
 HERE = Path(__file__).parent
 SHOTS = HERE.parent / "docs" / "screenshots"
-PAGES = {"landing.html": "index.html", "learn.src.html": "learn.html", "reference.src.html": "reference.html"}
+PAGES = {"landing.html": "index.html", "learn.src.html": "learn.html", "reference.src.html": "reference.html",
+         "spec.src.html": "spec.html", "how.src.html": "how.html"}
 DESC = "Ponte — 人は決めて、AIが書いて、言語が守る。"
 
 
@@ -38,4 +39,4 @@ for n in sorted(set(re.findall(r"\{\{IMG:(\w+)\}\}", one))):
     data = base64.b64encode((SHOTS / f"{n}.png").read_bytes()).decode()
     one = one.replace("{{IMG:%s}}" % n, f"data:image/png;base64,{data}")
 (HERE / "artifact.html").write_text(one, encoding="utf-8")
-print("site/index.html・learn.html・reference.html・artifact.html を作りました")
+print("site/index.html・" + "・".join(v for v in PAGES.values() if v != "index.html") + "・artifact.html を作りました")

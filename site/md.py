@@ -75,6 +75,10 @@ def render(src: str, link=lambda u: u) -> tuple[str, list[tuple[int, str, str]]]
             out.append(code_block("\n".join(lines[i + 1:j]), lang, states))
             i = j + 1
             continue
+        if l.strip().startswith("<!--"):          # 自動の所の印（見せない）
+            flush()
+            i += 1
+            continue
         m = re.match(r"^(#{1,4}) (.+)$", l)
         if m:
             flush()

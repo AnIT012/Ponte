@@ -401,6 +401,8 @@ def cmd_explain(args) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="ponte", description="Ponte — 人は決めて、AIが書いて、言語が守る（v0.3）")
+    from . import __version__
+    p.add_argument("--version", action="version", version=f"ponte {__version__}")
     sub = p.add_subparsers(dest="cmd", required=True)
     c = sub.add_parser("check", help="決めてないことを探す")
     c.add_argument("spec")

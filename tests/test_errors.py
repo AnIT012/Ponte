@@ -31,3 +31,9 @@ def test_check_json(capsys):
     assert out["ok"] is False and out["findings"][0]["code"] == "E32"
     assert main(["check", "--json", "tests/cases/E32_unknown_state/fixed.ponte"]) == 0
     assert json.loads(capsys.readouterr().out)["ok"] is True
+
+
+def test_version_matches_pyproject():
+    import re as _re
+    from ponte import __version__
+    assert _re.search(r'version = "([^"]+)"', open("pyproject.toml", encoding="utf-8").read()).group(1) == __version__

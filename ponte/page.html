@@ -195,7 +195,7 @@ const EMPTY_ICON = `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" 
 
 async function post(path, body){
   const r = await fetch(path, {method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({user:USER, ...body})});
-  const j = await r.json(); if(j.login){ location.href = "/login"; return j; } if(j.error) toast(j.error, true); return j;
+  const j = await r.json(); if(j.login){ location.href = "/login"; return j; } if(j.error) toast(esc(j.error), true); return j;
 }
 function trimToasts(){ const box = document.getElementById("toasts"); while(box.children.length > 2) box.firstElementChild.remove(); }   // 積み上げない（古いものから消す）
 function toast(text, err){

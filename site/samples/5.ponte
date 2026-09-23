@@ -1,0 +1,10 @@
+# AIに任せる処理には、例と禁止事項を先に書く
+action FindDeadline
+  in       mail text
+  out      found monthday | missing
+  example  "10/15(木)12:00まで"      -> found 10/15 12:00
+  example  "来週中にご提出ください"  -> missing
+  never    guess the year
+  never    fail
+  else     ask user
+  by       ai

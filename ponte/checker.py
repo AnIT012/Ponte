@@ -1242,7 +1242,7 @@ def check_notify_recipient(spec: Spec, opt: Options) -> list[Finding]:
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
-# example の中の値（動かす前に分かるもの）と、ログインに要る User.name
+# 行の形と値（打ち間違いが黙って無視されないように）と、ログインに要る User.name
 # ---------------------------------------------------------------------------
 
 STEPS = ("given", "adds", "at", "says", "taps", "gets", "expect")
@@ -1469,7 +1469,7 @@ CLAUSES = {"rule": ("why", "when", "where", "do", "example"),
            "look": ("title", "sub", "mark", "lead", "image", "button", "empty", "heading", "search", "group", "take", "sum")}
 
 
-def check_example_values(spec: Spec, opt: Options) -> list[Finding]:
+def check_line_forms(spec: Spec, opt: Options) -> list[Finding]:
     """動かす前に分かる、行の形の間違い（example の手順・flow・list の where と sort・notify each of）"""
     from .values import _DUR, parse_time, unquote
     out = []
@@ -1614,7 +1614,7 @@ ALL_CHECKS = [
     check_double_else, check_match_states, check_who, check_gone, check_change,
     check_ask_ai_limit, check_connect_fallback, check_scene_move, check_words,
     check_a11y, check_money, check_undefined, check_single_do, check_do_form, check_roles, check_types, check_notify_recipient,
-    check_example_values,
+    check_line_forms,
 ]
 
 

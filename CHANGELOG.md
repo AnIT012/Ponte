@@ -17,6 +17,8 @@
 - `ponte data export`（JSON / CSV）・`ponte data import`（CSV から。全部の行を先に確かめ、1行でもダメなら何も入れない）・`ponte data compact`（追記の記録を今の中身1枚に。前のものは .bak）
 - chart に `group by 項目` と `sum 項目`（家計メモに「費目ごとの合計」）。input の状態の項目は選ぶ形に（flow のある状態は選べない）
 - 道具 `time of`
+- shape に `one of "a" "b"`（どれか1つ。名前も付けられる）と `edge`（数字・英字の続きの途中で始まらない・終わらない）
+- 標準ライブラリに `FindDate`（年の入った日付）と `FindPostal`（郵便番号）
 - `ponte run --reload`: spec を書き直すと読み直して、開いている画面も読み直す。check が通らない書き直しは前のまま動かし続ける
 - `ponte doc`: 決めごとを、コードを読まない人にも読める1枚の HTML に（書いた人以外が確かめるため）
 - `ponte lsp`: 言語サーバー（Neovim・Helix などでもエラー・E32 の説明・名前の補い）

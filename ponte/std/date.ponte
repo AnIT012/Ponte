@@ -15,3 +15,17 @@ action FindMonthDay
   never    fail
   else     skip
   by       code "body/FindMonthDay.ponte"
+
+action FindDate
+  in       text text
+  out      found date | missing
+  example  "申込は2026/10/15まで"                 -> found 2026/10/15
+  example  "２０２６年１０月５日（月）"             -> found 2026/10/5
+  example  "2026-01-09 開始"                      -> found 2026/1/9
+  example  "締切は10/15です"                      -> missing
+  example  "2026/13/45"                           -> missing
+  example  "2026/10/15 か 2026/10/20"             -> missing
+  never    depend on width
+  never    fail
+  else     skip
+  by       code "body/FindDate.ponte"

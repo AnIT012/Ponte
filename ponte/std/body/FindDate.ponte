@@ -1,0 +1,22 @@
+# std/date FindDate の中身。年の入った日付を1つだけ。2つ以上・無い月日は決めない（missing）
+
+do
+  clean = normalize text
+  hits  = find all YMD in clean
+  kind[one | none | many] = match count of hits
+    1    -> one
+    0    -> none
+    else -> many
+  answer = match kind
+    one  -> found date of first of hits
+    none -> missing
+    many -> missing
+
+shape YMD
+  edge
+  year   digits 4
+  one of "/" "-" "年" "."
+  month  one of "1" "2" "3" "4" "5" "6" "7" "8" "9" "10" "11" "12" "01" "02" "03" "04" "05" "06" "07" "08" "09"
+  one of "/" "-" "月" "."
+  day    one of "1" "2" "3" "4" "5" "6" "7" "8" "9" "10" "11" "12" "13" "14" "15" "16" "17" "18" "19" "20" "21" "22" "23" "24" "25" "26" "27" "28" "29" "30" "31" "01" "02" "03" "04" "05" "06" "07" "08" "09"
+  edge

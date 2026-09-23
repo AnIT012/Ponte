@@ -55,6 +55,10 @@ def _is_arm(n: Node) -> bool:
     return (p.is_decl and p.keyword == "match") or bool(re.search(r"(^|\s|=)match\s", p.raw))
 
 
+def _is_one_of(n: Node) -> bool:
+    return n.keyword == "one" and n.text.startswith("of ")
+
+
 def dwidth(s: str) -> int:
     """画面での幅（全角は2）"""
     return sum(2 if unicodedata.east_asian_width(c) in "WF" else 1 for c in s)
@@ -80,7 +84,7 @@ def format_source(src: str) -> str:
         kids = [c for c in n.children if not c.children or c.keyword in ("how", "example", "do", "given", "taps", "expect", "adds", "at", "says", "gets")]
         if n.is_decl and n.keyword in ("flow", "relate"):     # 矢印や関係の行は、節ではないので揃えない
             continue
-        simple = [c for c in kids if not _is_arm(c) and c.text and not c.text.startswith(("[", "=")) and not c.is_decl]
+        simple = [c for c in kids if not _is_arm(c) and c.text and not c.text.startswith(("[", "=")) and not c.is_decl and not _is_one_of(c)]
         if simple and not (n.is_decl and n.keyword == "who"):   # 1つだけの塊も、名前と値の間は空白2つ以上
             widths[id(n)] = max(dwidth(c.keyword) for c in simple)
         if n.is_decl and n.keyword == "who":                     # who は表のように列を揃える
@@ -144,6 +148,8 @@ def format_source(src: str) -> str:
             parts = n.raw.split(None, 4)
             rest = parts[4] if len(parts) > 4 else ""
             body = f"{parts[0].ljust(wr)}  can {parts[2].ljust(wv)}  " + (f"{parts[3].ljust(wt)}  {rest}" if rest else parts[3])
+        elif _is_one_of(n):                                   # shape の `one of "a" "b"` は2語で1つの言葉。間を開けない
+            body = f"one {n.text}"
         elif _is_arm(n) and p is not None and id(p) in arm_widths:
             left, right = [x.strip() for x in n.raw.split("->", 1)]
             body = f"{pad(left, arm_widths[id(p)])} -> {right}"

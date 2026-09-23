@@ -6,6 +6,10 @@
 
 - **本当のログイン**: `ponte run --login`（名前と合言葉。scrypt・HttpOnly の cookie・間違いが続くと少し止める）。`--signup` で画面から登録。`ponte user add / remove / list`。`--login` 無しで 127.0.0.1 以外に開こうとすると止める
 - **エラーの辞書**: `ponte explain E32`（なぜ止めるか・どう直すか）。check のエラーの下に「直し方: ponte explain …」。仕様書 13章の表もここから作る
+- 打ち間違いらしい名前に「もしかして submitted？」
+- 画面の API: 変な形のリクエストにも JSON のエラー（接続を切らない）
+- ホームページに仕様書・しくみのページ（リポジトリが非公開でも読める）
+- `ponte --version`（0.3.1）
 - `ponte check --json`（エディタや AI のループ向け。直し方も入る）
 - `ponte data export`（JSON / CSV）・`ponte data compact`（追記の記録を今の中身1枚に。前のものは .bak）
 - `ponte run --reload`: spec を書き直すと読み直して、開いている画面も読み直す。check が通らない書き直しは前のまま動かし続ける

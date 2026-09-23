@@ -22,8 +22,6 @@ def parse_time(text: str, year: int) -> datetime:
     raise ValueError(f"日時が読めません: '{text}'")
 
 
-def format_monthday(dt: datetime) -> str:
-    return f"{dt.month}/{dt.day} {dt.hour}:{dt.minute:02d}"
 
 
 _DUR = re.compile(r"^(\d+)\s+(seconds?|minutes?|hours?|days?|weeks?)$")

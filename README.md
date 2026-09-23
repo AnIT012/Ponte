@@ -1,4 +1,6 @@
-# nameless-lang（仮）
+# Ponte（ポンテ）
+
+> Ponte はイタリア語で「橋」。人とAIの間にかかる橋、そして上の決まりと裏の Python をつなぐ橋。
 
 **人は決めて、AIが書いて、言語が守る。**
 
@@ -42,15 +44,15 @@ rule Borrow
 打ち間違いも、決め忘れも、動かす前に止まる。
 
 ```
-$ python -m lang check todo.lang
+$ python -m ponte check todo.ponte
 渡せません（1件）
-  todo.lang:20  E32  rule Finish: Task に「finished」という状態はありません（todo / done）
+  todo.ponte:20  E32  rule Finish: Task に「finished」という状態はありません（todo / done）
 ```
 
 example で確かめていない所も教えてくれる。
 
 ```
-$ python -m lang test todo.lang
+$ python -m ponte test todo.ponte
 穴（example で確かめていない所 3件）
   rule Finish: when があるのに example がありません
   flow Task.status: todo -> done をどの example も通っていません
@@ -77,7 +79,9 @@ $ python -m lang test todo.lang
 ```
 git clone https://github.com/AnIT012/nameless-lang
 cd nameless-lang
-python -m lang run spec/todo.lang        # → http://127.0.0.1:8000/
+python -m ponte run spec/todo.ponte        # → http://127.0.0.1:8000/
+
+pip install -e .                           # 入れると `ponte run spec/todo.ponte` だけで動く（依存は増えない）
 ```
 
 1歩ずつ作るなら **[docs/入門.md](docs/入門.md)**（やることアプリを、エラーを見ながら作る）。
@@ -86,24 +90,24 @@ python -m lang run spec/todo.lang        # → http://127.0.0.1:8000/
 
 | コマンド | すること |
 |---|---|
-| `python -m lang check 仕様.lang` | 決めてないこと・間違いを探す（エラー32種） |
-| `python -m lang test 仕様.lang` | example と never を全部流す。確かめていない所（穴）も出す。`--strict` で穴も失敗に |
-| `python -m lang run 仕様.lang` | 動かす（ブラウザの画面つき） |
-| `python -m lang fill 仕様.lang` | AIに action の中身を書かせて、機械で確かめる（要 `ANTHROPIC_API_KEY`） |
-| `python -m lang guide` | AIに渡す書き方の説明を出す（実装から作るので、実装とずれない）。`--rules` で rule の書き方 |
-| `python -m lang fmt 仕様.lang` | 見た目を整える（意味が変わるなら書かない） |
-| `python -m lang build 仕様.lang` | 1つのファイル（.pyz）にまとめる → `python app.pyz` |
-| `python -m lang role 仕様.lang 名前 admin` | 最初の管理者を決める |
+| `python -m ponte check 仕様.ponte` | 決めてないこと・間違いを探す（エラー32種） |
+| `python -m ponte test 仕様.ponte` | example と never を全部流す。確かめていない所（穴）も出す。`--strict` で穴も失敗に |
+| `python -m ponte run 仕様.ponte` | 動かす（ブラウザの画面つき） |
+| `python -m ponte fill 仕様.ponte` | AIに action の中身を書かせて、機械で確かめる（要 `ANTHROPIC_API_KEY`） |
+| `python -m ponte guide` | AIに渡す書き方の説明を出す（実装から作るので、実装とずれない）。`--rules` で rule の書き方 |
+| `python -m ponte fmt 仕様.ponte` | 見た目を整える（意味が変わるなら書かない） |
+| `python -m ponte build 仕様.ponte` | 1つのファイル（.pyz）にまとめる → `python app.pyz` |
+| `python -m ponte role 仕様.ponte 名前 admin` | 最初の管理者を決める |
 | `python -m pytest` | 言語そのもののテスト |
 
 ## 見本のアプリ
 
 | アプリ | 見どころ | |
 |---|---|---|
-| [spec/todo.lang](spec/todo.lang) やること | 入門のできあがり。一番小さい | ![](docs/screenshots/todo.png) |
-| [spec/lend.lang](spec/lend.lang) 備品かしだし | 役割（管理者）、2つの thing のつながり、rule の where、件数 | ![](docs/screenshots/lend_members.png) |
-| [spec/kakeibo.lang](spec/kakeibo.lang) 家計メモ | 標準ライブラリ（`use std/money`）で金額を拾って合計 | ![](docs/screenshots/kakeibo.png) |
-| [spec/hub_app.lang](spec/hub_app.lang) 就活Hub | メールから締切を拾う（AIが中身を書いた action）、ボード・カレンダー・英語 | ![](docs/screenshots/board.png) |
+| [spec/todo.ponte](spec/todo.ponte) やること | 入門のできあがり。一番小さい | ![](docs/screenshots/todo.png) |
+| [spec/lend.ponte](spec/lend.ponte) 備品かしだし | 役割（管理者）、2つの thing のつながり、rule の where、件数 | ![](docs/screenshots/lend_members.png) |
+| [spec/kakeibo.ponte](spec/kakeibo.ponte) 家計メモ | 標準ライブラリ（`use std/money`）で金額を拾って合計 | ![](docs/screenshots/kakeibo.png) |
+| [spec/hub_app.ponte](spec/hub_app.ponte) 就活Hub | メールから締切を拾う（AIが中身を書いた action）、ボード・カレンダー・英語 | ![](docs/screenshots/board.png) |
 
 ## 言語の中身（ひとめで）
 
@@ -126,8 +130,8 @@ python -m lang run spec/todo.lang        # → http://127.0.0.1:8000/
 
 | 場所 | 中身 |
 |---|---|
-| `lang/` | 言語の本体（パーサ・チェッカー・実行エンジン・画面・AIの穴埋め）→ [docs/仕組み.md](docs/仕組み.md) |
-| `lang/std/` | 標準ライブラリ（中身もこの言語） |
+| `ponte/` | 言語の本体（パーサ・チェッカー・実行エンジン・画面・AIの穴埋め）→ [docs/仕組み.md](docs/仕組み.md) |
+| `ponte/std/` | 標準ライブラリ（中身もこの言語） |
 | `spec/` | 見本のアプリ |
 | `tests/` | テスト（270件ほど） |
 | `docs/` | 仕様書・入門・仕組み・決めごと・画面の写真 |
@@ -144,4 +148,3 @@ python -m lang run spec/todo.lang        # → http://127.0.0.1:8000/
 - **ログインが仮。** 今は URL の `?user=名前` で誰にでもなれる。人に使ってもらう前に、本当のログインが要る。
 - **例と never に書いてないことは守れない。** 穴さがしで「書いていない所」は見えるが、書くのは人。
 - **道具はまだ少ない。** 曜日・日付の足し算・json などは「まだ無い道具」（書くとエラー）。
-- **名前がまだ無い。**（nameless）

@@ -5,9 +5,9 @@ from datetime import datetime
 
 import pytest
 
-from lang import fill as F
-from lang.parser import parse_file
-from lang.runtime import Engine
+from ponte import fill as F
+from ponte.parser import parse_file
+from ponte.runtime import Engine
 
 GOOD = open("experiment/ai_replies/ExtractDeadline/1.md", encoding="utf-8").read()
 SHAPE = GOOD[GOOD.index("shape Deadline"):GOOD.rindex("```")]
@@ -51,8 +51,8 @@ def scripted(*replies):
 
 @pytest.fixture
 def spec(tmp_path):
-    p = tmp_path / "hub.lang"
-    shutil.copy("spec/hub_app.lang", p)
+    p = tmp_path / "hub.ponte"
+    shutil.copy("spec/hub_app.ponte", p)
     return parse_file(str(p))
 
 
@@ -91,7 +91,7 @@ def test_engine_uses_the_filled_body(spec):
 
 
 def test_human_can_edit_the_body_and_test_catches_it(spec):
-    from lang.examples import run_action_examples
+    from ponte.examples import run_action_examples
     r = F.fill_action(spec, spec.find("action", "ExtractDeadline"), scripted(GOOD))
     src = open(r.path, encoding="utf-8").read().replace("1    -> one", "1    -> many")
     open(r.path, "w", encoding="utf-8").write(src)
@@ -148,8 +148,8 @@ def test_reply_that_repeats_the_contract_is_read(spec):
 
 def test_habit_hints_teach_this_language():
     """他の言語のクセで書いたら、この言語での書き方を返す。同じ間違いは1回だけ"""
-    from lang.fill import verify
-    spec = parse_file("spec/hub_app.lang")
+    from ponte.fill import verify
+    spec = parse_file("spec/hub_app.ponte")
     a = spec.find("action", "ExtractDeadline")
     cases = {
         "do\n  x = trim mail\n  if x == 1:\n    y = x\n": "match 式",

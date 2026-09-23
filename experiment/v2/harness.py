@@ -14,13 +14,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from lang.body import Tagged                      # noqa: E402
-from lang.fill import action_source, combine      # noqa: E402
-from lang.parser import parse, parse_file         # noqa: E402
-from lang.runtime import Ctx, Engine, RuleError   # noqa: E402
-from lang.body import body_of                     # noqa: E402
+from ponte.body import Tagged                      # noqa: E402
+from ponte.fill import action_source, combine      # noqa: E402
+from ponte.parser import parse, parse_file         # noqa: E402
+from ponte.runtime import Ctx, Engine, RuleError   # noqa: E402
+from ponte.body import body_of                     # noqa: E402
 
-SPEC = ROOT / "spec/hub_app.lang"
+SPEC = ROOT / "spec/hub_app.ponte"
 
 
 # ---------------------------------------------------------------------------

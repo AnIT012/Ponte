@@ -5,8 +5,8 @@ from datetime import datetime
 
 import pytest
 
-from lang.parser import parse, parse_file
-from lang.runtime import Ctx, Engine, NotAllowed, RuleError
+from ponte.parser import parse, parse_file
+from ponte.runtime import Ctx, Engine, NotAllowed, RuleError
 
 NOW = datetime(2026, 9, 21, 9, 0)
 
@@ -46,7 +46,7 @@ def test_remove_blocked():
 
 
 def test_remove_needs_who_and_goes_home():
-    e = Engine(parse_file("spec/hub_app.lang"), clock=lambda: NOW)
+    e = Engine(parse_file("spec/hub_app.ponte"), clock=lambda: NOW)
     me, other = e.login("me"), e.login("other")
     a = e.create("Application", {"company": "A"}, me)
     with pytest.raises(NotAllowed):
@@ -73,7 +73,7 @@ action Slow
   example "a" -> "a"
   example "b" -> "b"
   else    skip
-  by      code "slow.lang"
+  by      code "slow.ponte"
   how
     limit 0.2 seconds
     on failure retry 2 times
@@ -111,7 +111,7 @@ action Classify
 
 
 def test_ask_ai_uses_reply_only_in_the_out_form():
-    from lang.body import Tagged
+    from ponte.body import Tagged
     e = Engine(parse(ASK), clock=lambda: NOW)
     e.ask_client = lambda messages: "passed"
     assert e.run_action("Classify", Ctx(None, payload="選考通過")) == Tagged("passed")
@@ -120,20 +120,20 @@ def test_ask_ai_uses_reply_only_in_the_out_form():
 
 
 def test_use_imports_other_file_and_maps_lines(tmp_path):
-    (tmp_path / "parts.lang").write_text("part Header\n  show  text \"x\"\n\nmatch A.s to color\n  a -> red\n", encoding="utf-8")
-    (tmp_path / "main.lang").write_text('use "parts.lang"\n\nthing A\n  s[a | b]\n\nwho\n  user can see A\n', encoding="utf-8")
-    spec = parse_file(str(tmp_path / "main.lang"))
+    (tmp_path / "parts.ponte").write_text("part Header\n  show  text \"x\"\n\nmatch A.s to color\n  a -> red\n", encoding="utf-8")
+    (tmp_path / "main.ponte").write_text('use "parts.ponte"\n\nthing A\n  s[a | b]\n\nwho\n  user can see A\n', encoding="utf-8")
+    spec = parse_file(str(tmp_path / "main.ponte"))
     assert {d.name for d in spec.decls()} >= {"Header", "A.s"}
-    from lang.checker import check
+    from ponte.checker import check
     f = next(f for f in check(spec) if f.code == "E01")                              # match の b が無い（取り込んだ方のエラー）
-    assert spec.where(f.line) == (str(tmp_path / "parts.lang"), 4)
+    assert spec.where(f.line) == (str(tmp_path / "parts.ponte"), 4)
 
 
 def test_input_from_now_is_enforced_by_server():
     import threading
     import urllib.request
-    from lang.server import serve
-    e = Engine(parse_file("spec/hub_app.lang"), clock=lambda: NOW)
+    from ponte.server import serve
+    e = Engine(parse_file("spec/hub_app.ponte"), clock=lambda: NOW)
     httpd = serve(e.spec, e, port=0, ticker=False)
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
     op = urllib.request.build_opener(urllib.request.ProxyHandler({}))

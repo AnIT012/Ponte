@@ -2,6 +2,13 @@
 
 細かい作業の記録は [REPORT.md](REPORT.md)。ここは「何が入ったか」だけ。
 
+## 名前: Ponte（2026-09-23）
+
+言語の名前を **Ponte（ポンテ）** に決めた。イタリア語で「橋」。人とAIの間、上の決まりと裏の Python の間にかかる橋。
+- 拡張子 `.lang` → `.ponte`、パッケージ `lang/` → `ponte/`、コマンド `python -m ponte`（`pip install -e .` で `ponte` だけでも）
+- エディタの色分けも Ponte に
+- 実験の記録（experiment/v2/runs*・prompts）と archive は、当時のまま `.lang` で残した
+
 ## v0.3（2026-09-23）
 
 仕様書を [v0.3](docs/言語仕様_v0.3.md) にまとめ直した（v0.2 と追補を1つに。決まりは同じ）。

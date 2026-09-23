@@ -8,13 +8,13 @@ from datetime import datetime
 
 import pytest
 
-from lang.examples import run_examples
-from lang.parser import parse, parse_file
-from lang.runtime import Engine, NotAllowed, RuleError
-from lang.server import serve
+from ponte.examples import run_examples
+from ponte.parser import parse, parse_file
+from ponte.runtime import Engine, NotAllowed, RuleError
+from ponte.server import serve
 
 NOW = datetime(2026, 9, 21, 21, 0)   # 9/21 21:00
-APP = "spec/hub_app.lang"
+APP = "spec/hub_app.ponte"
 
 
 def engine(path=APP, **kw):
@@ -22,7 +22,7 @@ def engine(path=APP, **kw):
 
 
 def test_examples_pass():
-    for path in ("spec/hub_ready.lang", APP):
+    for path in ("spec/hub_ready.ponte", APP):
         results = run_examples(parse_file(path))
         assert results and all(r.ok for r in results), [r for r in results if not r.ok]
 
@@ -66,7 +66,7 @@ def test_list_within_and_sort():
     for c, d, s in [("late", "9/30 10:00", "draft"), ("soon", "9/24 23:59", "draft"),
                     ("sooner", "9/22 9:00", "draft"), ("done", "9/22 9:00", "submitted"), ("past", "9/20 9:00", "draft")]:
         e.create("Application", {"company": c, "deadline": d, "status": s}, me, fire=False)
-    from lang.runtime import Ctx
+    from ponte.runtime import Ctx
     assert [b.values["company"] for b in e.list_items("DueSoon", Ctx(me))] == ["sooner", "soon"]
 
 
@@ -74,7 +74,7 @@ def test_who_hides_other_peoples_data():
     e = engine()
     me, other = e.login("me"), e.login("other")
     a = e.create("Application", {"company": "Mine", "deadline": "9/23 10:00"}, me)
-    from lang.runtime import Ctx
+    from ponte.runtime import Ctx
     assert e.list_items("DueSoon", Ctx(other)) == []
     with pytest.raises(NotAllowed):
         e.move(a, "submitted", other)
@@ -100,7 +100,7 @@ def test_tap_moves_only_this_and_relate_wins():
 
 
 def test_action_without_body_goes_to_else():
-    e = engine("spec/hub_ready.lang")          # 中身（.ai）がまだ無い spec
+    e = engine("spec/hub_ready.ponte")          # 中身（.ai）がまだ無い spec
     e.gives("Gmail", "new message", "【締切9/24 23:59】")
     assert "確認してください" in e.notifications[-1]["text"]
 
@@ -154,7 +154,7 @@ def test_relate_then_before_else():
     j = e.create("Job", {"name": "x"}, me)
     texts = [n["text"] for n in e.notifications]
     assert texts.index("A") < texts.index("B") and "C" in texts
-    e.run_rule(e.rules["D"], __import__("lang.runtime", fromlist=["Ctx"]).Ctx(me, this=j))   # new -> filed は動けない → else E
+    e.run_rule(e.rules["D"], __import__("ponte.runtime", fromlist=["Ctx"]).Ctx(me, this=j))   # new -> filed は動けない → else E
     assert e.notifications[-1]["text"] == "E"
     e.says(me, "go x")                          # {name} で絞って move、moves to read で G が続く
     assert j.values["step"] == "filed"

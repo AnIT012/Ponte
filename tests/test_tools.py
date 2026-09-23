@@ -4,13 +4,13 @@ import re
 import subprocess
 import sys
 
-from lang.build import build
+from ponte.build import build
 
 
 import pytest
 
 
-@pytest.mark.parametrize("spec", ["spec/hub_app.lang", "spec/kakeibo.lang"])     # kakeibo は std を使う
+@pytest.mark.parametrize("spec", ["spec/hub_app.ponte", "spec/kakeibo.ponte"])     # kakeibo は std を使う
 def test_build_single_file_runs_check_and_test(tmp_path, spec):
     out = tmp_path / "app.pyz"
     build(spec, str(out))
@@ -21,10 +21,10 @@ def test_build_single_file_runs_check_and_test(tmp_path, spec):
 
 
 def test_editor_grammar_is_valid():
-    g = json.load(open("editor/vscode/syntaxes/lang.tmLanguage.json", encoding="utf-8"))
+    g = json.load(open("editor/vscode/syntaxes/ponte.tmLanguage.json", encoding="utf-8"))
     for p in g["patterns"]:
         re.compile(p["match"])
     pkg = json.load(open("editor/vscode/package.json", encoding="utf-8"))
-    assert pkg["contributes"]["languages"][0]["extensions"] == [".lang"]
-    decl = next(p for p in g["patterns"] if p["name"] == "keyword.declaration.lang")
+    assert pkg["contributes"]["languages"][0]["extensions"] == [".ponte"]
+    decl = next(p for p in g["patterns"] if p["name"] == "keyword.declaration.ponte")
     assert re.search(decl["match"], "thing Application") and not re.search(decl["match"], "  where x is y")

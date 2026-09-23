@@ -1,9 +1,9 @@
 """画面のために足した言語の小さな部品のテスト。"""
 from datetime import datetime
 
-from lang.body import Body, in_range
-from lang.checker import check
-from lang.parser import parse, parse_file, split_comment
+from ponte.body import Body, in_range
+from ponte.checker import check
+from ponte.parser import parse, parse_file, split_comment
 
 
 def test_hex_color_is_not_a_comment():
@@ -18,7 +18,7 @@ def test_number_ranges_in_match():
 
 
 def test_part_computes_days_and_urgency():
-    spec = parse_file("spec/hub_app.lang")
+    spec = parse_file("spec/hub_app.ponte")
     p = spec.find("part", "DeadlineBadge")
     lines = list(p.child("do").children)
     body = Body(p, {}, ["deadline"], {}, single_result=False, lines=lines)
@@ -28,8 +28,8 @@ def test_part_computes_days_and_urgency():
 
 
 def test_app_spec_passes_publish_check():
-    from lang.checker import Options
-    assert [f.code for f in check(parse_file("spec/hub_app.lang"), Options(publish=True))] == []
+    from ponte.checker import Options
+    assert [f.code for f in check(parse_file("spec/hub_app.ponte"), Options(publish=True))] == []
 
 
 def test_days_until_is_not_until():
@@ -38,7 +38,7 @@ def test_days_until_is_not_until():
 
 
 def test_parse_button():
-    from lang.parser import parse_button
+    from ponte.parser import parse_button
     b = parse_button('failed-button    named 不合格 icon x confirm "不合格にしますか？"')
     assert (b["id"], b["label"], b["icon"], b["confirm"]) == ("failed-button", "不合格", "x", "不合格にしますか？")
     assert parse_button("menu named メニュー toggle menu")["act"] == {"kind": "toggle", "state": "menu"}
@@ -46,15 +46,15 @@ def test_parse_button():
 
 
 def test_words_quoted_keys():
-    from lang.parser import words_entries
+    from ponte.parser import words_entries
     w = parse('words en\n  draft  Draft\n  "あと{left}日"   {left} days left\n').decls("words")[0]
     assert words_entries(w) == {"draft": "Draft", "あと{left}日": "{left} days left"}
 
 
 def test_update_refuses_state_fields():
     import pytest
-    from lang.runtime import Engine, RuleError
-    e = Engine(parse_file("spec/hub_app.lang"), clock=lambda: datetime(2026, 9, 21))
+    from ponte.runtime import Engine, RuleError
+    e = Engine(parse_file("spec/hub_app.ponte"), clock=lambda: datetime(2026, 9, 21))
     me = e.login("me")
     a = e.create("Application", {"company": "A"}, me)
     e.update(a, {"memo": "hi"}, me)
@@ -66,7 +66,7 @@ def test_update_refuses_state_fields():
 
 
 def test_sort_desc():
-    from lang.runtime import Ctx, Engine
+    from ponte.runtime import Ctx, Engine
     spec = parse("thing A\n  d monthday\n\nwho\n  user can see A\n\nlist L\n  of    A\n  sort  d desc\n")
     e = Engine(spec, clock=lambda: datetime(2026, 9, 1))
     for d in ["9/2 10:00", "9/9 10:00", "9/5 10:00"]:
@@ -77,22 +77,22 @@ def test_sort_desc():
 
 
 def test_never_fail_and_return_empty():
-    from lang import fill as F
-    spec = parse_file("spec/hub_app.lang")
+    from ponte import fill as F
+    spec = parse_file("spec/hub_app.ponte")
     a = spec.find("action", "ExtractDeadline")
     crash = "```lang\ndo\n  hits = find all D in mail\n  r = found monthday of first of hits\n\nshape D\n  month digits 1..2\n  \"/\"\n  day digits 1..2\n  space\n  hour digits 1..2\n  \":\"\n  minute digits 2\n```"
     probs = F.verify(spec, a, F.extract_code(crash)).problems
     assert any(p.startswith("never fail") for p in probs)          # 見つからない時に first of で止まる
-    empty_spec = parse(open("spec/hub_app.lang", encoding="utf-8").read().replace("never    fail", "never    return empty"))
+    empty_spec = parse(open("spec/hub_app.ponte", encoding="utf-8").read().replace("never    fail", "never    return empty"))
     ea = empty_spec.find("action", "ExtractDeadline")
     empty = "```lang\ndo\n  r = found \" \"\n```"
     assert any(p.startswith("never return empty") for p in F.verify(empty_spec, ea, F.extract_code(empty)).problems)
 
 
 def test_take_limits_rows_in_view():
-    from lang.runtime import Engine
-    from lang.server import App
-    e = Engine(parse_file("spec/hub_app.lang"), clock=lambda: datetime(2026, 9, 21))
+    from ponte.runtime import Engine
+    from ponte.server import App
+    e = Engine(parse_file("spec/hub_app.ponte"), clock=lambda: datetime(2026, 9, 21))
     me = e.login("me")
     for i in range(25):
         e.create("Application", {"company": f"C{i}", "deadline": "10/1 10:00"}, me, fire=False)

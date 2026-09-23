@@ -1,0 +1,376 @@
+# 就活Hub — ブラウザで動かす版（python -m ponte run spec/hub_app.ponte）
+# 仕様書 v0.2 の付録に、画面（タブ・ボード・カレンダー・グラフ・詳しく・メニュー）と見た目を足したもの
+
+thing Application
+  company   text
+  deadline  monthday
+  memo      text
+  owner     User   gone[remove too]
+  status[draft | submitted | passed | failed]
+
+thing User
+  name text
+
+flow Application.status
+  draft -> submitted -> passed | failed
+  failed > passed
+
+who
+  user  can see    Application where owner is me
+  user  can change Application where owner is me
+  user  can see    User where it is me
+  user  can remove  Application where owner is me
+
+list DueSoon
+  of     Application
+  where  status is draft
+  where  deadline within 3 days
+  sort   deadline
+
+list Mine
+  of    Application
+  sort  deadline
+
+match Application.status to color
+  draft     -> orange
+  submitted -> blue
+  passed    -> green
+  failed    -> gray
+  else      -> gray
+
+match Application.status to icon
+  draft     -> draft
+  submitted -> send
+  passed    -> trophy
+  failed    -> x
+
+connect Gmail
+  gives  new message  Message
+  needs  key GMAIL_TOKEN
+
+action ExtractDeadline
+  in       mail text
+  out      found monthday | missing
+  example  "10/15(木)12:00まで"            -> found 10/15 12:00
+  example  "【締切9/24 23:59】"            -> found 9/24 23:59
+  example  "来週中にご提出ください"        -> missing
+  example  "9/24 23:59 または 9/30 23:59"  -> missing
+  never    guess the year
+  never    depend on width
+  never    fail
+  else     ask user
+  by       ai
+
+rule ReadMail
+  why   メールの締切を自動で拾うため
+  when  Gmail gives new message
+  do    ExtractDeadline
+
+rule Remind
+  why   締切を落とさないため
+  when  every day at 21:00
+  do    notify owner each of DueSoon
+  example
+    given   Application
+      company   "Osaka Gas"
+      deadline  "9/24 23:59"
+      status    draft
+    at      "9/21 21:00"
+    expect  notify "Osaka Gas"
+
+rule MarkSubmitted
+  when  user taps submitted-button on Application
+  do    move this to submitted
+  example
+    given Application
+      company  "Osaka Gas"
+      status   draft
+    taps submitted-button on Application
+      company "Osaka Gas"
+    expect Application is submitted
+      company "Osaka Gas"
+
+rule MarkPassed
+  when  user taps passed-button on Application
+  do    move this to passed
+  example
+    given Application
+      company  "Osaka Gas"
+      status   submitted
+    taps passed-button on Application
+      company "Osaka Gas"
+    expect Application is passed
+      company "Osaka Gas"
+
+rule MarkFailed
+  when  user taps failed-button on Application
+  do    move this to failed
+  example
+    given Application
+      company  "Osaka Gas"
+      status   submitted
+    taps failed-button on Application
+      company "Osaka Gas"
+    expect Application is failed
+      company "Osaka Gas"
+
+rule OpenAdd
+  when  user taps add on Home
+  do    go AddApplication
+  example
+    taps    add on Home
+    expect  scene AddApplication
+
+rule OpenDetail
+  when  user taps card on Application
+  do    go Detail with this
+  example
+    given Application
+      company  "Osaka Gas"
+      status   draft
+    taps card on Application
+      company "Osaka Gas"
+    expect scene Detail
+
+rule OpenEdit
+  when  user taps edit-button on Application
+  do    go EditApplication with this
+  example
+    given Application
+      company  "Osaka Gas"
+      status   draft
+    taps edit-button on Application
+      company "Osaka Gas"
+    expect scene EditApplication
+
+rule RemoveApplication
+  why   間違えて足した応募を消せるように
+  when  user taps delete-button on Application
+  do    remove this
+  example
+    given Application
+      company  "Osaka Gas"
+      status   draft
+    taps delete-button on Application
+      company "Osaka Gas"
+    expect scene Home
+
+rule GoHome
+  do go Home
+
+rule Back
+  when  user taps back on Detail
+  do    go Home
+  example
+    taps    back on Detail
+    expect  scene Home
+
+relate
+  MarkSubmitted > Remind
+  RemoveApplication then GoHome
+
+# ---- 画面 ----
+
+scene Home
+  tab[soon | all | board | calendar] = soon
+  menu[closed | open] = closed
+  top     Header
+  top     tabs tab
+  top     notices
+  top     button menu-button named menu icon menu toggle menu
+  main    match tab
+    soon     -> DueSoon as cards
+    all      -> Mine as list
+    board    -> Mine as board
+    calendar -> Mine as calendar
+  side    Mine as chart
+  bottom  button add named add-application icon plus
+  over    match menu
+    open   -> Menu as sheet
+    closed -> nothing
+
+scene Detail
+  top   Header
+  top   button back named back icon back
+  main  this as detail
+
+match tab to icon
+  soon     -> clock
+  all      -> list
+  board    -> board
+  calendar -> calendar
+
+flow scene
+  Home -> AddApplication -> Home
+  Home -> Detail -> Home
+  Detail -> EditApplication -> Detail
+
+part Header
+  show  text app-name
+  show  text app-tagline
+
+part Menu
+  show  text menu
+  show  text menu-body
+
+part DeadlineBadge
+  in    deadline monthday
+  do
+    left = days until deadline
+    urgency[over | today | soon | later] = match left
+      ..-1 -> over
+      0    -> today
+      1..3 -> soon
+      else -> later
+    label = match urgency
+      over  -> "label-over"
+      today -> "label-today"
+      soon  -> "label-days-left"
+      later -> "label-days-left"
+  show  text badge-line
+  mark  urgency
+
+match DeadlineBadge.urgency to color
+  over  -> gray
+  today -> red
+  soon  -> orange
+  later -> blue
+
+look DueSoon as cards
+  heading  due-heading
+  lead     company
+  title    company
+  sub      DeadlineBadge of deadline
+  mark     color of status
+  button   submitted-button named submit icon send
+  empty    due-empty button add named add-application icon plus
+
+look Mine as list
+  take    20
+  search  company, memo
+  group   by status
+  lead    company
+  title   company
+  sub     DeadlineBadge of deadline
+  empty   mine-empty button add named add-application icon plus
+
+look Application as detail
+  lead    company
+  title   company
+  sub     DeadlineBadge of deadline
+  mark    color of status
+  button  submitted-button named submit icon send
+  button  passed-button    named pass icon trophy tone good
+  button  failed-button    named reject icon x tone danger confirm reject-confirm
+  button  edit-button      named edit icon edit tone quiet
+  button  delete-button  named delete icon trash tone danger confirm delete-confirm
+
+input AddApplication
+  company   required
+  deadline  required, from now
+  memo
+
+input EditApplication
+  company   required
+  deadline  required
+  memo
+
+style theme
+  color   main  #4F46E5
+  radius  14
+
+style DueSoon
+  card     pad 18
+  title    size 18, bold
+  enter    slide 240ms
+  reorder  slide 220ms
+
+words ja
+  draft            下書き
+  submitted        提出済み
+  passed           通過
+  failed           不合格
+  soon             締切が近い
+  all              すべて
+  board            ボード
+  calendar         カレンダー
+  company          会社
+  deadline         締切
+  memo             メモ
+  owner            担当
+  status           状態
+  over             期限切れ
+  today            今日
+  later            まだ先
+  Mine             選考のようす
+  AddApplication   応募を追加
+  EditApplication  応募を編集
+  app-name         就活Hub
+  app-tagline      締切と選考をひとつに
+  menu             メニュー
+  menu-body        通知は毎日21時。締切が3日以内の下書きをお知らせします
+  submit           提出した
+  pass             通過
+  reject           不合格
+  reject-confirm   不合格にしますか？
+  edit             編集
+  back             戻る
+  add-application  応募を追加
+  due-heading      3日以内に締切
+  due-empty        3日以内に締切の下書きはありません
+  mine-empty       まだ応募がありません
+  badge-line       {deadline} ・ {label}
+  label-over       締切を過ぎました
+  label-today      今日が締切
+  label-days-left  あと{left}日
+  search           さがす
+  save             保存
+  cancel           キャンセル
+  more             もっと見る
+  delete           消す
+  delete-confirm   この応募を消しますか？
+
+words en
+  draft            Draft
+  submitted        Submitted
+  passed           Passed
+  failed           Rejected
+  soon             Due soon
+  all              All
+  board            Board
+  calendar         Calendar
+  company          Company
+  deadline         Deadline
+  memo             Memo
+  owner            Owner
+  status           Status
+  over             Overdue
+  today            Today
+  later            Later
+  Mine             Pipeline
+  AddApplication   New application
+  EditApplication  Edit application
+  app-name         Job Hunt Hub
+  app-tagline      Deadlines and pipeline in one place
+  menu             Menu
+  menu-body        Reminders go out every day at 21:00 for drafts due within 3 days
+  submit           Mark submitted
+  pass             Passed
+  reject           Rejected
+  reject-confirm   Mark as rejected?
+  edit             Edit
+  back             Back
+  add-application  New application
+  due-heading      Due within 3 days
+  due-empty        Nothing due in the next 3 days
+  mine-empty       No applications yet
+  badge-line       {deadline} · {label}
+  label-over       Overdue
+  label-today      Due today
+  label-days-left  {left} days left
+  search           Search
+  save             Save
+  cancel           Cancel
+  more             Show more
+  delete           Delete
+  delete-confirm   Delete this application?

@@ -12,10 +12,10 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from lang.parser import flow_parts, parse_file
-from lang.runtime import Engine, RuleError
+from ponte.parser import flow_parts, parse_file
+from ponte.runtime import Engine, RuleError
 
-SPEC = parse_file("spec/hub_app.lang")
+SPEC = parse_file("spec/hub_app.ponte")
 STATES = ["draft", "submitted", "passed", "failed"]
 EDGES, WINS = flow_parts(SPEC.find("flow", "Application.status"))
 BUTTONS = ["submitted-button", "passed-button", "failed-button", "delete-button", "card", "edit-button"]

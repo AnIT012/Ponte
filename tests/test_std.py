@@ -4,17 +4,17 @@ from datetime import datetime
 
 import pytest
 
-from lang.body import BodyError, body_of
-from lang.checker import check
-from lang.examples import holes, run_examples
-from lang.parser import STD_DIR, ParseError, parse, parse_file
-from lang.runtime import Engine
+from ponte.body import BodyError, body_of
+from ponte.checker import check
+from ponte.examples import holes, run_examples
+from ponte.parser import STD_DIR, ParseError, parse, parse_file
+from ponte.runtime import Engine
 
-STD = sorted(f[:-5] for f in os.listdir(STD_DIR) if f.endswith(".lang"))
+STD = sorted(f[:-len(".ponte")] for f in os.listdir(STD_DIR) if f.endswith(".ponte"))
 
 
 def use(name, tmp_path):
-    p = tmp_path / "t.lang"
+    p = tmp_path / "t.ponte"
     p.write_text(f"use std/{name}\n", encoding="utf-8")
     return parse_file(str(p))
 
@@ -60,7 +60,7 @@ def test_word_with_is_ascii_and_part_access():
 
 
 def test_kakeibo_uses_std_money():
-    spec = parse_file("spec/kakeibo.lang")
+    spec = parse_file("spec/kakeibo.ponte")
     assert [f for f in check(spec) if f.is_error] == []
     res = run_examples(spec)
     assert all(r.ok for r in res) and holes(spec, res) == []
@@ -71,14 +71,14 @@ def test_kakeibo_uses_std_money():
     assert a.values["yen"] == "2200" and g.values["yen"] == ""
     assert e.notifications == []                      # 拾えない時は静かに（skip）
 
-    from lang.server import App
+    from ponte.server import App
     v = App(spec, e).view("Home", me, {}, None, None, "ja")
     stats = [b for s in v["slots"] for b in s["blocks"] if b.get("type") == "stats"][0]["items"]
     assert [(x["label"], x["value"]) for x in stats] == [("メモの数", "2"), ("金額の合計", "2,200")]
 
 
 def test_set_value_is_checked():
-    spec = parse_file("spec/kakeibo.lang")
-    src = open("spec/kakeibo.lang", encoding="utf-8").read().replace("do    set yen to result", "do    set yen to (result)")
+    spec = parse_file("spec/kakeibo.ponte")
+    src = open("spec/kakeibo.ponte", encoding="utf-8").read().replace("do    set yen to result", "do    set yen to (result)")
     found = [f.code for f in check(parse(src))]
     assert "E31" in found and spec is not None

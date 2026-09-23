@@ -45,6 +45,7 @@ class Box:
     prev: dict = field(default_factory=dict)          # flow の項目ごとの直前の状態
     done: set = field(default_factory=set)            # この箱で済んだ rule
     blocked: set = field(default_factory=set)         # then no で止められた rule
+    last_move: tuple | None = None                    # 直前の move（項目, 前, 後, した人の id）。1回だけ取り消せる
 
 
 @dataclass
@@ -247,6 +248,7 @@ class Engine:
             if cur == to:
                 return
             can = lambda a, b: (a, b) in edges
+            before = cur
             if can(cur, to):
                 box.prev[fld] = cur
                 box.values[fld] = to
@@ -262,9 +264,27 @@ class Engine:
                 else:
                     raise RuleError(f"{box.thing}.{fld}: {cur} から {to} へは動けません")
             self._log({"t": "set", "thing": box.thing, "id": box.id, "field": fld, "value": box.values[fld]})
+            box.last_move = (fld, before, box.values[fld], user.id if user else None)
         self._changed()
         if fire:
             self.fire(f"{box.thing} moves to {to}", Ctx(user, this=box))
+
+    def undo(self, box: Box, user: User) -> str:
+        """直前の1回の move だけを取り消す。した本人だけ。flow の矢印は増やさない。
+        move で起きた出来事（通知など）は取り消さない。"""
+        with box.lock:
+            lm = box.last_move
+            if lm is None:
+                raise RuleError("取り消せる変更がありません（取り消せるのは直前の1回だけ）")
+            fld, before, after, who = lm
+            if who != user.id or box.values.get(fld) != after:
+                raise RuleError("取り消せるのは、自分がした直前の1回だけです")
+            box.values[fld] = before
+            box.prev[fld] = None
+            box.last_move = None
+            self._log({"t": "set", "thing": box.thing, "id": box.id, "field": fld, "value": before})
+        self._changed()
+        return before
 
     def remove(self, box: Box, user: User | None, fire: bool = True, _seen: set | None = None) -> None:
         """箱を消す。この箱を指している項目は gone[...] の通りにする（remove too / leave empty / block）"""

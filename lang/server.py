@@ -59,7 +59,8 @@ class App:
             self.part_bodies[name] = Body(p, {}, [in_.text.split()[0]] if in_ else [], {}, single_result=False, lines=lines)
 
     # ------------------------------------------------------------------
-    BUILTIN = {"search": "さがす", "save": "保存", "cancel": "キャンセル", "none": "まだありません", "more": "もっと見る"}   # 言語が出す文字（words で訳せる）
+    BUILTIN = {"search": "さがす", "save": "保存", "cancel": "キャンセル", "none": "まだありません", "more": "もっと見る", "undo": "取り消す",
+               "next-year": "来年（{year}年）の締切ですか？ いいえなら、もう過ぎた締切として保存します"}   # 言語が出す文字（words で訳せる）
 
     def tr(self, key, env: Env) -> str:
         key = "" if key is None else str(key)
@@ -585,8 +586,18 @@ def make_handler(app: App):
             user = self._user(data.get("user"))
             try:
                 if self.path == "/api/tap":
+                    box = next((t[data["id"]] for t in app.eng.boxes.values() if data.get("id") in t), None) if data.get("id") else None
+                    before = box.last_move if box is not None else None
                     ctx = app.eng.tap(user, data["button"], data["on"], data.get("id"))
-                    self._json({"nav": ctx.nav, "this": ctx.this.id if ctx.this is not None else None})
+                    moved = box is not None and box.last_move is not None and box.last_move is not before
+                    self._json({"nav": ctx.nav, "this": ctx.this.id if ctx.this is not None else None,
+                                "undo": box.id if moved else None, "undo_label": app.tr("undo", Env(user, "", {}, None, None, data.get("lang") or "ja"))})
+                elif self.path == "/api/undo":
+                    box = next((t[data["id"]] for t in app.eng.boxes.values() if data["id"] in t), None)
+                    if box is None:
+                        raise RuleError("見つかりません")
+                    app.eng.undo(box, user)
+                    self._json({"ok": True})
                 elif self.path == "/api/drag":
                     box = next((t[data["id"]] for t in app.eng.boxes.values() if data["id"] in t), None)
                     fld = app.state_field(box.thing) if box else None
@@ -617,6 +628,18 @@ def make_handler(app: App):
                             raise ValueError(f"{app.tr(c.keyword, Env(user, '', {}, None, None, data.get('lang') or 'ja'))} は必須です")
                         if "from now" in c.text and v and parse_time(v, app.eng.clock().year) < app.eng.clock():
                             raise ValueError(f"{c.keyword} は今より後にしてください（from now）")
+                    now = app.eng.clock()
+                    for k, v in list(values.items()):              # 年の無い月日が今日より前 → 来年かどうかを人に聞く（推測しない）
+                        if app.eng.fields[thing][k].type == "monthday" and not re.match(r"^\d{4}", v):
+                            t = parse_time(v, now.year)
+                            if t.date() < now.date():
+                                ans = (data.get("year_answers") or {}).get(k)
+                                if ans is None:
+                                    msg = app.tr("next-year", Env(user, "", {}, None, None, data.get("lang") or "ja")).replace("{year}", str(now.year + 1))
+                                    self._json({"ask": {"field": k, "text": msg}})
+                                    return
+                                if ans == "next":
+                                    values[k] = f"{now.year + 1}/{t.month}/{t.day} {t.hour}:{t.minute:02d}"
                     box = next((t[data["this"]] for t in app.eng.boxes.values() if data.get("this") in t), None) if data.get("this") else None
                     if box is not None:
                         app.eng.update(box, values, user)

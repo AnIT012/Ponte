@@ -335,10 +335,18 @@ function paintPanel(){
   document.body.insertAdjacentHTML("beforeend", `<div class="panel" id="panel" data-stop><h4>お知らせ</h4>${list.length ? list.map(x =>
     `<div class="note"><b>${esc(x.rule)}</b><span>${esc(x.text)}</span><time>${esc((x.at || "").replace("T", " "))}</time></div>`).join("") : `<div class="nores">お知らせはまだありません</div>`}</div>`);
 }
+function undoToast(id, label, what){
+  // 直前の1回だけ取り消せる（言語が持っている仕組み）
+  const t = document.createElement("div"); t.className = "toast";
+  t.innerHTML = `<span style="flex:1">${esc(what)}</span><button class="btn sm quiet" style="background:transparent;color:inherit;border-color:currentColor">${esc(label)}</button>`;
+  t.querySelector("button").onclick = async () => { t.remove(); await post("/api/undo", {id}); render(); };
+  document.getElementById("toasts").appendChild(t);
+  setTimeout(() => { t.classList.add("out"); setTimeout(() => t.remove(), 300); }, 6000);
+}
 function ask(text){
   return new Promise(ok => {
     const v = document.createElement("div"); v.className = "veil";
-    v.innerHTML = `<div class="dialog ask"><h3>${esc(text)}</h3><p>元に戻せないことがあります。</p><div class="act"><button class="btn quiet" data-ans="0">やめる</button><button class="btn main" data-ans="1">${icon("check")}はい</button></div></div>`;
+    v.innerHTML = `<div class="dialog ask"><h3>${esc(text)}</h3><div class="act"><button class="btn quiet" data-ans="0">やめる</button><button class="btn main" data-ans="1">${icon("check")}はい</button></div></div>`;
     v.addEventListener("click", e => { e.stopPropagation(); const a = e.target.closest("[data-ans]"); if(a || e.target === v){ v.remove(); ok(a?.dataset.ans === "1"); } });
     document.body.appendChild(v); v.querySelector("[data-ans='1']").focus();
   });
@@ -364,7 +372,8 @@ document.addEventListener("click", async e => {
     if(act === "tap"){
       if(el.dataset.confirm && !(await ask(el.dataset.confirm))) return;
       el.disabled = true;
-      const r = await post("/api/tap", {button: el.dataset.button, on: el.dataset.on, id: el.dataset.id || null});
+      const r = await post("/api/tap", {button: el.dataset.button, on: el.dataset.on, id: el.dataset.id || null, lang: LANG});
+      if(r.undo) undoToast(r.undo, r.undo_label, el.textContent.trim());
       if(r.nav) return go(r.nav, r.this || el.dataset.id, el.dataset.on);
       return render();
     }
@@ -379,7 +388,12 @@ document.addEventListener("submit", async e => {
   e.preventDefault(); const f = e.target, err = f.querySelector("#err");
   const missing = [...f.querySelectorAll("[required]")].filter(i => !i.value);
   if(missing.length){ err.textContent = "必須の項目が空です: " + missing.map(i => i.closest("label").firstChild.firstChild.textContent.trim()).join("、"); missing[0].focus(); return; }
-  const r = await post("/api/submit", {input: f.dataset.input, this: f.dataset.this || null, values: Object.fromEntries(new FormData(f).entries())});
+  const values = Object.fromEntries(new FormData(f).entries()), year_answers = {};
+  let r = await post("/api/submit", {input: f.dataset.input, this: f.dataset.this || null, values, lang: LANG});
+  while(r.ask){                                   // 年の無い日付が今日より前 → 来年か聞く
+    year_answers[r.ask.field] = (await ask(r.ask.text)) ? "next" : "this";
+    r = await post("/api/submit", {input: f.dataset.input, this: f.dataset.this || null, values, year_answers, lang: LANG});
+  }
   if(r.error){ err.textContent = r.error; return; }
   toast(r.edited ? "書き換えました" : "保存しました"); goBack();
 });

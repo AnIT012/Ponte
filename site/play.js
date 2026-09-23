@@ -4,7 +4,12 @@ const src = $("src"), hl = $("hl"), out = $("out"), state = $("state"), testBtn 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
 const md = s => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>");
 let py = null, timer = null, seq = 0;
-try { src.value = localStorage.getItem("ponte-play") || SAMPLES.todo; } catch (e) { src.value = SAMPLES.todo; }
+// 共有リンク: #code=… に書いたものを入れる（# の後ろはサーバーに送られない）
+const b64 = t => btoa(String.fromCharCode(...new TextEncoder().encode(t))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const unb64 = t => new TextDecoder().decode(Uint8Array.from(atob(t.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0)));
+let shared = null;
+try { const m = location.hash.match(/^#code=([\w-]+)$/); if (m) shared = unb64(m[1]); } catch (e) {}
+try { src.value = shared ?? localStorage.getItem("ponte-play") ?? SAMPLES.todo; } catch (e) { src.value = shared ?? SAMPLES.todo; }
 
 function paintPlain() { hl.textContent = src.value + "\n"; }
 function sync() { hl.scrollTop = src.scrollTop; hl.scrollLeft = src.scrollLeft; }
@@ -46,6 +51,13 @@ testBtn.addEventListener("click", () => {
   out.innerHTML = `<p class="${ok === r.results.length ? "ok" : "bad"}">example ${r.results.length}件中 ${ok}件通過</p>` +
     r.results.map(x => `<button type="button" class="finding ${x[2] ? "pass" : "err"}" data-line="${x[1]}"><span class="where">${x[2] ? "通過" : "失敗"} ・ ${esc(x[0])}</span>${x[3] ? `<span class="msg">${esc(x[3])}</span>` : ""}</button>`).join("") +
     (r.holes.length ? `<p class="holes">確かめていない所（${r.holes.length}件）</p>` + r.holes.map(h => `<button type="button" class="finding warn" data-line="${h[0]}"><span class="where">${h[0]}行目</span><span class="msg">${esc(h[1])}</span></button>`).join("") : "");
+});
+$("share").addEventListener("click", async () => {
+  const url = location.href.split("#")[0] + "#code=" + b64(src.value);
+  history.replaceState(null, "", url);
+  try { await navigator.clipboard.writeText(url); $("share").textContent = "コピーしました"; }
+  catch (e) { $("share").textContent = "URL に入れました"; }
+  setTimeout(() => { $("share").textContent = "共有"; }, 1800);
 });
 docBtn.addEventListener("click", () => {
   const page = py.globals.get("run_doc")(src.value);

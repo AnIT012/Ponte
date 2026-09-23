@@ -327,7 +327,7 @@ def play() -> str:
     <textarea id="src" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Ponte のコード"></textarea>
   </div>
   <div class="panel sticker" aria-live="polite">
-    <div class="panel-bar"><span id="state" class="state">準備しています…</span><span class="acts"><button type="button" id="doc" class="quiet" disabled>決めごと</button><button type="button" id="test" disabled>test</button></span></div>
+    <div class="panel-bar"><span id="state" class="state">準備しています…</span><span class="acts"><button type="button" id="share" class="quiet">共有</button><button type="button" id="doc" class="quiet" disabled>決めごと</button><button type="button" id="test" disabled>test</button></span></div>
     <div id="out" class="out"><p class="muted">はじめての読み込みには数秒かかります（Python をブラウザに読み込むため）。</p></div>
   </div>
 </div>

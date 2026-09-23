@@ -14,6 +14,30 @@ from dataclasses import dataclass
 from .parser import Node, match_arms, states_of
 
 
+TOOLS_HINT = ("（使える道具: normalize X / trim X / lower X / upper X / split X by \",\" / join X by \",\" / "
+              "replace \"a\" with \"b\" in X / find all 形 in X / count of X / first of X / last of X / "
+              "monthday of X / number of X / a + b / a - b）")
+
+# 他の言語のクセで書いた時に、この言語での書き方を教える（AIは見たことのない文法なので）
+_HABITS = [
+    (r"^\s*(if|elif|else\b|switch|case)\b", "分かれ道は `名前[a | b] = match 式` と、その下の枝 `値 -> 結果` で書きます"),
+    (r"^\s*(for|while|foreach)\b|\.map\(|\.filter\(", "くり返しはありません。find all 形 in X / count of X / first of X を使います"),
+    (r"^\s*return\b", "return はありません。答えは「他のどの行からも使われていない行」です"),
+    (r"==|!=|<=|>=|\s[<>]\s|\band\b|\bor\b|\bnot\b", "比べる・かつ・またはは、match の枝で書きます。例: `kind[one | many] = match count of hits` の下に `1 -> one`"),
+    (r"\bre\.|\\d|\[0-9\]|regex", "正規表現の代わりに shape を書きます（`shape 名前` の下に `month digits 1..2` / `\"/\"` / `maybe space`）"),
+    (r"\blen\(", "長さ・数は count of X です"),
+    (r"\b(true|false|True|False|None|null)\b", "true / false / null はありません。状態の名前（`[found | missing]`）で書きます"),
+    (r"\w\(", "道具は カッコで呼びません。`count of X` / `normalize X` のように書きます"),
+]
+
+
+def habit_hint(text: str) -> str:
+    for pat, hint in _HABITS:
+        if re.search(pat, text):
+            return f"（{hint}）"
+    return ""
+
+
 class BodyError(Exception):
     def __init__(self, line: int, message: str):
         super().__init__(f"L{line}: {message}")
@@ -124,7 +148,7 @@ class Body:
         for c in (lines if lines is not None else do.children):
             m = re.match(r"^(\w+)\s*(\[[^\]]*\])?\s*=\s*(.+)$", c.raw)
             if not m:
-                raise BodyError(c.line, f"do に書けるのは `名前 = 式` だけです: '{c.raw}'")
+                raise BodyError(c.line, f"do に書けるのは `名前 = 式` だけです: '{c.raw}'" + habit_hint(c.raw))
             name = m.group(1)
             if name in self.steps or name in inputs:
                 raise BodyError(c.line, f"{name} はもう使われています（書き換えはできません）")
@@ -279,7 +303,7 @@ class Body:
         if m:
             a, b = ev(m.group(1)), ev(m.group(3))
             return a + b if m.group(2) == "+" else a - b
-        raise BodyError(line, f"式が分かりません: '{e}'（使える道具は 10章）")
+        raise BodyError(line, f"式が分かりません: '{e}'" + (habit_hint(e) or TOOLS_HINT))
 
 
 # ---------------------------------------------------------------------------

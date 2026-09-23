@@ -144,3 +144,22 @@ def test_reply_that_repeats_the_contract_is_read(spec):
     """実験2回目の B4: 契約まで書き写して、do と shape を中に字下げした返事も読める（中身は変えない）"""
     code = F.extract_code(open("experiment/v2/runs2/B4/reply.md", encoding="utf-8").read())
     assert F.verify(spec, spec.find("action", "ExtractDeadline"), code).ok
+
+
+def test_habit_hints_teach_this_language():
+    """他の言語のクセで書いたら、この言語での書き方を返す。同じ間違いは1回だけ"""
+    from lang.fill import verify
+    spec = parse_file("spec/hub_app.lang")
+    a = spec.find("action", "ExtractDeadline")
+    cases = {
+        "do\n  x = trim mail\n  if x == 1:\n    y = x\n": "match 式",
+        "do\n  return missing\n": "答えは「他のどの行からも使われていない行」",
+        'do\n  hits = re.findall(r"\\d+", mail)\n': "shape",
+        "do\n  a = len(mail)\n": "count of X",
+        "do\n  a = bogus mail\n": "使える道具",
+    }
+    for code, hint in cases.items():
+        probs = verify(spec, a, code).problems
+        assert hint in probs[0], (code, probs[0])
+    probs = verify(spec, a, "do\n  a = bogus mail\n").problems
+    assert sum("bogus" in p for p in probs if p.startswith("example")) == 1

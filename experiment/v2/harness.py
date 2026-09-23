@@ -234,12 +234,28 @@ def t_race(mk):
     assert not errs and s.apps("me")[0]["status"] == "submitted"
 
 
+TIME_LIMIT = 10     # 1テストの時間。これを超えたら「止まった」（デッドロックなど）として落とす
+
+
 def run(mk) -> list[tuple[str, bool, bool, str]]:
     out = []
     for name, fn, ex in TESTS:
-        try:
-            fn(mk)
+        box: list = []
+
+        def go():
+            try:
+                fn(mk)
+                box.append(None)
+            except Exception as e:  # noqa: BLE001
+                box.append(e)
+        t = threading.Thread(target=go, daemon=True)
+        t.start()
+        t.join(TIME_LIMIT)
+        if not box:
+            out.append((name, False, ex, f"{TIME_LIMIT}秒たっても終わりません（止まっている。デッドロックなど）"))
+        elif box[0] is None:
             out.append((name, True, ex, ""))
-        except Exception as e:      # noqa: BLE001
+        else:
+            e = box[0]
             out.append((name, False, ex, f"{type(e).__name__}: {e}"[:200]))
     return out

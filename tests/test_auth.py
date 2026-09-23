@@ -105,3 +105,15 @@ def test_page_shows_who_is_logged_in(site):
     cookie = h["set-cookie"].split(";")[0]
     st, _, body = req(port, "GET", "/", headers={"cookie": cookie})
     assert st == 200 and 'taro ・ <a href="/logout">' in body
+
+
+def test_lang_in_url_cannot_inject(tmp_path):
+    import threading as _t
+    spec = parse_file(SPEC)
+    httpd = serve(spec, Engine(spec), port=0, ticker=False)
+    _t.Thread(target=httpd.serve_forever, daemon=True).start()
+    try:
+        st, _, body = req(httpd.server_address[1], "GET", '/?lang=%22%3Balert(1)%3B%2F%2F%3C%2Fscript%3E')
+        assert st == 200 and "alert(1)" not in body
+    finally:
+        httpd.shutdown()

@@ -823,6 +823,10 @@ def check_undefined(spec: Spec, opt: Options) -> list[Finding]:
                 out.append(Finding("E28", c.line, f"ボタンの書き方が分かりません（button 名前 named 文字 [icon 名前] [confirm \"文\"] [toggle 状態 / set 状態 値]）: '{c.raw}'"))
             elif b["icon"] and b["icon"] not in ICONS:
                 out.append(Finding("E28", c.line, f"アイコン「{b['icon']}」はありません（使えるのは {', '.join(sorted(ICONS))}）"))
+    for st in spec.decls("style"):
+        for c in st.children:
+            if re.search(r"\btone\b", c.text):
+                out.append(Finding("E28", c.line, f"style {st.name}: tone はボタンの行に書きます（`button {c.keyword} named ... tone {c.text.split()[-1]}`）"))
     for m in spec.decls("match"):
         if m.text.endswith(" to icon"):
             for _, right, arm in match_arms(m):

@@ -241,9 +241,9 @@ look Application as detail
   sub     DeadlineBadge of deadline
   mark    color of status
   button  submitted-button named 提出した icon send
-  button  passed-button    named 通過 icon trophy
-  button  failed-button    named 不合格 icon x confirm "不合格にしますか？"
-  button  edit-button      named 編集 icon edit
+  button  passed-button    named 通過 icon trophy tone good
+  button  failed-button    named 不合格 icon x tone danger confirm "不合格にしますか？"
+  button  edit-button      named 編集 icon edit tone quiet
 
 input AddApplication
   company   required
@@ -264,11 +264,6 @@ style DueSoon
   title    size 18, bold
   enter    slide 240ms
   reorder  slide 220ms
-
-style Application
-  passed-button  tone good
-  failed-button  tone danger
-  edit-button    tone quiet
 
 words ja
   draft                下書き

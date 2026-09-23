@@ -453,6 +453,20 @@ def data_import(eng, args) -> int:
     return 0
 
 
+def cmd_doc(args) -> int:
+    from .doc import build
+    try:
+        spec = parse_file(args.spec)
+    except (ParseError, FileNotFoundError) as e:
+        print(f"読めません: {e}")
+        return 1
+    out = args.out or (os.path.splitext(args.spec)[0] + ".html")
+    with open(out, "w", encoding="utf-8") as f:
+        f.write(build(spec))
+    print(f"決めごとの1枚を書きました: {out}")
+    return 0
+
+
 def cmd_explain(args) -> int:
     from .errors import ERRORS, explain
     if not args.code:
@@ -537,6 +551,10 @@ def build_parser() -> argparse.ArgumentParser:
     da.add_argument("--data", help="データのファイル（既定は <spec>.data.jsonl）")
     da.add_argument("--csv", metavar="DIR", help="export を thing ごとの CSV にする")
     da.set_defaults(fn=cmd_data)
+    dc = sub.add_parser("doc", help="決めごとを、コードを読まない人にも読める1枚の HTML に")
+    dc.add_argument("spec")
+    dc.add_argument("-o", "--out", help="書き出す先（既定は <spec>.html）")
+    dc.set_defaults(fn=cmd_doc)
     ls = sub.add_parser("lsp", help="エディタ向けの言語サーバー（標準入出力。エラー・説明・補い）")
     ls.set_defaults(fn=lambda a: __import__("ponte.lsp", fromlist=["serve"]).serve())
     ex = sub.add_parser("explain", help="エラーの意味と直し方（例: explain E32。無しなら一覧）")

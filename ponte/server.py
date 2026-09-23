@@ -99,6 +99,8 @@ class App:
             for t in self.eng.boxes.values():
                 if this_id in t:
                     this = t[this_id]
+            if this is not None and user is not None and not self.eng.can(user, "see", this.thing, this):
+                raise RuleError("見つかりません")          # 見られない箱は、あるかどうかも言わない
         env = Env(user, scene, dict(state), this, origin, lang)
         self._viewer = user.name if user is not None else "me"
         self._local.user = user
@@ -770,6 +772,9 @@ def make_handler(app: App):
                 try:
                     v = app.view(q.get("scene") or app.home, user, state,
                                  q.get("this"), q.get("origin"), q.get("lang") or "ja")
+                except RuleError as e:
+                    self._json({"error": str(e), "slots": [], "states": {}}, 404)
+                    return
                 except Exception as e:    # 見せる途中で壊れても、理由を画面に出す
                     self._json({"error": f"{type(e).__name__}: {e}", "slots": [], "states": {}}, 500)
                     return

@@ -41,230 +41,183 @@ code,pre{font-family:var(--mono)}
 section{padding-block:56px}
 .eyebrow{font-family:var(--pop);font-size:13px;letter-spacing:.08em;color:var(--tomato)}
 
-/* ---- hero ---- */
-.hero{padding-block:40px 24px;display:grid;gap:18px;justify-items:center;text-align:center}
-.bridge{width:100%;max-width:720px}
-.bridge svg{width:100%;height:auto;display:block;overflow:visible}
-.word{font-family:var(--pop);font-size:clamp(64px,13vw,128px);letter-spacing:.02em;line-height:1}
-.word span:nth-child(1){color:var(--tomato)}.word span:nth-child(2){color:var(--lemon);-webkit-text-stroke:2px var(--line)}
+/* ---- top bar ---- */
+.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-block:18px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo svg{width:52px;height:auto}
+.logo .word{font-size:34px}
+.nav{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--pop);font-size:14px}
+.nav a{text-decoration:none;padding:4px 2px;border-bottom:3px solid transparent}
+.nav a:hover{border-bottom-color:var(--tomato)}
+.word{font-family:var(--pop);letter-spacing:.02em;line-height:1}
+.word span:nth-child(1){color:var(--tomato)}.word span:nth-child(2){color:var(--lemon);-webkit-text-stroke:1.5px var(--line)}
 .word span:nth-child(3){color:var(--mint)}.word span:nth-child(4){color:var(--sky)}.word span:nth-child(5){color:var(--tomato)}
-.tag{font-family:var(--pop);font-size:clamp(18px,3vw,24px)}
-.lead{max-width:36em;color:var(--muted)}
-.cta{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:6px}
-.btn{font-family:var(--pop);text-decoration:none;padding:12px 22px;border:3px solid var(--line);border-radius:999px;box-shadow:4px 4px 0 var(--line);background:var(--lemon);color:#1B1F3B;transition:transform .12s,box-shadow .12s}
-.btn.alt{background:var(--panel);color:var(--ink)}
-.btn:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--line)}
-.btn:focus-visible{outline:3px dashed var(--tomato);outline-offset:4px}
-.features{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-top:26px}
-.feature{padding:22px 22px 20px;display:flex;flex-direction:column;gap:10px;min-width:0}
-.feature h3{font-size:19px}
-.feature p code{font-size:13px;background:var(--ground);padding:1px 6px;border-radius:6px}
-.code.mini{font-size:12.5px;padding:14px 16px;border-radius:14px;margin-top:4px}
-.story{display:grid;gap:14px;margin-top:26px;max-width:640px}
-.bubble{padding:14px 18px;font-size:15.5px;max-width:92%}
-.bubble .who{display:block;font-family:var(--pop);font-size:12px;margin-bottom:2px}
-.bubble.me{background:var(--lemon);color:#1B1F3B;justify-self:start;border-bottom-left-radius:6px}
-.bubble.ai{background:var(--mint);color:#0D2B28;justify-self:end;border-bottom-right-radius:6px}
-.bubble.fact{background:var(--panel);justify-self:start}
-.bubble.fact b{color:var(--err);font-weight:500}
-.aside{max-width:40em;margin-top:18px;color:var(--muted)}
-.name-note{text-align:center;color:var(--muted);font-size:14px;padding-block:8px 0}
 
-/* ---- stop ---- */
-.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;margin-top:24px}
-.two>div{min-width:0}
-.code{background:var(--code);color:var(--codeink);border-radius:18px;border:3px solid var(--line);padding:18px 20px;font-size:13.5px;line-height:1.7;overflow-x:auto;margin:0}
+/* ---- slides ---- */
+.show{padding:22px;margin-top:8px}
+.slide[hidden]{display:none}
+.slide{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:26px;align-items:center;min-height:310px}
+.code{background:var(--code);color:var(--codeink);border-radius:18px;border:3px solid var(--line);padding:18px 20px;font-size:14px;line-height:1.75;overflow-x:auto;margin:0}
 .code .k{color:#FF8A6E}.code .s{color:#FFD35C}.code .c{color:#8F95C9}.code .t{color:#5FE3D0}
-.term .bad{color:#FF8A6E}.term .good{color:#5FE3D0}.term .dim{color:#8F95C9}
-.caption{font-family:var(--pop);font-size:15px;margin-bottom:8px}
-.stamp{display:inline-block;font-family:var(--pop);font-size:13px;padding:2px 10px;border-radius:999px;border:2px solid var(--line);background:var(--tomato);color:#fff;transform:rotate(-3deg)}
+.explain h2{font-size:clamp(22px,3vw,28px);margin-bottom:12px}
+.explain p{line-height:1.95}
+.explain code,.col code{font-family:var(--mono);font-size:13px;background:var(--ground);padding:1px 6px;border-radius:6px}
+.ctrl{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:18px;flex-wrap:wrap}
+.ctrl button{font-family:var(--pop);border:3px solid var(--line);border-radius:999px;background:var(--panel);color:var(--ink);padding:6px 14px;cursor:pointer;box-shadow:3px 3px 0 var(--line)}
+.ctrl button[aria-current="true"]{background:var(--lemon);color:#1B1F3B}
+.ctrl button:focus-visible{outline:3px dashed var(--tomato);outline-offset:3px}
+.dots{display:flex;gap:8px}
+.dots button{width:34px;height:34px;padding:0;font-size:13px}
 
-/* ---- layers ---- */
-.layers{display:grid;gap:14px;margin-top:26px}
-.layer{display:grid;grid-template-columns:150px 1fr;gap:16px;align-items:center;padding:16px 20px}
-.layer b{font-family:var(--pop);font-weight:400;font-size:18px}
-.layer.l1{background:var(--lemon);color:#1B1F3B}.layer.l2{background:var(--mint);color:#0D2B28}.layer.l3{background:var(--panel)}
-.layer small{display:block;font-size:13px;opacity:.8}
+/* ---- tagline ---- */
+.tagline{text-align:center;padding-block:40px;font-family:var(--pop);font-size:clamp(18px,2.6vw,23px);line-height:1.7;max-width:34em;margin:0 auto}
+.tagline a{color:var(--tomato);text-decoration:none;white-space:nowrap}
 
-/* ---- numbers ---- */
-.nums{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:26px}
-.num{padding:22px}
-.num .big{font-family:var(--pop);font-size:clamp(34px,6vw,46px);line-height:1.1;font-variant-numeric:tabular-nums}
-.num .vs{font-family:var(--mono);font-size:13px;color:var(--muted)}
-.num:nth-child(1) .big{color:var(--mint)}.num:nth-child(2) .big{color:var(--tomato)}.num:nth-child(3) .big{color:var(--sky)}
-.note{font-size:13px;color:var(--muted);margin-top:14px}
+/* ---- columns ---- */
+.cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;padding-bottom:30px}
+.col{padding:20px;display:flex;flex-direction:column;gap:10px}
+.col h3{font-size:18px}
+.col p{font-size:14.5px;line-height:1.85}
+.col a.more{font-family:var(--pop);font-size:13px;color:var(--tomato);text-decoration:none;margin-top:auto}
+.col pre{margin:0;font-family:var(--mono);font-size:13px;background:var(--code);color:var(--codeink);border-radius:10px;padding:8px 10px;overflow-x:auto}
 
-/* ---- apps ---- */
-.apps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:26px}
-.app{overflow:hidden;display:flex;flex-direction:column}
-.app img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top left;border-bottom:3px solid var(--line)}
-.app div{padding:14px 16px}
-.app h3{font-size:17px}.app p{font-size:13.5px;color:var(--muted)}
-.app code{font-size:12px}
+footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13.5px}
 
-/* ---- start ---- */
-.steps{display:grid;gap:14px;margin-top:22px}
-.step{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:12px 14px 12px 18px}
-.step .n{font-family:var(--pop);width:34px;height:34px;display:grid;place-items:center;border-radius:50%;border:3px solid var(--line);background:var(--tomato);color:#fff}
-.step pre{margin:0;font-size:13.5px;overflow-x:auto;white-space:pre}
-.copy{font-family:var(--pop);font-size:12px;border:2px solid var(--line);border-radius:999px;background:var(--lemon);color:#1B1F3B;padding:4px 12px;cursor:pointer}
-.copy:focus-visible{outline:3px dashed var(--tomato);outline-offset:3px}
-
-.limits{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:22px}
-.limit{padding:16px 18px;font-size:14px}
-.limit b{font-family:var(--pop);font-weight:400;display:block;margin-bottom:4px}
-
-footer{padding-block:40px 56px;text-align:center;color:var(--muted);font-size:13px}
-footer .word{font-size:34px}
-
-@media (max-width:760px){
-  .two,.nums,.apps,.limits,.features{grid-template-columns:minmax(0,1fr)}
-  .layer{grid-template-columns:1fr;gap:4px}
-  .step{grid-template-columns:auto 1fr}.step .copy{grid-column:2;justify-self:start}
+@media (max-width:860px){
+  .slide{grid-template-columns:minmax(0,1fr);min-height:0}
+  .cols{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
-@media (prefers-reduced-motion:no-preference){
-  .pier{transition:transform .25s cubic-bezier(.3,1.6,.5,1)}
-  .bridge:hover .pier{transform:translateY(-6px)}
-}
+@media (max-width:520px){ .cols{grid-template-columns:minmax(0,1fr)} }
 </style>
 
 <div class="wrap">
 
-<header class="hero">
-  <div class="bridge" aria-hidden="true">
-    <svg viewBox="0 0 720 230">
-      <path d="M40 200 L680 200" stroke="var(--line)" stroke-width="10" stroke-linecap="round" fill="none"/>
-      <path class="arch" d="M110 196 C 220 20, 500 20, 610 196" stroke="var(--tomato)" stroke-width="14" stroke-linecap="round" fill="none"/>
-      <g stroke="var(--line)" stroke-width="5" stroke-linecap="round">
-        <line x1="200" y1="92" x2="200" y2="196"/><line x1="280" y1="64" x2="280" y2="196"/><line x1="360" y1="56" x2="360" y2="196"/>
-        <line x1="440" y1="64" x2="440" y2="196"/><line x1="520" y1="92" x2="520" y2="196"/>
-      </g>
-      <g class="pier l" style="transform-origin:70px 170px">
-        <circle cx="70" cy="160" r="46" fill="var(--lemon)" stroke="var(--line)" stroke-width="5"/>
-        <text x="70" y="176" text-anchor="middle" font-family="Mochiy Pop One, sans-serif" font-size="44" fill="#1B1F3B">人</text>
-      </g>
-      <g class="pier r" style="transform-origin:650px 170px">
-        <circle cx="650" cy="160" r="46" fill="var(--mint)" stroke="var(--line)" stroke-width="5"/>
-        <text x="650" y="175" text-anchor="middle" font-family="Mochiy Pop One, sans-serif" font-size="36" fill="#0D2B28">AI</text>
-      </g>
-      <rect x="306" y="206" width="108" height="24" rx="12" fill="var(--panel)" stroke="var(--line)" stroke-width="3"/>
-      <text x="360" y="223" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="13" fill="var(--ink)">.ponte</text>
+<header class="bar">
+  <a class="logo" href="https://github.com/AnIT012/nameless-lang" aria-label="Ponte">
+    <svg viewBox="0 0 120 70" aria-hidden="true">
+      <path d="M6 60 L114 60" stroke="var(--line)" stroke-width="6" stroke-linecap="round"/>
+      <path d="M20 58 C 40 8, 80 8, 100 58" stroke="var(--tomato)" stroke-width="8" stroke-linecap="round" fill="none"/>
+      <circle cx="12" cy="50" r="9" fill="var(--lemon)" stroke="var(--line)" stroke-width="3"/>
+      <circle cx="108" cy="50" r="9" fill="var(--mint)" stroke="var(--line)" stroke-width="3"/>
     </svg>
-  </div>
-  <h1 class="word" aria-label="Ponte"><span>P</span><span>o</span><span>n</span><span>t</span><span>e</span></h1>
-  <p class="tag">アプリの決まりを書いて、そのまま動かす言語です</p>
-  <p class="lead">Ponte では、どんなデータを持つのか、状態がどう変わるのか、誰が何をしてよいのかといったアプリの決まりを書きます。書いた内容はそのまま動くアプリになり、決まっていないところがあれば、動かす前に教えてくれます。</p>
-  <div class="cta">
-    <a class="btn" href="https://github.com/AnIT012/nameless-lang">GitHub で見る</a>
-    <a class="btn alt" href="#start">試してみる</a>
-  </div>
+    <span class="word"><span>P</span><span>o</span><span>n</span><span>t</span><span>e</span></span>
+  </a>
+  <nav class="nav">
+    <a href="https://github.com/AnIT012/nameless-lang/blob/main/docs/入門.md">入門</a>
+    <a href="https://github.com/AnIT012/nameless-lang/blob/main/docs/言語仕様_v0.3.md">仕様書</a>
+    <a href="https://github.com/AnIT012/nameless-lang/blob/main/docs/仕組み.md">しくみ</a>
+    <a href="https://github.com/AnIT012/nameless-lang">GitHub</a>
+  </nav>
 </header>
 
-<section>
-  <p class="eyebrow">特徴</p>
-  <h2>Ponte でできること</h2>
-  <div class="features">
-    <article class="feature sticker">
-      <h3>決まりをそのまま書けます</h3>
-      <p>データの形、状態の流れ、誰が何をしてよいか、画面の見せ方までを、同じ書き方で書けます。プログラムの細かい手順は書かなくてよいので、読み返したときに「このアプリは何をするのか」がすぐに分かります。</p>
-<pre class="code mini"><span class="k">thing</span> <span class="t">Task</span>
+<section class="show sticker" aria-label="書き方の見本">
+    <div class="slide">
+      <pre class="code"><span class="c"># データの形：やることと、その持ち主</span>
+<span class="k">thing</span> <span class="t">Task</span>
   title   text
+  due     monthday
+  owner   User  gone[remove too]
   status[todo | done]
 
+<span class="k">thing</span> <span class="t">User</span>
+  name  text</pre>
+      <div class="explain"><h2>データの形を書く</h2><p>thing には、アプリが持つデータの形を書きます。項目の名前と型を並べておけば、保存や読み書きは Ponte が引き受けます。状態は <code>[todo | done]</code> のように、取りうる値を全部書いておきます。</p></div>
+    </div>
+    <div class="slide" hidden>
+      <pre class="code"><span class="c"># 状態の流れと、誰が何をできるか</span>
 <span class="k">flow</span> Task.status
-  todo -> done -> todo
+  todo -&gt; done -&gt; todo
 
 <span class="k">who</span>
-  user  can change  Task where owner is me</pre>
-    </article>
-    <article class="feature sticker">
-      <h3>決まっていないと動きません</h3>
-      <p>存在しない状態を書いたり、誰が操作できるかを書き忘れたりすると、動かす前にエラーになります。まだ決めていないことは <code>tbd</code> と書いておけば、決めるまで先に進まないようになっています。</p>
-<pre class="code mini term"><span class="dim">$</span> ponte check todo.ponte
-<span class="bad">渡せません（1件）</span>
-  todo.ponte:42  E32  rule Finish:
-  Task に「finished」という状態は
-  ありません（todo / done）</pre>
-    </article>
-    <article class="feature sticker">
-      <h3>確かめていないところを教えてくれます</h3>
-      <p>ルールごとに「この状態でこうしたら、こうなる」という例を書いておくと、それをテストとして実行します。例が一つもないルールや、どの例でも通っていない状態の変化があれば、それも一覧にして教えてくれます。</p>
-<pre class="code mini term"><span class="dim">$</span> ponte test todo.ponte
-<span class="bad">穴（example で確かめていない所 1件）</span>
-  flow Task.status: done -> todo を
-  どの example も通っていません</pre>
-    </article>
-    <article class="feature sticker">
-      <h3>AIに任せる部分には約束を付けます</h3>
-      <p>メールから締切を取り出すような処理は、AIに中身を書いてもらうこともできます。その場合も、入力と答えの例や「年を推測しない」といった禁止事項を先に書いておくので、AIが書いたものはその約束を守っているかどうかを機械で確かめてから使われます。</p>
-    </article>
-    <article class="feature sticker">
-      <h3>Python だけで動きます</h3>
-      <p>裏では Python が Ponte を読んで動かしていますが、ふだん Python を書く必要はありません。追加で入れるライブラリもないので、Python があればすぐに試せます。1つのファイルにまとめて持ち運ぶこともできます。</p>
-    </article>
-    <article class="feature sticker">
-      <h3>画面も一緒についてきます</h3>
-      <p>一覧、ボード、カレンダー、入力フォームなどの画面を、見せ方を書くだけで用意できます。スマホの幅やダークモード、日本語と英語の切り替えにも対応しています。</p>
-    </article>
+  user  can see     Task where owner is me
+  user  can change  Task where owner is me
+  user  can see     User where it is me</pre>
+      <div class="explain"><h2>流れと、誰が何をできるか</h2><p>flow には状態がどう移れるかを、who には誰が何をしてよいかを書きます。who に書いていない操作は誰にもできないので、権限の書き忘れはエラーとして見つかります。</p></div>
+    </div>
+    <div class="slide" hidden>
+      <pre class="code"><span class="c"># 毎朝8時に、明日までのやることを知らせる</span>
+<span class="k">list</span> <span class="t">Soon</span>
+  <span class="k">of</span>     Task
+  <span class="k">where</span>  status is todo
+  <span class="k">where</span>  due within 1 days
+
+<span class="k">rule</span> <span class="t">Remind</span>
+  <span class="k">why</span>   明日までのものを忘れない
+  <span class="k">when</span>  every day at 8:00
+  <span class="k">do</span>    notify owner each of Soon</pre>
+      <div class="explain"><h2>きっかけと、やること</h2><p>rule には、きっかけとやることを一組で書きます。when に書けるのは時刻やボタンのような出来事だけで、「明日まで」のような条件は list の where で絞ります。</p></div>
+    </div>
+    <div class="slide" hidden>
+      <pre class="code"><span class="c"># ボタンを押したら終わりにする。例を書くとテストになる</span>
+<span class="k">rule</span> <span class="t">Finish</span>
+  <span class="k">when</span>  user taps done-button on Task
+  <span class="k">where</span> status is todo
+  <span class="k">do</span>    move this to done
+  <span class="k">example</span>
+    <span class="k">given</span> Task
+      title   <span class="s">"牛乳を買う"</span>
+      status  todo
+    <span class="k">taps</span> done-button on Task
+      title <span class="s">"牛乳を買う"</span>
+    <span class="k">expect</span> Task is done
+      title <span class="s">"牛乳を買う"</span></pre>
+      <div class="explain"><h2>例がそのままテストになる</h2><p>rule の下に example を書くと、それがテストになります。<code>ponte test</code> は例が通るかを確かめるだけでなく、まだ例で確かめていないルールや状態の変化も教えてくれます。</p></div>
+    </div>
+    <div class="slide" hidden>
+      <pre class="code"><span class="c"># AIに任せる処理には、例と禁止事項を先に書く</span>
+<span class="k">action</span> <span class="t">FindDeadline</span>
+  <span class="k">in</span>       mail text
+  <span class="k">out</span>      found monthday | missing
+  <span class="k">example</span>  <span class="s">"10/15(木)12:00まで"</span>      -&gt; found 10/15 12:00
+  <span class="k">example</span>  <span class="s">"来週中にご提出ください"</span>  -&gt; missing
+  <span class="k">never</span>    guess the year
+  <span class="k">never</span>    fail
+  <span class="k">else</span>     ask user
+  <span class="k">by</span>       ai</pre>
+      <div class="explain"><h2>AIに任せる部分には約束を</h2><p>処理の中身をAIに書いてもらうときは、action に入力と答えの例、してはいけないことを先に書きます。AIが書いた中身はこの約束に照らして機械で確かめられ、守れていなければ書き直しになります。</p></div>
+    </div>
+    <div class="slide" hidden>
+      <pre class="code"><span class="c"># まだ決めていないことは tbd に書く。残っているうちは動かない</span>
+<span class="k">tbd</span>
+  締切を過ぎたやることは、一覧に残すか消すか</pre>
+      <div class="explain"><h2>決めていないことは tbd に</h2><p>まだ決めていないことは tbd に書いておけます。tbd が残っているあいだは <code>ponte check</code> が通らないので、決め忘れたまま動き出すことはありません。</p></div>
+    </div>
+  <div class="ctrl">
+    <button type="button" id="prev" aria-label="前の見本">‹</button>
+    <div class="dots"><button type="button" data-go="0" aria-label="見本 1" aria-current="true">1</button><button type="button" data-go="1" aria-label="見本 2">2</button><button type="button" data-go="2" aria-label="見本 3">3</button><button type="button" data-go="3" aria-label="見本 4">4</button><button type="button" data-go="4" aria-label="見本 5">5</button><button type="button" data-go="5" aria-label="見本 6">6</button></div>
+    <button type="button" id="next" aria-label="次の見本">›</button>
   </div>
 </section>
 
-<section>
-  <p class="eyebrow">しくみ</p>
-  <h2>人とAIと Ponte の分担</h2>
-  <div class="layers">
-    <div class="layer l1 sticker"><b>人 ＋ AI</b><p>どんなアプリにしたいか、何をしてはいけないか、まだ決めていないことは何かを考えます。AIと相談しながら書いても構いません。</p></div>
-    <div class="layer l2 sticker"><b>.ponte</b><p>決めたことを書いておくファイルです。<small>書いた内容はそのまま動き、書いていない操作は誰にもできません。</small></p></div>
-    <div class="layer l3 sticker"><b>Python（裏）</b><p>Ponte のファイルを読んで、その通りに動かします。<small>ふだんは意識しなくて大丈夫です。</small></p></div>
-  </div>
-</section>
+<p class="tagline">Ponte は、アプリの決まりを書いて、そのまま動かすためのプログラミング言語です。決まっていないことがあれば、動かす前に教えてくれます。 <a href="https://github.com/AnIT012/nameless-lang/blob/main/docs/言語仕様_v0.3.md">詳しく ›</a></p>
 
-<section>
-  <p class="eyebrow">見本</p>
-  <h2>Ponte で作ったアプリ</h2>
-  <div class="apps">
-    <article class="app sticker"><img src="img/todo.png" alt="やることアプリの画面"><div><h3>やること</h3><p>いちばん小さな見本です。入門ではこのアプリを、エラーを見ながら少しずつ作っていきます。</p><code>spec/todo.ponte</code></div></article>
-    <article class="app sticker"><img src="img/lend_home.png" alt="備品かしだしの画面"><div><h3>備品かしだし</h3><p>チームの備品を借りたり返したりするアプリです。返却日を過ぎると知らせてくれて、管理者も決められます。</p><code>spec/lend.ponte</code></div></article>
-    <article class="app sticker"><img src="img/kakeibo.png" alt="家計メモの画面"><div><h3>家計メモ</h3><p>「ランチ 1,200円」のようにメモを書くと、金額を読み取って合計してくれます。</p><code>spec/kakeibo.ponte</code></div></article>
-  </div>
+<section class="cols">
+  <div class="col sticker"><h3>はじめる</h3><p>入門では、やることアプリをエラーを見ながら少しずつ作っていきます。はじめての方はここからどうぞ。</p><a class="more" href="https://github.com/AnIT012/nameless-lang/blob/main/docs/入門.md">入門を読む ›</a></div>
+  <div class="col sticker"><h3>入れる</h3><p>Python 3.11 があれば動きます。ほかに入れるものはありません。</p><pre>pip install -e .
+ponte new myapp</pre><a class="more" href="https://github.com/AnIT012/nameless-lang">GitHub から入手 ›</a></div>
+  <div class="col sticker"><h3>ドキュメント</h3><p>書き方の決まりは仕様書にまとまっています。使える道具の一覧は <code>ponte guide</code> でいつでも確認できます。</p><a class="more" href="https://github.com/AnIT012/nameless-lang/blob/main/docs/言語仕様_v0.3.md">仕様書を読む ›</a></div>
+  <div class="col sticker"><h3>しくみ</h3><p>Ponte は Python で書かれていて、.ponte ファイルを読んでそのまま動かします。画面もついてきます。</p><a class="more" href="https://github.com/AnIT012/nameless-lang/blob/main/docs/仕組み.md">しくみを読む ›</a></div>
 </section>
-
-<section id="start">
-  <p class="eyebrow">はじめかた</p>
-  <h2>手元で動かしてみる</h2>
-  <div class="steps">
-    <div class="step sticker"><span class="n">1</span><pre id="cmd1">git clone https://github.com/AnIT012/nameless-lang &amp;&amp; cd nameless-lang</pre><button class="copy" type="button" data-copy="cmd1">コピー</button></div>
-    <div class="step sticker"><span class="n">2</span><pre id="cmd2">pip install -e .</pre><button class="copy" type="button" data-copy="cmd2">コピー</button></div>
-    <div class="step sticker"><span class="n">3</span><pre id="cmd3">ponte run spec/todo.ponte</pre><button class="copy" type="button" data-copy="cmd3">コピー</button></div>
-  </div>
-  <p class="note">ブラウザで http://127.0.0.1:8000/ を開くと、やることアプリが表示されます。自分のアプリを作るときは <code>ponte new myapp</code> で、ひな形から始められます。</p>
-</section>
-
-<section>
-  <p class="eyebrow">いまの状態</p>
-  <h2>まだできないこと</h2>
-  <div class="limits">
-    <div class="limit sticker"><b>ログインは仮のものです</b>今はURLに名前を入れるだけで、誰にでもなれてしまいます。人に使ってもらう前に、きちんとしたログインを用意する予定です。</div>
-    <div class="limit sticker"><b>計算の道具はまだ少なめです</b>曜日の判定や日付の足し算などはまだありません。使おうとした場合は、エラーで教えてくれます。</div>
-    <div class="limit sticker"><b>向いていないアプリもあります</b>ゲームや見た目に凝ったサイトには向いていません。貸し借りや申請、記録、管理のように、決まりの多いアプリが得意です。</div>
-  </div>
-</section>
-
-<p class="name-note">Ponte（ポンテ）はイタリア語で「橋」という意味です。人とAIのあいだにかける橋になればと思って名前をつけました。</p>
 
 <footer>
-  <div class="word" aria-hidden="true"><span>P</span><span>o</span><span>n</span><span>t</span><span>e</span></div>
-  <p>v0.3 ・ 依存なし ・ Python 3.11</p>
+  <p>Ponte（ポンテ）はイタリア語で「橋」という意味です。人とAIのあいだにかける橋になればと思って名前をつけました。</p>
+  <p>v0.3 ・ Python 3.11</p>
 </footer>
 </div>
 
 <script>
-document.querySelectorAll("[data-copy]").forEach(b => b.addEventListener("click", () => {
-  const el = document.getElementById(b.dataset.copy), text = el.textContent;
-  const done = () => { b.textContent = "コピーした"; setTimeout(() => b.textContent = "コピー", 1500); };
-  const fallback = () => { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = "選んだ"; };
-  try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
-}));
+(() => {
+  const slides = [...document.querySelectorAll(".slide")], dots = [...document.querySelectorAll("[data-go]")];
+  let i = 0;
+  const show = n => {
+    i = (n + slides.length) % slides.length;
+    slides.forEach((s, k) => s.hidden = k !== i);
+    dots.forEach((d, k) => d.setAttribute("aria-current", k === i ? "true" : "false"));
+  };
+  document.getElementById("prev").onclick = () => show(i - 1);
+  document.getElementById("next").onclick = () => show(i + 1);
+  dots.forEach(d => d.onclick = () => show(+d.dataset.go));
+})();
 </script>
 
 </body>

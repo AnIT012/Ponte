@@ -1,0 +1,9 @@
+# データの形：やることと、その持ち主
+thing Task
+  title   text
+  due     monthday
+  owner   User  gone[remove too]
+  status[todo | done]
+
+thing User
+  name  text

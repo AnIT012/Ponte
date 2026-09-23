@@ -1,0 +1,10 @@
+# 毎朝8時に、明日までのやることを知らせる
+list Soon
+  of     Task
+  where  status is todo
+  where  due within 1 days
+
+rule Remind
+  why   明日までのものを忘れない
+  when  every day at 8:00
+  do    notify owner each of Soon

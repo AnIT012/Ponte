@@ -49,3 +49,16 @@ def test_every_sample_app_passes_check_and_test():
         s = parse_file(p)
         assert [f for f in check(s) if f.is_error] == [], p
         assert all(r.ok for r in run_examples(s)), p
+
+
+def test_homepage_samples_are_real_ponte():
+    """ホームページに載せた構文の見本（site/samples）は本物。6番は tbd の見本なので E05 だけで止まる"""
+    import glob
+    src = "\n".join(open(p, encoding="utf-8").read() for p in sorted(glob.glob("site/samples/[1-5].ponte")))
+    assert [f.code for f in check(parse(src)) if f.is_error] == []
+    six = open("site/samples/6.ponte", encoding="utf-8").read()
+    assert [f.code for f in check(parse(src + "\n" + six)) if f.is_error] == ["E05"]
+    page = open("site/landing.html", encoding="utf-8").read()
+    for p in sorted(glob.glob("site/samples/*.ponte")):
+        first = open(p, encoding="utf-8").read().splitlines()[0]
+        assert first in page, p

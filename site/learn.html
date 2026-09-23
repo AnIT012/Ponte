@@ -125,6 +125,9 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 .prose blockquote{margin:0 0 16px;padding:10px 16px;border-left:4px solid var(--lemon);background:var(--panel);border-radius:0 10px 10px 0}
 .prose :not(pre)>code{font-size:.88em;background:var(--panel);border:1px solid var(--line);padding:1px 6px;border-radius:6px;overflow-wrap:anywhere}
 .prose .code{margin:0 0 18px;font-size:13.5px}
+.prose .code:has(+ .try){margin-bottom:4px}
+.prose .try{text-align:right;font-size:13px;margin:0 0 18px}
+.prose .try a{text-decoration:none}
 .term{margin:0 0 18px;background:#101326;color:#D7DBF5;border-radius:10px;padding:14px 18px;font-size:13px;line-height:1.7;overflow-x:auto;white-space:pre}
 .term .prompt{color:#6BE3A4;user-select:none}
 .term .ecode{color:#FF9D5C;font-weight:700}
@@ -204,7 +207,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
   <span class="field">name</span> <span class="type">text</span>
 
 <span class="head">flow</span> <span class="name">Task</span>.<span class="val">status</span>
-  <span class="val">todo</span> <span class="op">-&gt;</span> <span class="val">done</span> <span class="op">-&gt;</span> <span class="val">todo</span></pre>
+  <span class="val">todo</span> <span class="op">-&gt;</span> <span class="val">done</span> <span class="op">-&gt;</span> <span class="val">todo</span></pre><p class="try"><a href="play.html#code=dGhpbmcgVGFzawogIHRpdGxlICB0ZXh0CiAgZHVlICAgIG1vbnRoZGF5CiAgb3duZXIgIFVzZXIgIGdvbmVbcmVtb3ZlIHRvb10KICBzdGF0dXNbdG9kbyB8IGRvbmVdCgp0aGluZyBVc2VyCiAgbmFtZSB0ZXh0CgpmbG93IFRhc2suc3RhdHVzCiAgdG9kbyAtPiBkb25lIC0-IHRvZG8">このコードを試す ›</a></p>
 <ul><li><code>thing</code> はデータの形です。<code>status[todo | done]</code> は「この2つのどれか」という状態です。</li><li><code>owner User</code> は別の thing（User）を指す項目です。<code>gone[remove too]</code> は「User が消えたら、この Task も消す」という意味です。</li><li><code>flow</code> は状態の流れです。矢印のとおりにしか動きません。</li></ul>
 <p>チェックしてみます。</p>
 <pre class="term"><span class="prompt">$</span> python -m ponte check todo.ponte
@@ -217,12 +220,12 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 <pre class="code"><span class="head">who</span>
   user  can see     <span class="name">Task</span> where owner is me
   user  can change  <span class="name">Task</span> where owner is me
-  user  can see     <span class="name">User</span> where it is me</pre>
+  user  can see     <span class="name">User</span> where it is me</pre><p class="try"><a href="play.html#code=d2hvCiAgdXNlciAgY2FuIHNlZSAgICAgVGFzayB3aGVyZSBvd25lciBpcyBtZQogIHVzZXIgIGNhbiBjaGFuZ2UgIFRhc2sgd2hlcmUgb3duZXIgaXMgbWUKICB1c2VyICBjYW4gc2VlICAgICBVc2VyIHdoZXJlIGl0IGlzIG1l">このコードを試す ›</a></p>
 <p>自分のやることだけが見えて、自分のものだけを変えられます（消せるようにするなら <code>user can remove Task where owner is me</code> も足します）。</p>
 <h2 id="3-ボタンを押したら終わりにする">3. ボタンを押したら終わりにする</h2>
 <pre class="code"><span class="head">rule</span> <span class="name">Finish</span>
   <span class="clause">when</span>  user taps done-button on <span class="name">Task</span>
-  <span class="clause">do</span>    move this to finished</pre>
+  <span class="clause">do</span>    move this to finished</pre><p class="try"><a href="play.html#code=cnVsZSBGaW5pc2gKICB3aGVuICB1c2VyIHRhcHMgZG9uZS1idXR0b24gb24gVGFzawogIGRvICAgIG1vdmUgdGhpcyB0byBmaW5pc2hlZA">このコードを試す ›</a></p>
 <pre class="term"><span class="prompt">$</span> python -m ponte check todo.ponte
 渡せません（1件）
   todo.ponte:20  <span class="ecode">E32</span>  rule Finish: Task に「finished」という状態はありません（todo / done）
@@ -251,14 +254,14 @@ example 0件中 0件通過
     <span class="clause">taps</span> done-button on <span class="name">Task</span>
       <span class="field">title</span> <span class="val">"牛乳を買う"</span>
     <span class="clause">expect</span> <span class="name">Task</span> is <span class="val">done</span>
-      <span class="field">title</span> <span class="val">"牛乳を買う"</span></pre>
+      <span class="field">title</span> <span class="val">"牛乳を買う"</span></pre><p class="try"><a href="play.html#code=cnVsZSBGaW5pc2gKICB3aHkgICDntYLjgo_jgaPjgZ_jgonmtojjgYjjgabjgbvjgZfjgYQKICB3aGVuICB1c2VyIHRhcHMgZG9uZS1idXR0b24gb24gVGFzawogIHdoZXJlIHN0YXR1cyBpcyB0b2RvCiAgZG8gICAgbW92ZSB0aGlzIHRvIGRvbmUKICBleGFtcGxlCiAgICBnaXZlbiBUYXNrCiAgICAgIHRpdGxlICAi54mb5Lmz44KS6LK344GGIgogICAgICBzdGF0dXMgdG9kbwogICAgdGFwcyBkb25lLWJ1dHRvbiBvbiBUYXNrCiAgICAgIHRpdGxlICLniZvkubPjgpLosrfjgYYiCiAgICBleHBlY3QgVGFzayBpcyBkb25lCiAgICAgIHRpdGxlICLniZvkubPjgpLosrfjgYYi">このコードを試す ›</a></p>
 <p><code>where status is todo</code> は「まだのときだけ」という意味です。合わないとき、この rule は静かに起きません（ボタンも押せなくなります）。</p>
 <p><code>done -&gt; todo</code> の穴は、「戻す」ボタンの rule（Reopen）と、その example で埋まります。できあがりのファイルで確かめてみてください。</p>
 <h2 id="5-きっかけは出来事だけ">5. きっかけは出来事だけ</h2>
 <p>「期限が明日なら知らせる」をこう書くと、止まります。</p>
 <pre class="code"><span class="head">rule</span> <span class="name">Remind</span>
   <span class="clause">when</span>  due within <span class="val">1 days</span>
-  <span class="clause">do</span>    notify owner <span class="val">"{title} の期限です"</span></pre>
+  <span class="clause">do</span>    notify owner <span class="val">"{title} の期限です"</span></pre><p class="try"><a href="play.html#code=cnVsZSBSZW1pbmQKICB3aGVuICBkdWUgd2l0aGluIDEgZGF5cwogIGRvICAgIG5vdGlmeSBvd25lciAie3RpdGxlfSDjga7mnJ_pmZDjgafjgZki">このコードを試す ›</a></p>
 <pre class="term"><span class="prompt">$</span> python -m ponte check todo.ponte
 渡せません（1件）
   todo.ponte:23  <span class="ecode">E07</span>  rule Remind: when は出来事だけです。「due within 1 days」は状態なので where に書いてください
@@ -272,7 +275,7 @@ example 0件中 0件通過
 <span class="head">rule</span> <span class="name">Remind</span>
   <span class="clause">why</span>   明日までのものを忘れない
   <span class="clause">when</span>  every day at <span class="val">8:00</span>
-  <span class="clause">do</span>    notify owner each of <span class="name">Soon</span></pre>
+  <span class="clause">do</span>    notify owner each of <span class="name">Soon</span></pre><p class="try"><a href="play.html#code=bGlzdCBTb29uCiAgb2YgICAgIFRhc2sKICB3aGVyZSAgc3RhdHVzIGlzIHRvZG8KICB3aGVyZSAgZHVlIHdpdGhpbiAxIGRheXMKCnJ1bGUgUmVtaW5kCiAgd2h5ICAg5piO5pel44G-44Gn44Gu44KC44Gu44KS5b-Y44KM44Gq44GECiAgd2hlbiAgZXZlcnkgZGF5IGF0IDg6MDAKICBkbyAgICBub3RpZnkgb3duZXIgZWFjaCBvZiBTb29u">このコードを試す ›</a></p>
 <p><code>notify owner each of Soon</code> は「Soon のそれぞれを、その Task の owner に知らせる」という意味です。</p>
 <h2 id="6-画面">6. 画面</h2>
 <pre class="code"><span class="head">scene</span> <span class="name">Home</span>
@@ -293,7 +296,7 @@ example 0件中 0件通過
   <span class="clause">title</span>   title
   <span class="clause">sub</span>     due
   <span class="clause">button</span>  done-button  named finish  icon check  tone good
-  <span class="clause">empty</span>   todo-empty</pre>
+  <span class="clause">empty</span>   todo-empty</pre><p class="try"><a href="play.html#code=c2NlbmUgSG9tZQogIHRhYlt0b2RvIHwgZG9uZV0gPSB0b2RvCiAgdG9wICAgICBIZWFkZXIKICB0b3AgICAgIHRhYnMgdGFiCiAgbWFpbiAgICBzdGF0cyBUb2RvLCBEb25lCiAgbWFpbiAgICBtYXRjaCB0YWIKICAgIHRvZG8gLT4gVG9kbyBhcyBsaXN0CiAgICBkb25lIC0-IERvbmUgYXMgbGlzdAogIGJvdHRvbSAgYnV0dG9uIGFkZCBuYW1lZCBhZGQtdGFzayBpY29uIHBsdXMKCmlucHV0IEFkZFRhc2sKICB0aXRsZSAgcmVxdWlyZWQKICBkdWUgICAgZnJvbSBub3cKCmxvb2sgVG9kbyBhcyBsaXN0CiAgdGl0bGUgICB0aXRsZQogIHN1YiAgICAgZHVlCiAgYnV0dG9uICBkb25lLWJ1dHRvbiAgbmFtZWQgZmluaXNoICBpY29uIGNoZWNrICB0b25lIGdvb2QKICBlbXB0eSAgIHRvZG8tZW1wdHk">このコードを試す ›</a></p>
 <ul><li><code>scene</code> は画面、<code>look</code> は一覧の見せ方、<code>input</code> は入力です。</li><li>画面に出る文字は <code>words ja</code> / <code>words en</code> に書きます（書き忘れもエラーになります）。日本語だけのアプリなら words は書かずに、<code>named &quot;終わった&quot;</code> のように直接書いてもかまいません。</li></ul>
 <p>動かしてみます。</p>
 <pre class="term"><span class="prompt">$</span> python -m ponte run todo.ponte

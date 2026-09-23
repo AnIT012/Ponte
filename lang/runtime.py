@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from .parser import Node, Spec, flow_parts, flow_states, match_arms, relate_lines, thing_fields
-from .values import format_monthday, parse_record, parse_time, unquote, within
+from .values import parse_time, unquote, within
 
 
 class RuleError(Exception):

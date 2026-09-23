@@ -5,7 +5,7 @@
 import html
 import re
 
-HEAD = "thing flow list match rule relate action group tbd scene look part style input words who change connect use".split()
+HEAD = "thing flow list match rule relate action group tbd scene look part style input words who change connect use shape".split()
 CLAUSE = ("of where sort when do why in out example by ask how given at says taps gets expect adds "
           "title sub mark button lead heading empty search take top main side bottom over").split()
 GUARD = "never else tbd gone limit confirm".split()

@@ -304,6 +304,8 @@ example 0件中 0件通過
 <pre class="term"><span class="prompt">$</span> python -m ponte check todo.ponte --publish    # 公開する時の検査（読み上げ対応も）
 <span class="prompt">$</span> python -m ponte test todo.ponte --strict      # 穴が1つでもあれば失敗
 <span class="prompt">$</span> python -m ponte build todo.ponte              # 1つのファイルに → python todo.pyz</pre>
+<p>決めたことを、コードを読まない人に見てもらうこともできます。データ・流れ・誰が何をできるか・きまりとその理由・残っていることを、1枚のページにまとめます。</p>
+<pre class="term"><span class="prompt">$</span> python -m ponte doc todo.ponte                # → todo.html</pre>
 <p>ほかの人にも使ってもらうときは、ログインを付けて動かします。<code>--login</code> を付けないまま外に開こうとすると、Ponte が止めます。</p>
 <pre class="term"><span class="prompt">$</span> python -m ponte user add todo.ponte taro      # 合言葉を聞かれます
 <span class="prompt">$</span> python -m ponte run todo.ponte --login --host 0.0.0.0</pre>

@@ -175,6 +175,8 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 .state.good{color:var(--ok)}.state.bad{color:var(--err)}
 .panel-bar button{font-family:var(--pop);font-weight:700;border:0;border-radius:999px;background:var(--ink);color:var(--panel);padding:7px 18px;cursor:pointer}
 .panel-bar button:disabled{opacity:.35;cursor:default}
+.panel-bar .acts{display:flex;gap:8px}
+.panel-bar button.quiet{background:transparent;color:var(--ink);border:1px solid var(--line)}
 .out{overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
 .out p{margin:4px 2px;font-size:14px;line-height:1.8}
 .out .ok{color:var(--ok);font-weight:700}.out .bad{color:var(--err);font-weight:700}.out .holes{color:var(--muted);font-weight:700;margin-top:10px}
@@ -224,7 +226,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
     <textarea id="src" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Ponte のコード"></textarea>
   </div>
   <div class="panel sticker" aria-live="polite">
-    <div class="panel-bar"><span id="state" class="state">準備しています…</span><button type="button" id="test" disabled>test</button></div>
+    <div class="panel-bar"><span id="state" class="state">準備しています…</span><span class="acts"><button type="button" id="doc" class="quiet" disabled>決めごと</button><button type="button" id="test" disabled>test</button></span></div>
     <div id="out" class="out"><p class="muted">はじめての読み込みには数秒かかります（Python をブラウザに読み込むため）。</p></div>
   </div>
 </div>
@@ -266,11 +268,18 @@ def run_test(src):
 
 def run_highlight(src):
     return highlight(src)
+
+def run_doc(src):
+    from ponte.doc import build
+    try:
+        return build(_spec(src), "試す")
+    except ParseError as e:
+        return None
 </script>
 <script type="module">
 const $ = id => document.getElementById(id);
 const SAMPLES = JSON.parse($("samples").textContent);
-const src = $("src"), hl = $("hl"), out = $("out"), state = $("state"), testBtn = $("test");
+const src = $("src"), hl = $("hl"), out = $("out"), state = $("state"), testBtn = $("test"), docBtn = $("doc");
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
 const md = s => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>");
 let py = null, timer = null, seq = 0;
@@ -317,6 +326,12 @@ testBtn.addEventListener("click", () => {
     r.results.map(x => `<button type="button" class="finding ${x[2] ? "pass" : "err"}" data-line="${x[1]}"><span class="where">${x[2] ? "通過" : "失敗"} ・ ${esc(x[0])}</span>${x[3] ? `<span class="msg">${esc(x[3])}</span>` : ""}</button>`).join("") +
     (r.holes.length ? `<p class="holes">確かめていない所（${r.holes.length}件）</p>` + r.holes.map(h => `<button type="button" class="finding warn" data-line="${h[0]}"><span class="where">${h[0]}行目</span><span class="msg">${esc(h[1])}</span></button>`).join("") : "");
 });
+docBtn.addEventListener("click", () => {
+  const page = py.globals.get("run_doc")(src.value);
+  if (!page) { out.innerHTML = '<p class="bad">読めないので、決めごとの1枚を作れません。</p>'; return; }
+  const url = URL.createObjectURL(new Blob([page], { type: "text/html" }));
+  window.open(url, "_blank", "noopener");
+});
 paintPlain();
 try {
   const base = new URLSearchParams(location.search).get("pyodide") || "https://cdn.jsdelivr.net/npm/pyodide@314.0.7/";
@@ -325,7 +340,7 @@ try {
   const zip = await (await fetch("ponte.zip")).arrayBuffer();
   py.unpackArchive(zip, "zip");
   py.runPython($("playpy").textContent);
-  testBtn.disabled = false;
+  testBtn.disabled = false; docBtn.disabled = false;
   run();
 } catch (e) {
   state.className = "state bad"; state.textContent = "読み込めませんでした";

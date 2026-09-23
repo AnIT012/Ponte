@@ -1246,6 +1246,219 @@ def check_notify_recipient(spec: Spec, opt: Options) -> list[Finding]:
 # ---------------------------------------------------------------------------
 
 STEPS = ("given", "adds", "at", "says", "taps", "gets", "expect")
+COLORS = ("red", "gray", "blue", "green", "orange", "yellow", "purple", "pink", "teal", "black")
+KINDS_SHOWN = ("cards", "list", "table", "board", "calendar", "chart", "detail", "dialog", "sheet")
+INPUT_WORDS = {"required", "from", "now", "long"}
+
+
+def _check_line_values(spec: Spec, ths_all: dict, all_fields: dict) -> list[Finding]:
+    """行の中の値の打ち間違い（書いた通りに黙って動いて、空の一覧・起きない rule・効かない権利になるもの）"""
+    from .values import _DUR
+    out = []
+    states = {n: {f.name: f.states for f in thing_fields(t) if f.states} for n, t in ths_all.items()}
+    buttons = set()                                   # 画面に置いたボタンの名前（look と scene の button 行）
+    for d in spec.decls():
+        if d.keyword in ("look", "scene", "part"):
+            for c in d.walk():
+                bm = re.search(r"(?:^|\s)button\s+(\S+)", c.raw)
+                if bm:
+                    buttons.add(bm.group(1))
+    gives = {}
+    for cn in spec.decls("connect"):
+        gives[cn.name] = [re.split(r"\s{2,}", c.text.strip())[0] for c in cn.children_of("gives")]
+
+    def where(thing, cond, line, who):
+        cond = cond.strip()
+        if thing not in all_fields or cond in ("it is me", "it is not me"):
+            return
+        m = re.match(r"^(\w+)\s+(is|within)\s+(.+)$", cond)
+        if not m:
+            return
+        fld, op, val = m.groups()
+        if fld not in all_fields[thing]:
+            out.append(Finding("E32", line, f"{who}: {thing} に「{fld}」という項目はありません（{', '.join(all_fields[thing])}）{did_you_mean(fld, all_fields[thing])}"))
+            return
+        if op == "is":
+            val = val.strip()
+            if re.fullmatch(r"(\w+) now", val) and val not in ("after now", "before now"):
+                out.append(Finding("E32", line, f"{who}: 「{val}」は読めません（after now / before now）{did_you_mean(val.split()[0], ['after', 'before'])}"))
+            elif fld in states[thing] and re.fullmatch(r"\w+", val) and val not in ("me",) and val not in states[thing][fld]:
+                sts = states[thing][fld]
+                out.append(Finding("E32", line, f"{who}: {thing}.{fld} に「{val}」という状態はありません（{' / '.join(sts)}）{did_you_mean(val, sts)}"))
+
+    for l in spec.decls("list"):
+        t = list_thing(spec, l.name)
+        for w in l.children_of("where"):
+            where(t, w.text, w.line, f"list {l.name}")
+        so = l.child("sort")
+        if so is not None and so.text.split() and t in all_fields and so.text.split()[0] not in all_fields[t]:
+            f0 = so.text.split()[0]
+            out.append(Finding("E32", so.line, f"list {l.name}: sort の「{f0}」という項目はありません（{', '.join(all_fields[t])}）{did_you_mean(f0, all_fields[t])}"))
+    this_of = rule_this(spec)
+    for r in rules(spec).values():
+        for w in r.children_of("where"):
+            if this_of.get(r.name):
+                where(this_of[r.name], w.text, w.line, f"rule {r.name}")
+    for wd in spec.decls("who"):
+        for c in wd.children:
+            m = re.match(r"^\w+\s+can\s+\w+\s+(\w+)\s+where\s+(.+)$", c.raw.strip())
+            if m:
+                where(m.group(1), m.group(2), c.line, "who")
+    # example の状態の値と expect の形
+    for r in rules(spec).values():
+        for ex in r.children_of("example"):
+            for c in ex.children:
+                t = c.text.strip()
+                if c.keyword == "expect":
+                    m = re.match(r"^([A-Z]\w*) is (\w+)$", t)
+                    if m and m.group(1) in states and states[m.group(1)]:
+                        allst = [x for v in states[m.group(1)].values() for x in v]
+                        if m.group(2) not in allst:
+                            out.append(Finding("E32", c.line, f"rule {r.name}: {m.group(1)} に「{m.group(2)}」という状態はありません（{' / '.join(allst)}）{did_you_mean(m.group(2), allst)}"))
+                    first = t.split()[0] if t else ""
+                    if first and not (first in ("notify", "scene", "no", "nothing") or first.isdigit() or first in ths_all
+                                      or re.match(r"^\w+ shows \d+", t)):
+                        out.append(Finding("E31", c.line, f"rule {r.name}: expect の書き方が分かりません: '{t}'（notify \"…\" / scene 画面 / Thing is 状態 / Thing / no Thing / 2 Thing / 画面 shows 1 card）{did_you_mean(first, ['notify', 'scene', 'no', 'nothing'])}"))
+                if c.keyword in ("given", "adds", "taps", "expect"):
+                    w = t.split()
+                    thing = w[2] if c.keyword == "taps" and len(w) >= 3 else (w[0] if w else "")
+                    for v in c.children:
+                        sts = states.get(thing, {}).get(v.keyword)
+                        val = v.text.strip()
+                        if sts and re.fullmatch(r"\w+", val) and val not in sts:
+                            out.append(Finding("E32", v.line, f"rule {r.name}: {thing}.{v.keyword} に「{val}」という状態はありません（{' / '.join(sts)}）{did_you_mean(val, sts)}"))
+    # create の値: 期間の打ち間違い
+    for r in rules(spec).values():
+        for d in r.children_of("do"):
+            for c in d.walk():
+                m = re.match(r"^(\d+)\s+(\w+)\s+from now$", c.text.strip())
+                if m and not _DUR.match(f"{m.group(1)} {m.group(2)}"):
+                    out.append(Finding("E32", c.line, f"rule {r.name}: 期間が読めません: {m.group(1)} {m.group(2)}（days / hours / minutes / weeks）{did_you_mean(m.group(2), ['days', 'hours', 'minutes', 'weeks'])}"))
+    # list の where の言葉（`iwthin` は黙って何も絞らない）
+    for l in spec.decls("list"):
+        for w in l.children_of("where"):
+            m = re.match(r"^(\w+)\s+([a-z]+)\s+", w.text.strip())
+            if m and w.text.strip() not in ("it is me", "it is not me") and m.group(2) not in ("is", "within"):
+                out.append(Finding("E28", w.line, f"list {l.name}: 「{m.group(2)}」は where の言葉ではありません（is / within）{did_you_mean(m.group(2), ['is', 'within'])}"))
+    # when の moves to / do の move … to の状態
+    all_states = {x for v in states.values() for sts in v.values() for x in sts}
+    for r in rules(spec).values():
+        w = r.child("when")
+        if w is not None:
+            m = re.match(r"^([A-Z]\w*) moves to (\w+)$", w.text.strip())
+            if m and m.group(1) in states and m.group(2) not in {x for sts in states[m.group(1)].values() for x in sts}:
+                sts = sorted({x for v in states[m.group(1)].values() for x in v})
+                out.append(Finding("E32", w.line, f"rule {r.name}: {m.group(1)} に「{m.group(2)}」という状態はありません（{' / '.join(sts)}）{did_you_mean(m.group(2), sts)}"))
+            m = re.match(r"^user taps (\S+) on (\w+)$", w.text.strip())
+            if m and buttons and m.group(1) not in buttons and m.group(1) != "card":   # 画面をまだ書いていない間は見ない
+                out.append(Finding("E28", w.line, f"rule {r.name}: 「{m.group(1)}」というボタンは、どの画面にもありません{did_you_mean(m.group(1), sorted(buttons) + ['card'])}"))
+            m = re.match(r"^(\w+) gives (.+)$", w.text.strip())
+            if m and m.group(1) in gives and m.group(2).strip() not in gives[m.group(1)]:
+                out.append(Finding("E28", w.line, f"rule {r.name}: {m.group(1)} は「{m.group(2)}」を届けません（{' / '.join(gives[m.group(1)])}）{did_you_mean(m.group(2).strip(), gives[m.group(1)])}"))
+        for d in r.children_of("do"):
+            m = re.match(r"^move ([A-Z]\w*) where .+ to (\w+)$", d.text.strip())
+            if m and m.group(1) in states and m.group(2) not in {x for v in states[m.group(1)].values() for x in v}:
+                sts = sorted({x for v in states[m.group(1)].values() for x in v})
+                out.append(Finding("E32", d.line, f"rule {r.name}: {m.group(1)} に「{m.group(2)}」という状態はありません（{' / '.join(sts)}）{did_you_mean(m.group(2), sts)}"))
+    # example で押すボタン・move … where の条件
+    for r in rules(spec).values():
+        for ex in r.children_of("example"):
+            for c in ex.children_of("taps"):
+                m = re.match(r"^(\S+) on \w+$", c.text.strip())
+                if m and buttons and m.group(1) not in buttons and m.group(1) != "card":
+                    out.append(Finding("E28", c.line, f"rule {r.name}: 「{m.group(1)}」というボタンは、どの画面にもありません{did_you_mean(m.group(1), sorted(buttons) + ['card'])}"))
+        for d in r.children_of("do"):
+            m = re.match(r"^move ([A-Z]\w*) where (.+) to \w+$", d.text.strip())
+            if m:
+                where(m.group(1), m.group(2), d.line, f"rule {r.name}")
+    # create の値: User などを指す項目に、ただの言葉（this の打ち間違いなど）
+    for r in rules(spec).values():
+        for d in r.children_of("do"):
+            cm = re.match(r"^create (\w+)$", d.text.strip())
+            if not cm or cm.group(1) not in ths_all:
+                continue
+            ftypes = {f.name: f.type for f in thing_fields(ths_all[cm.group(1)])}
+            for c in d.children:
+                v = c.text.strip()
+                if ftypes.get(c.keyword) in ths_all and re.fullmatch(r"[a-z]\w*", v) and v not in ("this", "me", "result"):
+                    out.append(Finding("E31", c.line, f"rule {r.name}: {c.keyword} は {ftypes[c.keyword]} を指す項目です。「{v}」は読めません（this / me / result / 項目 of this）{did_you_mean(v, ['this', 'me', 'result'])}"))
+                m2 = re.match(r"^\d+\s+\w+\s+(\w+)\s+now$", v)
+                if m2 and m2.group(1) != "from":
+                    out.append(Finding("E31", c.line, f"rule {r.name}: 「{v}」は読めません（`7 days from now`）{did_you_mean(m2.group(1), ['from'])}"))
+    # action の out の型
+    for a in actions(spec).values():
+        o = a.child("out")
+        if o is None:
+            continue
+        for alt in [x.strip() for x in o.text.split("|")]:
+            w = alt.split()
+            if len(w) >= 2:
+                ty = w[1] if not w[1].startswith("[") else None      # found monthday / total money yen（型の後ろに通貨）
+                if ty and ty not in BUILTIN_TYPES and ty not in ths_all:
+                    out.append(Finding("E28", o.line, f"action {a.name}: out の型「{ty}」がどこにも定義されていません{did_you_mean(ty, sorted(BUILTIN_TYPES))}"))
+    # action の else
+    for a in actions(spec).values():
+        e = a.child("else")
+        if e is not None and not re.match(r"^(ask user|skip|use default\b.*)$", e.text.strip()):
+            out.append(Finding("E28", e.line, f"action {a.name}: else は ask user / skip / use default … です: '{e.text.strip()}'{did_you_mean(e.text.strip(), ['ask user', 'skip'])}"))
+    # look の sub（部品 of 項目）と image … about 項目
+    for lk in spec.decls("look"):
+        t = list_thing(spec, lk.name)
+        if t not in all_fields:
+            continue
+        for c in lk.children:
+            m = re.match(r"^[A-Z]\w* of (\w+)$", c.text.strip()) if c.keyword == "sub" else None
+            about = c.text.split(" about ", 1)[1].strip() if c.keyword == "image" and " about " in c.text else None
+            name = m.group(1) if m else about
+            if name and name not in all_fields[t] and not (about and re.search(r"[^\w]|-", about)):
+                out.append(Finding("E28", c.line, f"look {lk.name}: 「{name}」という項目はありません（{', '.join(all_fields[t])}）{did_you_mean(name, all_fields[t])}"))
+    # 画面: 置いた物の書き方・見せ方の種類・状態の始まり
+    for sc in spec.decls("scene"):
+        for c in sc.walk():
+            if c is sc:
+                continue
+            t = c.text.strip()
+            if c.parent is sc and t.startswith("["):
+                m = re.match(r"^\[([^\]]*)\]\s*=\s*(\w+)$", t)
+                if m:
+                    sts = [x.strip() for x in m.group(1).split("|")]
+                    if m.group(2) not in sts:
+                        out.append(Finding("E32", c.line, f"scene {sc.name}: 始まりの「{m.group(2)}」は {c.keyword} の状態にありません（{' / '.join(sts)}）{did_you_mean(m.group(2), sts)}"))
+                continue
+            content = t.split("->", 1)[1].strip() if "->" in c.raw else t
+            m = re.match(r"^(\w+) as (\w+)$", content)
+            if m and m.group(2) not in KINDS_SHOWN:
+                out.append(Finding("E28", c.line, f"scene {sc.name}: 「{m.group(2)}」という見せ方はありません（{' / '.join(KINDS_SHOWN)}）{did_you_mean(m.group(2), KINDS_SHOWN)}"))
+            elif not m and " " in content and not content.startswith('"'):
+                head = content.split()[0]
+                if head not in ("match", "tabs", "button", "stats", "notices"):
+                    out.append(Finding("E28", c.line, f"scene {sc.name}: 「{content}」の書き方が分かりません（部品の名前 / 一覧 as 見せ方 / tabs 状態 / stats … / match 状態 / button …）{did_you_mean(head, ['match', 'tabs', 'button', 'stats'])}"))
+    # input の決まり
+    for inp in spec.decls("input"):
+        for c in inp.children:
+            for word in re.findall(r"[A-Za-z_]+", c.text):
+                if word not in INPUT_WORDS:
+                    out.append(Finding("E28", c.line, f"input {inp.name}: 「{word}」は input の決まりにありません（required / from now / long）{did_you_mean(word, INPUT_WORDS)}"))
+    # match … to color の色
+    for mt in spec.decls("match"):
+        if not re.search(r"\bto color$", mt.text or ""):
+            continue
+        for lefts, right, arm in match_arms(mt):
+            col = right.strip()
+            if col and not col.startswith("#") and col not in COLORS:
+                out.append(Finding("E28", arm.line, f"match {mt.name}: 「{col}」という色はありません（{' / '.join(COLORS)} か #色）{did_you_mean(col, COLORS)}"))
+    # look の mark
+    for lk in spec.decls("look"):
+        t = list_thing(spec, lk.name)
+        for c in lk.children_of("mark"):
+            m = re.match(r"^(\w+) of (\w+)$", c.text.strip())
+            if m and m.group(1) != "color":
+                out.append(Finding("E28", c.line, f"look {lk.name}: mark は `color of 項目` です{did_you_mean(m.group(1), ['color'])}"))
+            elif m and t in all_fields and m.group(2) not in all_fields[t]:
+                out.append(Finding("E28", c.line, f"look {lk.name}: 「{m.group(2)}」という項目はありません（{', '.join(all_fields[t])}）{did_you_mean(m.group(2), all_fields[t])}"))
+            elif not m and t in all_fields and c.text.strip() not in all_fields[t]:
+                out.append(Finding("E28", c.line, f"look {lk.name}: 「{c.text.strip()}」という項目はありません（{', '.join(all_fields[t])}）{did_you_mean(c.text.strip(), all_fields[t])}"))
+    return out
 WHO_VERBS = ("see", "change", "create", "remove", "move", "do")
 SLOTS = ("top", "main", "side", "bottom", "over")
 CLAUSES = {"rule": ("why", "when", "where", "do", "example"),
@@ -1315,6 +1528,7 @@ def check_example_values(spec: Spec, opt: Options) -> list[Finding]:
                 for v in c.children:
                     if v.keyword not in all_fields[thing]:
                         out.append(Finding("E32", v.line, f"rule {r.name}: {thing} に「{v.keyword}」という項目はありません（{', '.join(all_fields[thing])}）{did_you_mean(v.keyword, all_fields[thing])}"))
+    out += _check_line_values(spec, ths_all, all_fields)
     # 節の打ち間違い（`wher status is todo` が黙って無視されると、条件の無い rule になってしまう）
     for kind, allowed in CLAUSES.items():
         for d in spec.decls(kind):

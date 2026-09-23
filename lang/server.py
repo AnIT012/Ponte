@@ -12,12 +12,10 @@ import json
 import re
 import threading
 import time
-from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 from .body import Body, BodyError
-from .icons import ICONS
 from .parser import Node, Spec, match_arms, parse_button, states_of, words_entries
 from .runtime import Box, Ctx, Engine, RuleError
 from .values import parse_time

@@ -197,17 +197,18 @@ part Menu
 
 part DeadlineBadge
   in    deadline monthday
-  left = days until deadline
-  urgency[over | today | soon | later] = match left
-    ..-1 -> over
-    0    -> today
-    1..3 -> soon
-    else -> later
-  label = match urgency
-    over  -> "締切を過ぎました"
-    today -> "今日が締切"
-    soon  -> "あと{left}日"
-    later -> "あと{left}日"
+  do
+    left = days until deadline
+    urgency[over | today | soon | later] = match left
+      ..-1 -> over
+      0    -> today
+      1..3 -> soon
+      else -> later
+    label = match urgency
+      over  -> "締切を過ぎました"
+      today -> "今日が締切"
+      soon  -> "あと{left}日"
+      later -> "あと{left}日"
   show  text "{deadline} ・ {label}"
   mark  urgency
 

@@ -6,10 +6,8 @@
 from __future__ import annotations
 
 import importlib.util
-import re
 import sys
 import threading
-import traceback
 from datetime import datetime
 from pathlib import Path
 

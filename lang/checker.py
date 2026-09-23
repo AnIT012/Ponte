@@ -98,7 +98,7 @@ def match_domain(spec: Spec, node: Node, subject: str) -> list[str] | None:
         t, f = subject.split(".", 1)
         if t in {p.name for p in spec.decls("part")}:
             part = spec.find("part", t)
-            for c in part.children:
+            for c in part.walk():
                 if c.keyword == f and c.text.startswith("["):
                     return states_of(c.text)
             return None
@@ -368,6 +368,10 @@ def check_nesting(spec: Spec, opt: Options) -> list[Finding]:
             for c in n.children:
                 if c.children:
                     out.append(Finding("E12", c.children[0].line, "入れ子: example の箱の中身の下に、さらに行は書けません"))
+        if n.is_decl and n.keyword == "part":
+            for c in n.children:
+                if re.match(r"^\w+\s*(\[[^\]]*\])?\s*=", c.raw):
+                    out.append(Finding("E12", c.line, f"part {n.name}: 部品の中の計算は do の下に書きます（action の中身と同じ）: '{c.raw}'"))
         if n.is_decl and n.keyword == "group" and n.parent is not None:
             out.append(Finding("E12", n.line, "入れ子: group の中に group は書けません"))
     return out

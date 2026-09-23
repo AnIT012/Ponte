@@ -11,6 +11,7 @@
 """
 from __future__ import annotations
 
+import calendar
 import functools
 import itertools
 import json
@@ -832,6 +833,11 @@ class Engine:
             hit = False
             if m and (m.group(1) == "day" or m.group(1) == wd) and (now.hour, now.minute) == (int(m.group(2)), int(m.group(3))):
                 hit = True
+            mm = re.match(r"^every month on (\d{1,2}|last) at (\d{1,2}):(\d{2})$", w.text.strip())
+            if mm and (now.hour, now.minute) == (int(mm.group(2)), int(mm.group(3))):
+                last = calendar.monthrange(now.year, now.month)[1]
+                want = last if mm.group(1) == "last" else min(int(mm.group(1)), last)   # 無い日（2/30 など）の月は月末に
+                hit = now.day == want
             m2 = re.match(r"^at (.+)$", w.text.strip())
             if m2:
                 t = self._time_of(m2.group(1))

@@ -6,6 +6,8 @@ from __future__ import annotations
 WHEN_FORMS = [
     (r"every (day|monday|tuesday|wednesday|thursday|friday|saturday|sunday) at \d{1,2}:\d{2}",
      "every day at 21:00 / every monday at 9:00", "毎日・毎週その時刻に", "every day at 21:00", True),
+    (r"every month on (\d{1,2}|last) at \d{1,2}:\d{2}", "every month on 1 at 9:00 / every month on last at 18:00",
+     "毎月その日のその時刻に（last は月末。31 のように無い日の月は月末に）", "every month on 1 at 9:00", True),
     (r"at \S.*", "at 9/24 23:00", "その日時に1回", "at 9/24 23:00", True),
     (r'user says ".*"', 'user says "submitted {company}"', "人が言った（{…} は変数になる）", 'user says "submitted {company}"', True),
     (r"user taps \S+ on \S+", "user taps 名前 on 画面か thing", "ボタンを押した（押された1件が this）", "user taps borrow-button on Item", True),

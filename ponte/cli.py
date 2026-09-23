@@ -11,6 +11,7 @@
   python -m ponte role  spec/lend.ponte taro admin   最初の管理者を決める（2人目からは画面で）
   python -m ponte explain E32                      エラーの意味と直し方
   python -m ponte user add spec/lend.ponte taro      ログインする人を足す（ponte run --login）
+  python -m ponte data export spec/todo.ponte        保存したデータを JSON で（--csv DIR で CSV）。compact で記録を詰める
 """
 from __future__ import annotations
 
@@ -344,6 +345,46 @@ def cmd_user(args) -> int:
     return 0
 
 
+def cmd_data(args) -> int:
+    """保存したデータを書き出す（export）/ 追記の記録を今の中身1枚に詰める（compact）"""
+    from .runtime import Engine
+    spec = _load_checked(args.spec)
+    if spec is None:
+        return 1
+    store = args.data or (args.spec + ".data.jsonl")
+    if not os.path.exists(store):
+        print(f"データがありません: {store}")
+        return 1
+    eng = Engine(spec, store=store)
+    order = lambda b: int(b.id.split("-")[-1])
+    if args.action == "export":
+        things = {t: [{"id": b.id, **b.values} for b in sorted(eng.boxes[t].values(), key=order)] for t in eng.boxes}
+        if args.csv:
+            import csv
+            os.makedirs(args.csv, exist_ok=True)
+            for t, rows in things.items():
+                cols = ["id"] + list(eng.fields.get(t, {}))
+                with open(os.path.join(args.csv, f"{t}.csv"), "w", encoding="utf-8-sig", newline="") as f:
+                    w = csv.DictWriter(f, fieldnames=cols, extrasaction="ignore")
+                    w.writeheader()
+                    w.writerows(rows)
+            print(f"{args.csv}/ に {len(things)}個の CSV を書きました（Excel でそのまま開けます）")
+        else:
+            print(json.dumps(things, ensure_ascii=False, indent=2))
+        return 0
+    # compact: 今の中身だけを、作った順に書き直す（古い記録は .bak に残す）
+    before = sum(1 for _ in open(store, encoding="utf-8"))
+    boxes = sorted((b for t in eng.boxes.values() for b in t.values()), key=order)
+    tmp = store + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        for b in boxes:
+            f.write(json.dumps({"t": "create", "thing": b.thing, "id": b.id, "values": b.values}, ensure_ascii=False) + "\n")
+    os.replace(store, store + ".bak")
+    os.replace(tmp, store)
+    print(f"{before}行 → {len(boxes)}行に詰めました（前のものは {store}.bak。動かしている間はしないでください）")
+    return 0
+
+
 def cmd_explain(args) -> int:
     from .errors import ERRORS, explain
     if not args.code:
@@ -416,6 +457,12 @@ def build_parser() -> argparse.ArgumentParser:
     ro.add_argument("role")
     ro.add_argument("--data", help="データのファイル（既定は <spec>.data.jsonl）")
     ro.set_defaults(fn=cmd_role)
+    da = sub.add_parser("data", help="保存したデータを書き出す（export）・詰める（compact）")
+    da.add_argument("action", choices=["export", "compact"])
+    da.add_argument("spec")
+    da.add_argument("--data", help="データのファイル（既定は <spec>.data.jsonl）")
+    da.add_argument("--csv", metavar="DIR", help="export を thing ごとの CSV にする")
+    da.set_defaults(fn=cmd_data)
     ex = sub.add_parser("explain", help="エラーの意味と直し方（例: explain E32。無しなら一覧）")
     ex.add_argument("code", nargs="?")
     ex.set_defaults(fn=cmd_explain)

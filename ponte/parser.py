@@ -151,7 +151,10 @@ def parse(source: str, path: str = "<string>") -> Spec:
 
         if node.indent == 0:
             if node.keyword not in DECLARATIONS:
-                raise ParseError(i, f"行頭に書けるのは見出しだけです: '{node.raw}'")
+                import difflib
+                near = difflib.get_close_matches(node.keyword, sorted(DECLARATIONS), n=1, cutoff=0.6)
+                hint = f"。もしかして `{near[0]}`？" if near else f"（{' / '.join(sorted(DECLARATIONS))}）"
+                raise ParseError(i, f"行頭に書けるのは見出しだけです: '{node.raw}'{hint}")
             node.is_decl = True
             roots.append(node)
             stack = [node]

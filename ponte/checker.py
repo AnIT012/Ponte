@@ -907,7 +907,7 @@ def check_undefined(spec: Spec, opt: Options) -> list[Finding]:
             base = f.type[len("list of "):] if f.type.startswith("list of ") else f.type
             base = base.split()[0]
             if base not in known_types:
-                out.append(Finding("E28", f.line, f"{t.name}.{f.name}: 型「{base}」がどこにも定義されていません（{', '.join(sorted(BUILTIN_TYPES))} か thing の名前）"))
+                out.append(Finding("E28", f.line, f"{t.name}.{f.name}: 型「{base}」がどこにも定義されていません（{', '.join(sorted(BUILTIN_TYPES))} か thing の名前）{did_you_mean(base, set(BUILTIN_TYPES) | set(known_types))}"))
     for a in actions(spec).values():
         i = a.child("in")
         if i is not None and len(i.text.split()) >= 2:

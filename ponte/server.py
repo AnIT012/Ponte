@@ -51,6 +51,7 @@ class App:
         self.version = 0                          # ponte run --reload で読み直すたびに増える
         self._press_cache: dict = {}
         self._card_cache: dict = {}
+        self._mem_files: dict[str, bytes] = {}   # 保存先の無い時の画像
         self._local = threading.local()           # 見ている人は要求ごと（サーバーは並列に動くので、App に直接持たない）
         self.scenes = {s.name: s for s in spec.decls("scene")}
         self.looks = {l.name: l for l in spec.decls("look")}
@@ -70,6 +71,62 @@ class App:
                "next-year": "来年（{year}年）の締切ですか？ いいえなら、もう過ぎた締切として保存します", "total-of": "{x}の合計"}   # 言語が出す文字（words で訳せる）
     BUILTIN_EN = {"search": "Search", "save": "Save", "cancel": "Cancel", "none": "Nothing yet", "more": "Show more", "undo": "Undo",
                   "total-of": "Total {x}"}
+
+    # ---- 画像（image の項目）------------------------------------------------
+    IMAGE_MAX = 5 * 1024 * 1024
+    IMAGE_KINDS = {b"\x89PNG\r\n\x1a\n": ("png", "image/png"), b"\xff\xd8\xff": ("jpg", "image/jpeg"),
+                   b"GIF87a": ("gif", "image/gif"), b"GIF89a": ("gif", "image/gif")}
+
+    def save_image(self, data_url: str) -> str:
+        """画面から来た画像（data:...;base64,...）を確かめて残す。中身の頭で種類を見る（名前や申告は信じない）"""
+        import base64
+        import secrets
+        m = re.match(r"^data:[\w/+.-]*;base64,([A-Za-z0-9+/=\s]+)$", data_url)
+        if not m:
+            raise ValueError("画像が読めません")
+        raw = base64.b64decode(m.group(1), validate=False)
+        if len(raw) > self.IMAGE_MAX:
+            raise ValueError("画像が大きすぎます（5MB まで）")
+        kind = next((v for k, v in self.IMAGE_KINDS.items() if raw.startswith(k)), None)
+        if kind is None and raw[:4] == b"RIFF" and raw[8:12] == b"WEBP":
+            kind = ("webp", "image/webp")
+        if kind is None:
+            raise ValueError("画像は png / jpg / gif / webp だけです")
+        name = f"{secrets.token_hex(16)}.{kind[0]}"
+        if self.eng.store:
+            import os
+            d = self.eng.store + ".files"
+            os.makedirs(d, exist_ok=True)
+            with open(os.path.join(d, name), "wb") as f:
+                f.write(raw)
+        else:
+            self._mem_files[name] = raw
+        return "file:" + name
+
+    def image_url(self, value) -> str | None:
+        v = str(value or "")
+        return "/files/" + v[5:] if v.startswith("file:") else None
+
+    def read_image(self, name: str, user) -> tuple[bytes, str] | None:
+        """見られる箱の画像だけ返す（画像の名前を知っていても、who で見られなければ無いのと同じ）"""
+        import os
+        if not re.fullmatch(r"[0-9a-f]{32}\.(png|jpg|gif|webp)", name):
+            return None
+        box = next((b for t in self.eng.boxes.values() for b in t.values() if f"file:{name}" in b.values.values()), None)
+        if box is None or (user is not None and not self.eng.can(user, "see", box.thing, box)):
+            return None
+        if self.eng.store:
+            path = os.path.join(self.eng.store + ".files", name)
+            if not os.path.exists(path):
+                return None
+            with open(path, "rb") as f:
+                raw = f.read()
+        else:
+            raw = self._mem_files.get(name)
+            if raw is None:
+                return None
+        ctype = {"png": "image/png", "jpg": "image/jpeg", "gif": "image/gif", "webp": "image/webp"}[name.rsplit(".", 1)[1]]
+        return raw, ctype
 
     def can_read_notice(self, n: dict, user) -> bool:
         """宛先のある通知は本人だけ。宛先の無い通知（毎朝の rule の失敗など）は、管理者のいるアプリなら管理者だけ。
@@ -318,6 +375,8 @@ class App:
     def show_value(self, box: Box, fld: str, env: Env):
         f = self.eng.fields[box.thing].get(fld)
         v = box.values.get(fld, "")
+        if f is not None and f.type == "image":
+            return ""                                   # 画像は文字では見せない（image で見せる）
         if f is not None and f.type in self.eng.fields and v:
             ub = self.eng.boxes.get(f.type, {}).get(v)
             return ub.values.get("name", v) if ub else v
@@ -355,6 +414,11 @@ class App:
                 elif c.keyword == "mark":
                     m = re.match(r"^color of (\w+)$", c.text.strip())
                     row["mark"] = self.mark_of(box, m.group(1) if m else c.text.strip(), env)
+                elif c.keyword == "image":                   # image photo about name（説明は項目の値か、words の言葉）
+                    fld, _, about = c.text.strip().partition(" about ")
+                    row["image"] = self.image_url(box.values.get(fld.strip()))
+                    a = about.strip()
+                    row["image_alt"] = str(self.show_value(box, a, env)) if a in self.eng.fields[box.thing] else self.tr(a, env)
                 elif c.keyword == "lead":
                     t = str(self.show_value(box, c.text.strip(), env) or "?")
                     row["lead"] = {"text": t[:1].upper(), "color": AUTO[sum(map(ord, t)) % len(AUTO)]}
@@ -471,7 +535,8 @@ class App:
         box = env.this
         look = self.looks.get(box.thing) or (self.looks.get(env.origin) if env.origin else None)
         r = self.row(box, look, env, env.origin or box.thing)
-        fields = [{"label": self.tr(k, env), "value": self.show_value(box, k, env)} for k, f in self.eng.fields[box.thing].items()]
+        fields = [{"label": self.tr(k, env), "value": self.show_value(box, k, env), "image": self.image_url(box.values.get(k)) if f.type == "image" else None}
+                  for k, f in self.eng.fields[box.thing].items()]
         return {"type": "detail", "title": r.get("title"), "sub": r.get("sub"), "mark": r.get("mark"), "lead": r.get("lead"),
                 "fields": fields, "buttons": r["buttons"], "id": box.id, "on": env.origin or box.thing}
 
@@ -516,7 +581,7 @@ class App:
         fields = []
         for c in inp.children:
             f = self.eng.fields[thing][c.keyword]
-            kind = {"monthday": "datetime-local", "date": "datetime-local", "number": "number", "count": "number"}.get(f.type, "text")
+            kind = {"monthday": "datetime-local", "date": "datetime-local", "number": "number", "count": "number", "image": "image"}.get(f.type, "text")
             if c.keyword == "memo" or "long" in c.text:
                 kind = "textarea"
             value = ""
@@ -529,6 +594,8 @@ class App:
                     except ValueError:
                         value = ""
             row = {"name": c.keyword, "label": self.tr(c.keyword, env), "kind": kind, "required": "required" in c.text, "value": value}
+            if kind == "image":
+                row["value"], row["image"] = "", self.image_url(value)
             if f.states:                                   # 状態は選ぶ（書いた状態のどれか）
                 row["kind"] = "select"
                 row["options"] = [{"value": st, "label": self.tr(st, env)} for st in f.states]
@@ -790,6 +857,18 @@ def make_handler(app: App):
                     return
                 v["notifications"] = [n for n in app.eng.notifications if app.can_read_notice(n, user)]
                 self._json(v)
+            elif u.path.startswith("/files/"):
+                got = app.read_image(u.path[len("/files/"):], self._user(q.get("user")))
+                if got is None:
+                    self._json({"error": "見つかりません"}, 404)
+                else:
+                    self.send_response(200)
+                    self.send_header("content-type", got[1])
+                    self.send_header("content-length", str(len(got[0])))
+                    self.send_header("cache-control", "private, max-age=3600")
+                    self.send_header("content-security-policy", "default-src 'none'")
+                    self.end_headers()
+                    self.wfile.write(got[0])
             elif u.path == "/api/events":
                 self.send_response(200)
                 self.send_header("content-type", "text/event-stream")
@@ -818,7 +897,14 @@ def make_handler(app: App):
                 self._json({"error": "not found"}, 404)
 
         def do_POST(self):
-            n = int(self.headers.get("content-length") or 0)
+            try:
+                n = int(self.headers.get("content-length") or 0)
+            except ValueError:
+                n = -1
+            if n < 0 or n > 8 * 1024 * 1024:            # 画像（5MB まで）を base64 にした大きさ + 少し
+                self._json({"error": "送る中身が大きすぎます"}, 413)
+                self.close_connection = True
+                return
             raw = self.rfile.read(n)
             if app.auth and self._auth_post(self.path, raw):
                 return
@@ -864,6 +950,9 @@ def make_handler(app: App):
                         if v in ("", None):
                             continue
                         fl = app.eng.fields[thing].get(k)
+                        if fl is not None and fl.type == "image":        # 画像は画面から来た中身だけ受け取る（file:… を直接書かせない）
+                            values[k] = app.save_image(v)
+                            continue
                         if fl is not None and fl.states and v not in fl.states:
                             raise ValueError(f"{k} は {' / '.join(fl.states)} のどれかです")
                         if fl is not None and fl.states and (thing, k) in app.eng.flows:

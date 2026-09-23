@@ -4,6 +4,7 @@
 thing Item
   name   text
   place  text
+  photo  image
   status[free | lent | broken]
 
 thing Loan
@@ -253,6 +254,7 @@ scene Home
 input AddItem
   name  required
   place
+  photo
 
 flow scene
   Home -> AddItem -> Home
@@ -277,6 +279,7 @@ match tab to icon
   members -> star
 
 look Items as cards
+  image   photo about name
   title   name
   sub     place
   mark    color of status
@@ -308,6 +311,7 @@ style theme
 
 words ja
   free                空いてる
+  photo               写真
   lent                貸し出し中
   broken              こわれてる
   active              借りてる
@@ -347,6 +351,7 @@ words ja
 
 words en
   free                Available
+  photo               Photo
   lent                On loan
   broken              Broken
   active              Borrowed

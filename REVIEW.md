@@ -110,7 +110,7 @@ style は look や scene の名前で塊を作るのに、tone はボタンの�
 | 5 ask ai（**対応済み**: 答えが out の形でなければ else へ） | 実行の度にAIに聞く | チェッカーだけ。実行はまだ |
 | 8 connect does | 外に頼む（メールを送る） | 形だけ。本当につなぐのは中身の仕事（相談で後回しに決めた） |
 | 6 input（**対応済み**: required と from now を画面とサーバーで守る） | `from now`、`pdf only, max 5 MB` などの入力のチェック | required だけ効く |
-| 6 look | map / media / table の細かい見せ方 | map と media は無い |
+| 6 look（**一部対応**: 画像は `image 項目`） | map / media / table の細かい見せ方 | map は無い |
 | F use（**対応済み**: 別ファイルを取り込む。エラーは元のファイルと行で出る） | 別ファイルの group を使う | まだ |
 
 ---

@@ -133,6 +133,10 @@ td{padding:11px 14px;border-bottom:1px solid var(--line)}tr:last-child td{border
 .form h2{margin:0;font-size:20px}
 .form label{display:grid;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}.form label>span{display:flex;gap:4px}
 .form label span.req{color:var(--danger)}
+.thumb{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:calc(var(--radius) - 4px);margin-bottom:10px;background:var(--line)}
+.thumb.sm{width:44px;height:44px;aspect-ratio:auto;margin:0;flex:none;border-radius:10px}
+.photo{display:block;max-width:100%;max-height:320px;border-radius:10px;margin:4px 0}
+.form input[type=file]{padding:9px}
 .form select{font:inherit;font-size:15px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text)}
 .form select:focus{outline:0;border-color:var(--main);box-shadow:0 0 0 3px var(--main-soft)}
 .form input{font:inherit;font-size:15px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text);transition:border-color .15s,box-shadow .15s}
@@ -218,13 +222,13 @@ const empty = e => { const t = typeof e === "string" ? {text:e} : (e || {}); ret
 const hay = r => esc(Object.values(r.values || {}).join(" ").toLowerCase());
 function card(r, b){
   const tap = r.cardTap ? `tap" data-card="${esc(r.id)}" data-on="${esc(b.name)}` : "";
-  return `<div class="card ${tap}" data-key="${esc(r.id)}" data-search="${hay(r)}">
+  return `<div class="card ${tap}" data-key="${esc(r.id)}" data-search="${hay(r)}">${r.image ? `<img class="thumb" src="${esc(r.image)}" alt="${esc(r.image_alt || "")}" loading="lazy">` : ""}
     <div class="head"><div class="who">${lead(r.lead)}<div class="title">${esc(r.title)}</div></div>${badge(r.mark)}</div>${sub(r.sub)}
     ${r.buttons.length ? `<div class="btns">${r.buttons.map(x => btn(x, {sm:1, on:b.name, id:r.id})).join("")}</div>` : ""}</div>`;
 }
 function listRow(r, b){
   const tap = r.cardTap ? `tap" data-card="${esc(r.id)}" data-on="${esc(b.name)}` : "";
-  return `<div class="card ${tap}" data-key="${esc(r.id)}" data-search="${hay(r)}">${lead(r.lead)}<div class="grow"><div class="title">${esc(r.title)}</div>${sub(r.sub)}</div>${badge(r.mark)}
+  return `<div class="card ${tap}" data-key="${esc(r.id)}" data-search="${hay(r)}">${r.image ? `<img class="thumb sm" src="${esc(r.image)}" alt="${esc(r.image_alt || "")}" loading="lazy">` : lead(r.lead)}<div class="grow"><div class="title">${esc(r.title)}</div>${sub(r.sub)}</div>${badge(r.mark)}
     ${r.buttons.length ? `<div class="btns">${r.buttons.map(x => btn(x, {sm:1, on:b.name, id:r.id})).join("")}</div>` : ""}</div>`;
 }
 function calendar(b){
@@ -281,10 +285,12 @@ function block(b){
         ${b.bars.map(x => `<div class="bar"><span>${esc(x.label)}</span><div class="track"><div class="fill" style="--c:${esc(x.color)};width:${x.count / max * 100}%"></div></div><span class="n">${esc(x.shown ?? x.count)}</span></div>`).join("")}</div>`;
     }
     case "detail": return `<div class="detail"><div class="head" style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start"><div class="who" style="display:flex;gap:14px;align-items:center">${lead(b.lead)}<div class="title">${esc(b.title)}</div></div>${badge(b.mark)}</div>${sub(b.sub)}
-      <dl class="fields">${b.fields.map(f => `<dt>${esc(f.label)}</dt><dd>${esc(f.value)}</dd>`).join("")}</dl>
+      <dl class="fields">${b.fields.map(f => `<dt>${esc(f.label)}</dt><dd>${f.image ? `<img class="photo" src="${esc(f.image)}" alt="${esc(f.label)}">` : esc(f.value)}</dd>`).join("")}</dl>
       ${b.buttons.length ? `<div class="btns">${b.buttons.map(x => btn(x, {on:b.on, id:b.id})).join("")}</div>` : ""}</div>`;
     case "input": return `<form class="form" data-input="${esc(b.name)}" data-this="${esc(b.this || "")}" novalidate><h2>${esc(b.title)}</h2>${b.fields.map(f =>
-      `<label><span>${esc(f.label)}${f.required ? `<span class="req">*</span>` : ""}</span>${f.kind === "select"
+      `<label><span>${esc(f.label)}${f.required ? `<span class="req">*</span>` : ""}</span>${f.kind === "image"
+        ? `${f.image ? `<img class="photo" src="${esc(f.image)}" alt="">` : ""}<input name="${esc(f.name)}" type="file" accept="image/png,image/jpeg,image/gif,image/webp" ${f.required && !f.image ? "required" : ""}>`
+        : f.kind === "select"
         ? `<select name="${esc(f.name)}">${f.options.map(o => `<option value="${esc(o.value)}"${o.value === f.value ? " selected" : ""}>${esc(o.label)}</option>`).join("")}</select>`
         : f.kind === "textarea"
         ? `<textarea name="${esc(f.name)}" ${f.required ? "required" : ""}>${esc(f.value)}</textarea>`
@@ -403,7 +409,14 @@ document.addEventListener("submit", async e => {
   e.preventDefault(); const f = e.target, err = f.querySelector("#err");
   const missing = [...f.querySelectorAll("[required]")].filter(i => !i.value);
   if(missing.length){ err.textContent = "必須の項目が空です: " + missing.map(i => i.closest("label").firstChild.firstChild.textContent.trim()).join("、"); missing[0].focus(); return; }
-  const values = Object.fromEntries(new FormData(f).entries()), year_answers = {};
+  const values = {}, year_answers = {};
+  for (const [k, v] of new FormData(f).entries()) {
+    if (v instanceof File) {                      // 画像: 選んでいなければ送らない（前のまま）。選んだら中身を送る
+      if (!v.size) continue;
+      if (v.size > 5 * 1024 * 1024) { err.textContent = "画像が大きすぎます（5MB まで）"; return; }
+      values[k] = await new Promise((ok, ng) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = ng; r.readAsDataURL(v); });
+    } else values[k] = v;
+  }
   let r = await post("/api/submit", {input: f.dataset.input, this: f.dataset.this || null, values, lang: LANG});
   while(r.ask){                                   // 年の無い日付が今日より前 → 来年か聞く
     year_answers[r.ask.field] = (await ask(r.ask.text)) ? "next" : "this";

@@ -30,7 +30,8 @@ def req(port, method, path, body=None, headers=None):
     c = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
     c.request(method, path, body=body, headers=headers or {})
     r = c.getresponse()
-    return r.status, dict((k.lower(), v) for k, v in r.getheaders()), r.read().decode()
+    raw = r.read()
+    return r.status, dict((k.lower(), v) for k, v in r.getheaders()), raw.decode("utf-8", "replace")
 
 
 def login(port, name, pw, path="/login"):
@@ -123,3 +124,39 @@ def test_security_headers(site):
     port, _ = site
     _, h, _ = req(port, "GET", "/login")
     assert h["x-frame-options"] == "DENY" and h["x-content-type-options"] == "nosniff"
+
+
+PNG = ("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==")
+
+
+def test_images_are_checked_stored_and_served_by_who(tmp_path):
+    import base64
+    import threading as _t
+    spec = parse_file("spec/lend.ponte")
+    eng = Engine(spec, store=str(tmp_path / "d.jsonl"))
+    eng.set_role("boss", "admin")
+    httpd = serve(spec, eng, port=0, ticker=False)
+    _t.Thread(target=httpd.serve_forever, daemon=True).start()
+    port = httpd.server_address[1]
+    post = lambda body: req(port, "POST", "/api/submit", json.dumps(body), {"content-type": "application/json"})
+    try:
+        st, _, body = post({"user": "boss", "input": "AddItem", "values": {"name": "カメラ", "photo": PNG}})
+        assert st == 200, body
+        item = next(b for b in eng.boxes["Item"].values() if b.values["name"] == "カメラ")
+        v = item.values["photo"]
+        assert v.startswith("file:") and v.endswith(".png") and (tmp_path / "d.jsonl.files" / v[5:]).exists()
+        st, h, _ = req(port, "GET", "/files/" + v[5:] + "?user=taro")
+        assert st == 200 and h["content-type"] == "image/png"
+        fake = "data:image/png;base64," + base64.b64encode(b"<script>alert(1)</script>").decode()
+        assert post({"user": "boss", "input": "AddItem", "values": {"name": "偽物", "photo": fake}})[0] == 400
+        assert post({"user": "boss", "input": "AddItem", "values": {"name": "借用", "photo": v}})[0] == 400   # 他の画像を名前で指せない
+        assert req(port, "GET", "/files/" + "0" * 32 + ".png")[0] == 404
+        assert req(port, "GET", "/files/../../etc/passwd")[0] == 404
+        c = http.client.HTTPConnection("127.0.0.1", port, timeout=5)      # 大きすぎる中身は、読む前に断る
+        c.putrequest("POST", "/api/submit")
+        c.putheader("content-type", "application/json")
+        c.putheader("content-length", str(9 * 1024 * 1024))
+        c.endheaders()
+        assert c.getresponse().status == 413
+    finally:
+        httpd.shutdown()

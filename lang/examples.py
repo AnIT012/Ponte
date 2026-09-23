@@ -48,7 +48,13 @@ def run_example(spec: Spec, rule: Node, ex: Node) -> Result:
             if k == "given":
                 thing, vals = record(c, t.split()[0])
                 vals = _refs(eng, thing, vals)
-                eng.create(thing, vals, me, fire=False, check=False)
+                same = [b for b in eng.all("User") if b.values.get("name") == vals.get("name")] if thing == "User" else []
+                if same:                          # `given User name "me" role admin` は、例を動かす人そのもの
+                    same[0].values.update(vals)
+                    me = eng.login("me")
+                    ctx = Ctx(me)
+                else:
+                    eng.create(thing, vals, me, fire=False, check=False)
             elif k == "at":
                 eng.run_rule(rule, Ctx(None))
             elif k == "says":

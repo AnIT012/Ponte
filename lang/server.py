@@ -136,7 +136,8 @@ class App:
             return [{"type": "tabs", "state": name, "current": env.state.get(name),
                      "options": [{"value": v, "label": self.tr(v, env), "icon": self.icon_for(name, v)} for v in vals]}]
         if text.startswith("button "):   # 画面の下のボタンだけ目立たせる。上のボタンは控えめ
-            return [self.button(parse_button(text[7:]), env, main=(node.keyword == "bottom"), on=env.scene)]
+            pb = parse_button(text[7:])
+            return [self.button(pb, env, main=(node.keyword == "bottom"), on=env.scene)] if self.can_open(pb["id"], env.scene) else []
         if text == "notices":
             return [{"type": "notices"}]
         m = re.match(r"^(\w+) as (\w+)$", text)
@@ -192,6 +193,19 @@ class App:
                     if str(value) in lefts or "else" in lefts:
                         return right
         return None
+
+    def can_open(self, bid: str, on: str) -> bool:
+        """画面のボタンが入力（input）を開くなら、その thing を作れる人にだけ見せる（押しても保存できないので）"""
+        me = self.eng.login(self._viewer)
+        for r in self.eng.rules.values():
+            w = r.child("when")
+            if w is None or w.text.strip() != f"user taps {bid} on {on}":
+                continue
+            for d in r.children_of("do"):
+                m = re.match(r"^go (\w+)", d.text.strip())
+                if m and self.spec.find("input", m.group(1)) and not self.eng.can(me, "create", self.eng.input_thing(m.group(1)), None):
+                    return False
+        return True
 
     def can_press(self, box: Box, bid: str, on: str) -> bool:
         """このボタンの rule が `move this to X` なら、flow でいま X へ動けるかを見る（動けないボタンは押せなくする）"""
@@ -364,7 +378,7 @@ class App:
         btn = None
         if "button" in toks:
             pb = parse_button(" ".join(toks[toks.index("button") + 1:]))
-            btn = self.button(pb, env, main=True, on=env.scene) if pb else None
+            btn = self.button(pb, env, main=True, on=env.scene) if pb and self.can_open(pb["id"], env.scene) else None
         return {"text": self.tr(text, env), "button": btn}
 
     def detail_block(self, env: Env) -> dict:

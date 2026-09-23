@@ -124,3 +124,17 @@ def test_http_request_shape(monkeypatch):
     assert sent["headers"]["x-api-key"] == "test-key"
     assert sent["headers"]["anthropic-beta"] == "server-side-fallback-2026-07-01"
     assert "thinking" not in sent["body"] and "temperature" not in sent["body"]
+
+
+def test_answer_line_may_repeat_the_out_form(spec):
+    """実験の B3: 答えの行に out の形 [found monthday | missing] を書いても通る"""
+    code = F.extract_code(open("experiment/v2/runs/B3/reply.md", encoding="utf-8").read())
+    assert F.verify(spec, spec.find("action", "ExtractDeadline"), code).ok
+
+
+def test_never_depend_on_width_catches_missing_normalize(spec):
+    """実験の B5: normalize を忘れると、例は通っても never depend on width で止まる"""
+    code = F.extract_code(open("experiment/v2/runs/B5/reply.md", encoding="utf-8").read())
+    v = F.verify(spec, spec.find("action", "ExtractDeadline"), code)
+    assert not v.ok and all(p.startswith("never depend on width") for p in v.problems)
+    assert F.to_fullwidth("9/24 23:59") == "９／２４\u3000２３：５９".replace("\u3000", " ")

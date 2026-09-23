@@ -111,6 +111,10 @@ def run_action_examples(spec: Spec) -> list[Result]:
                 continue
             ok = same(got, parse_expected(right, outs))
             out.append(Result(a.name, ex.line, ok, "" if ok else f"{left} → {right} のはずが {got}"))
+        from .fill import check_nevers            # 機械で確かめられる never も流す
+        for n in a.children_of("never"):
+            probs = [p for p in check_nevers(a, body, input_names(a)[0]) if p.startswith(f"never {n.text.strip()}")]
+            out.append(Result(a.name, n.line, not probs, "; ".join(probs)))
     return out
 
 

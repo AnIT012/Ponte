@@ -7,9 +7,13 @@ import sys
 from lang.build import build
 
 
-def test_build_single_file_runs_check_and_test(tmp_path):
-    out = tmp_path / "hub.pyz"
-    build("spec/hub_app.lang", str(out))
+import pytest
+
+
+@pytest.mark.parametrize("spec", ["spec/hub_app.lang", "spec/kakeibo.lang"])     # kakeibo は std を使う
+def test_build_single_file_runs_check_and_test(tmp_path, spec):
+    out = tmp_path / "app.pyz"
+    build(spec, str(out))
     for cmd in (["check"], ["test"]):
         r = subprocess.run([sys.executable, str(out), *cmd], capture_output=True, text=True, cwd=tmp_path)
         assert r.returncode == 0, r.stdout + r.stderr

@@ -419,3 +419,21 @@ def test_events_stream_says_changed():
         assert r.fp.readline() == b"data: changed\n"
     finally:
         httpd.shutdown()
+
+
+def test_every_month_fires_on_the_day_and_month_end():
+    from datetime import datetime as _dt
+    src = open("spec/todo.ponte", encoding="utf-8").read() + '''
+rule Monthly
+  why   月の初めに知らせる
+  when  every month on 31 at 9:00
+  do    notify me "月末です"
+'''
+    eng = Engine(parse(src))
+    eng.tick(_dt(2026, 2, 27, 9, 0))
+    assert not any(n["text"] == "月末です" for n in eng.notifications)
+    eng.tick(_dt(2026, 2, 28, 9, 0))                       # 2月に31日は無い → 月末に
+    eng.tick(_dt(2026, 2, 28, 9, 0))                       # 同じ分に2回は起きない
+    assert sum(n["text"] == "月末です" for n in eng.notifications) == 1
+    eng.tick(_dt(2026, 3, 31, 9, 0))
+    assert sum(n["text"] == "月末です" for n in eng.notifications) == 2

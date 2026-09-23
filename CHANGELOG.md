@@ -19,6 +19,7 @@
 - 画面: 押せるカードはキーボードでも（Tab で選んで Enter / Space）
 - **画像**: `photo image` の項目を input で選べる（種類は中身で確かめる・5MB まで・名前はランダム）。look の `image photo about name` で一覧に写真。画像は who で見られる人にだけ出る。備品かしだしに写真
 - chart に `group by 項目` と `sum 項目`（家計メモに「費目ごとの合計」）。input の状態の項目は選ぶ形に（flow のある状態は選べない）
+- when に `every month on 1 at 9:00` / `every month on last at 18:00`（無い日の月は月末に）
 - 道具 `time of`
 - shape に `one of "a" "b"`（どれか1つ。名前も付けられる）と `edge`（数字・英字の続きの途中で始まらない・終わらない）
 - 標準ライブラリに `FindDate`（年の入った日付）と `FindPostal`（郵便番号）

@@ -385,6 +385,8 @@ class Body:
         if m:
             v = ev(m.group(2))
             op = m.group(1)
+            if op in ("count", "length", "first", "last") and not isinstance(v, (list, str)):
+                raise BodyError(line, f"{op} of: 集まりか文字が要ります（{type(v).__name__} でした）")
             if op in ("count", "length"):
                 return len(v)
             if op in ("first", "last"):
@@ -392,7 +394,14 @@ class Body:
                     raise BodyError(line, f"{op} of: 空の集まりです（先に count で分けてください）")
                 return v[0] if op == "first" else v[-1]
             if op == "number":
-                return int(str(v))
+                t = str(v).strip().replace(",", "")
+                try:
+                    return int(t)
+                except ValueError:
+                    try:
+                        return float(t)
+                    except ValueError:
+                        raise BodyError(line, f"number of: 数として読めません: {str(v)[:30]!r}（先に find all で数字だけ取り出す）")
             if op == "date":
                 if not isinstance(v, dict) or not {"year", "month", "day"} <= set(v):
                     raise BodyError(line, "date of: year と month と day を取り出した shape の結果が要ります（年は推測しません）")

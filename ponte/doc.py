@@ -166,6 +166,7 @@ def build(spec: Spec, title: str | None = None) -> str:
     return f"""<!doctype html>
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{_e(title)} — 決めごと</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Cdefs%3E%3ClinearGradient id="pi" x1="0" x2="1"%3E%3Cstop offset=".15" stop-color="#FF7355"/%3E%3Cstop offset=".85" stop-color="#83C3FF"/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="100" height="100" rx="24" fill="#1F2340"/%3E%3Cpath d="M24 62 C 38 28, 62 28, 76 62" stroke="url%28#pi%29" stroke-width="9" fill="none" stroke-linecap="round"/%3E%3Ccircle cx="24" cy="62" r="13" fill="#FF7355"/%3E%3Ccircle cx="76" cy="62" r="13" fill="#83C3FF"/%3E%3C/svg%3E">
 <style>
 :root{{--bg:#f7f7f5;--fg:#1f2328;--sub:#6b7280;--card:#fff;--line:#e5e7eb;--accent:#2f6fd6;--warn:#b42318}}
 @media (prefers-color-scheme: dark){{:root{{--bg:#16171a;--fg:#e6e6e6;--sub:#9aa0a6;--card:#202226;--line:#2f3237;--accent:#83c3ff;--warn:#ff8a80}}}}

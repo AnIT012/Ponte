@@ -1,7 +1,7 @@
 /* ---- top bar ---- */
 .bar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-block:18px}
 .logo{display:flex;align-items:center;gap:10px;text-decoration:none}
-.logo svg{width:52px;height:auto}
+.logo svg{width:44px;height:auto}
 .logo .word{font-size:28px}
 .nav{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--pop);font-size:14px}
 .nav a{text-decoration:none;padding:4px 2px;border-bottom:3px solid transparent}

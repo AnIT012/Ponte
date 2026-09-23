@@ -1,5 +1,7 @@
 # Ponte（ポンテ）
 
+<img src="docs/logo/ponte.svg" alt="Ponte" width="96">
+
 [English](README.en.md)
 
 > Ponte はイタリア語で「橋」。人とAIの間にかかる橋、そして上の決まりと裏の Python をつなぐ橋。

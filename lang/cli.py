@@ -6,6 +6,7 @@
   python -m lang test  spec/hub_app.lang           rule の example を全部流す（確かめていない所も出す。--strict で失敗に）
   python -m lang fill  spec/hub_app.lang           by ai の action の中身をAIに書かせる
   python -m lang run   spec/hub_app.lang           動かす（ブラウザで http://127.0.0.1:8000/）
+  python -m lang role  spec/lend.lang taro admin   最初の管理者を決める（2人目からは画面で）
 """
 from __future__ import annotations
 
@@ -110,6 +111,22 @@ def cmd_run(args) -> int:
         httpd.serve_forever()
     except KeyboardInterrupt:
         pass
+    return 0
+
+
+def cmd_role(args) -> int:
+    """最初の管理者を決める。2人目からは、画面で管理者が決める（spec の rule と who の通り）"""
+    from .runtime import Engine, RuleError
+    spec = _load_checked(args.spec)
+    if spec is None:
+        return 1
+    store = args.data or (args.spec + ".data.jsonl")
+    try:
+        Engine(spec, store=store).set_role(args.name, args.role)
+    except RuleError as e:
+        print(e)
+        return 1
+    print(f"{args.name} を {args.role} にしました（データ: {store}）")
     return 0
 
 
@@ -223,6 +240,12 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--host", default="127.0.0.1")
     r.add_argument("--data", help="データを残すファイル（既定は <spec>.data.jsonl）")
     r.set_defaults(fn=cmd_run)
+    ro = sub.add_parser("role", help="最初の管理者を決める（例: role spec/lend.lang taro admin）")
+    ro.add_argument("spec")
+    ro.add_argument("name")
+    ro.add_argument("role")
+    ro.add_argument("--data", help="データのファイル（既定は <spec>.data.jsonl）")
+    ro.set_defaults(fn=cmd_role)
     args = p.parse_args(argv)
     return args.fn(args)
 

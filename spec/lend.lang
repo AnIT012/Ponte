@@ -2,8 +2,8 @@
 # チームの備品（カメラ・マイクなど）を借りて、返す。返し忘れたら知らせる。
 
 thing Item
-  name    text
-  place   text
+  name   text
+  place  text
   status[free | lent | broken]
 
 thing Loan
@@ -14,12 +14,16 @@ thing Loan
 
 thing User
   name text
+  role[member | admin]
 
 flow Item.status
   free -> lent -> free
   free | lent -> broken -> free
   broken > lent
   broken > free
+
+flow User.role
+  member -> admin -> member
 
 flow Loan.status
   active -> returned
@@ -31,10 +35,12 @@ who
   user   can see     Loan where borrower is me
   user   can create  Loan
   user   can change  Loan where borrower is me
-  user   can change  Item
-  user   can create  Item
+  user   can move    Item
+  admin  can create  Item
   admin  can see     Loan
   user   can see     User where it is me
+  admin  can see     User
+  admin  can change  User
 
 list FreeItems
   of     Item
@@ -51,18 +57,22 @@ list Items
   of    Item
   sort  name
 
+list Members
+  of    User
+  sort  name
+
 list Late
   of     Loan
   where  status is active
   where  due is before now
 
 rule Borrow
-  why   空いている備品を借りる
-  when  user taps borrow-button on Item
-  where status is free
-  do    create Loan
-          item  this
-          due   7 days from now
+  why    空いている備品を借りる
+  when   user taps borrow-button on Item
+  where  status is free
+  do     create Loan
+    item  this
+    due   7 days from now
   example
     given Item
       name    "カメラ"
@@ -137,10 +147,10 @@ rule ReportBroken
       name "ライト"
 
 rule Fixed
-  why   直ったらまた貸せる
-  when  user taps fixed-button on Item
-  where status is broken
-  do    move this to free
+  why    直ったらまた貸せる
+  when   user taps fixed-button on Item
+  where  status is broken
+  do     move this to free
   example
     given Item
       name    "ライト"
@@ -157,15 +167,66 @@ rule OpenAdd
     taps    add on Home
     expect  scene AddItem
 
+rule MakeAdmin
+  why    管理者を増やせる（最初の1人は lang role で決める）
+  when   user taps admin-button on User
+  where  role is member
+  do     move this to admin
+  example
+    given User
+      name  "me"
+      role  admin
+    given User
+      name  "hanako"
+      role  member
+    taps admin-button on User
+      name "hanako"
+    expect User is admin
+      name "hanako"
+  example
+    given User
+      name  "hanako"
+      role  member
+    taps admin-button on User
+      name "hanako"
+    expect User is member
+      name "hanako"
+
+rule StepDown
+  why    管理者をやめられる
+  when   user taps member-button on User
+  where  role is admin
+  where  it is not me
+  do     move this to member
+  example
+    given User
+      name  "me"
+      role  admin
+    given User
+      name  "jiro"
+      role  admin
+    taps member-button on User
+      name "jiro"
+    expect User is member
+      name "jiro"
+  example
+    given User
+      name  "me"
+      role  admin
+    taps member-button on User
+      name "me"
+    expect User is admin
+      name "me"
+
 rule MarkLate
   why   返し忘れを見つける
   when  every day at 9:00
   do    move Loan where due is before now to late
   example
-    given Item
+    given   Item
       name    "マイク"
       status  lent
-    given Loan
+    given   Loan
       item    "マイク"
       due     "9/20 18:00"
       status  active
@@ -179,16 +240,17 @@ rule RemindLate
 # ---- 画面 ----
 
 scene Home
-  tab[items | mine] = items
-  top   Header
-  top   tabs tab
-  main  match tab
-    items -> Items as cards
-    mine  -> MyLoans as list
+  tab[items | mine | members] = items
+  top     Header
+  top     tabs tab
+  main    match tab
+    items   -> Items as cards
+    mine    -> MyLoans as list
+    members -> Members as list
   bottom  button add named add-item icon plus
 
 input AddItem
-  name   required
+  name required
   place
 
 flow scene
@@ -199,18 +261,19 @@ part Header
   show  text app-tagline
 
 match Item.status to color
-  free    -> green
-  lent    -> orange
-  broken  -> gray
+  free   -> green
+  lent   -> orange
+  broken -> gray
 
 match Loan.status to color
-  active    -> blue
-  late      -> orange
-  returned  -> gray
+  active   -> blue
+  late     -> orange
+  returned -> gray
 
 match tab to icon
-  items -> list
-  mine  -> user
+  items   -> list
+  mine    -> user
+  members -> star
 
 look Items as cards
   title   name
@@ -220,6 +283,16 @@ look Items as cards
   button  broken-button  named broken  icon alert  tone quiet  confirm broken-confirm
   button  fixed-button   named fixed   icon check  tone good
   empty   items-empty
+
+look Members as list
+  title   name
+  mark    color of role
+  button  admin-button   named make-admin  icon star  tone good  confirm make-admin-confirm
+  button  member-button  named step-down   icon x     tone quiet
+
+match User.role to color
+  member -> gray
+  admin  -> blue
 
 look MyLoans as list
   title   item
@@ -233,59 +306,75 @@ style theme
   radius  12
 
 words ja
-  free            空いてる
-  lent            貸し出し中
-  broken          こわれてる
-  active          借りてる
-  returned        返した
-  late            返却日すぎ
-  items           備品
-  mine            借りてる物
-  name            名前
-  place           置き場所
-  status          状態
-  item            備品
-  borrower        借りた人
-  due             返却日
-  app-name        備品かしだし
-  app-tagline     借りて、返す。忘れたら知らせます
-  borrow          借りる
-  broken          こわれてる
-  broken-confirm  こわれていると記録しますか？
-  fixed           直った
-  return          返す
-  items-empty     備品がまだありません
-  loans-empty     借りている物はありません
-  add-item        備品を足す
-  AddItem         備品を足す
-  Items           備品
-  MyLoans         借りてる物
+  free                空いてる
+  lent                貸し出し中
+  broken              こわれてる
+  active              借りてる
+  returned            返した
+  late                返却日すぎ
+  items               備品
+  mine                借りてる物
+  name                名前
+  place               置き場所
+  status              状態
+  item                備品
+  borrower            借りた人
+  due                 返却日
+  app-name            備品かしだし
+  app-tagline         借りて、返す。忘れたら知らせます
+  borrow              借りる
+  broken              こわれてる
+  broken-confirm      こわれていると記録しますか？
+  fixed               直った
+  return              返す
+  items-empty         備品がまだありません
+  loans-empty         借りている物はありません
+  add-item            備品を足す
+  members             メンバー
+  member              メンバー
+  admin               管理者
+  role                役割
+  make-admin          管理者にする
+  make-admin-confirm  この人を管理者にしますか？
+  step-down           メンバーに戻す
+  Members             メンバー
+  AddItem             備品を足す
+  Items               備品
+  MyLoans             借りてる物
 
 words en
-  free            Available
-  lent            On loan
-  broken          Broken
-  active          Borrowed
-  returned        Returned
-  late            Overdue
-  items           Items
-  mine            My loans
-  name            Name
-  place           Place
-  status          Status
-  item            Item
-  borrower        Borrower
-  due             Due
-  app-name        Lending shelf
-  app-tagline     Borrow it, bring it back. We'll remind you.
-  borrow          Borrow
-  broken          Broken
-  broken-confirm  Mark this as broken?
-  fixed           Fixed
-  return          Return
-  items-empty     No items yet
-  loans-empty     Nothing borrowed
-  add-item        Add item
-  AddItem         Add item
-  Items           Items
-  MyLoans         My loans
+  free                Available
+  lent                On loan
+  broken              Broken
+  active              Borrowed
+  returned            Returned
+  late                Overdue
+  items               Items
+  mine                My loans
+  name                Name
+  place               Place
+  status              Status
+  item                Item
+  borrower            Borrower
+  due                 Due
+  app-name            Lending shelf
+  app-tagline         Borrow it, bring it back. We'll remind you.
+  borrow              Borrow
+  broken              Broken
+  broken-confirm      Mark this as broken?
+  fixed               Fixed
+  return              Return
+  items-empty         No items yet
+  loans-empty         Nothing borrowed
+  add-item            Add item
+  members             Members
+  member              Member
+  admin               Admin
+  role                Role
+  make-admin          Make admin
+  make-admin-confirm  Make this person an admin?
+  step-down           Make member
+  Members             Members
+  AddItem             Add item
+  Items               Items
+  MyLoans             My loans

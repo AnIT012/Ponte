@@ -935,6 +935,22 @@ def check_single_do(spec: Spec, opt: Options) -> list[Finding]:
     return out
 
 
+def check_roles(spec: Spec, opt: Options) -> list[Finding]:
+    """who に書いた役割（admin など）は、thing User の role[...] の状態のどれか"""
+    out = []
+    u = things(spec).get("User")
+    role = next((f for f in thing_fields(u) if f.name == "role" and f.states), None) if u else None
+    known = set(role.states) if role else set()
+    for w in spec.decls("who"):
+        for c in w.children:
+            r = c.raw.split()[0] if c.raw.split() else ""
+            if r in ("user", "nobody") or r in known:
+                continue
+            hint = f"（{' / '.join(sorted(known))}）" if known else "。thing User に `role[member | " + r + "]` を書きます"
+            out.append(Finding("E28", c.line, f"who: 「{r}」という役割がありません{hint}"))
+    return out
+
+
 # ---------------------------------------------------------------------------
 # 31. do の書き方（動かす前に分かるように）
 # ---------------------------------------------------------------------------
@@ -1007,7 +1023,7 @@ ALL_CHECKS = [
     check_relate_cycle, check_relate_contradiction, check_before_possible,
     check_double_else, check_match_states, check_who, check_gone, check_change,
     check_ask_ai_limit, check_connect_fallback, check_scene_move, check_words,
-    check_a11y, check_money, check_undefined, check_single_do, check_do_form, check_notify_recipient,
+    check_a11y, check_money, check_undefined, check_single_do, check_do_form, check_roles, check_notify_recipient,
 ]
 
 

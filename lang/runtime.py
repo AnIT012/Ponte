@@ -183,14 +183,31 @@ class Engine:
     # 人
     # ------------------------------------------------------------------
     def login(self, name: str, roles: set | None = None) -> User:
-        """User 箱を名前で探す。無ければ作る。"""
+        """User 箱を名前で探す。無ければ作る。
+        thing User に role[...] があれば、その値が役割になる（who の `admin can ...` の admin）。"""
         if "User" in self.fields:
-            for b in self.boxes["User"].values():
-                if b.values.get("name") == name:
-                    return User(b.id, name, roles or {"user"})
-            b = self.create("User", {"name": name}, user=None, fire=False, check=False)
-            return User(b.id, name, roles or {"user"})
+            b = next((x for x in self.boxes["User"].values() if x.values.get("name") == name), None)
+            if b is None:
+                b = self.create("User", {"name": name}, user=None, fire=False, check=False)
+            return User(b.id, name, roles or self.roles_of(b))
         return User(name, name, roles or {"user"})
+
+    def roles_of(self, b: Box) -> set:
+        f = self.fields["User"].get("role")
+        return {"user", b.values["role"]} if f is not None and f.states and b.values.get("role") else {"user"}
+
+    def set_role(self, name: str, role: str) -> None:
+        """役割を直接決める（最初の管理者を決める時だけ。`lang role`）。flow と who は通さない"""
+        f = self.fields.get("User", {}).get("role")
+        if f is None or not f.states:
+            raise RuleError("thing User に role[...] がありません（例: role[member | admin]）")
+        if role not in f.states:
+            raise RuleError(f"{role} という役割はありません（{' / '.join(f.states)}）")
+        b = self.boxes["User"][self.login(name).id]
+        with b.lock:
+            b.values["role"] = role
+            self._log({"t": "set", "thing": "User", "id": b.id, "field": "role", "value": role})
+        self._changed()
 
     def can(self, user: User | None, verb: str, thing: str, box: Box | None) -> bool:
         if user is None:
@@ -365,6 +382,8 @@ class Engine:
         cond = cond.strip()
         if cond == "it is me":
             return ctx.user is not None and box.id == ctx.user.id
+        if cond == "it is not me":
+            return ctx.user is None or box.id != ctx.user.id
         m = re.match(r"^(\w+) within (\d+ \w+)$", cond)
         if m:
             t = self._time_of(box.values.get(m.group(1), ""))

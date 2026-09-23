@@ -71,6 +71,16 @@ class App:
     BUILTIN_EN = {"search": "Search", "save": "Save", "cancel": "Cancel", "none": "Nothing yet", "more": "Show more", "undo": "Undo",
                   "total-of": "Total {x}"}
 
+    def can_read_notice(self, n: dict, user) -> bool:
+        """宛先のある通知は本人だけ。宛先の無い通知（毎朝の rule の失敗など）は、管理者のいるアプリなら管理者だけ。
+        役割（role[...]）の無いアプリは管理者がいないので、宛先の無い通知はみんなに出す"""
+        if n["user"] is not None:
+            return user is not None and n["user"] == user.name
+        role = self.eng.fields.get("User", {}).get("role")
+        if role is None or not role.states or "admin" not in role.states:
+            return True
+        return user is not None and "admin" in getattr(user, "roles", set())
+
     def reload(self, spec: Spec, engine: Engine) -> None:
         """書き直した spec に入れ替える（--reload）。開いている画面には読み直してもらう"""
         old, auth, version = self.eng, self.auth, self.version
@@ -778,7 +788,7 @@ def make_handler(app: App):
                 except Exception as e:    # 見せる途中で壊れても、理由を画面に出す
                     self._json({"error": f"{type(e).__name__}: {e}", "slots": [], "states": {}}, 500)
                     return
-                v["notifications"] = [n for n in app.eng.notifications if n["user"] in (None, user.name)]
+                v["notifications"] = [n for n in app.eng.notifications if app.can_read_notice(n, user)]
                 self._json(v)
             elif u.path == "/api/events":
                 self.send_response(200)

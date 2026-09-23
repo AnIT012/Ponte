@@ -2,6 +2,14 @@
 
 細かい作業の記録は [REPORT.md](REPORT.md)。ここは「何が入ったか」だけ。
 
+## 格上げ（2026-09-23）
+
+- **本当のログイン**: `ponte run --login`（名前と合言葉。scrypt・HttpOnly の cookie・間違いが続くと少し止める）。`--signup` で画面から登録。`ponte user add / remove / list`。`--login` 無しで 127.0.0.1 以外に開こうとすると止める
+- **エラーの辞書**: `ponte explain E32`（なぜ止めるか・どう直すか）。check のエラーの下に「直し方: ponte explain …」。仕様書 13章の表もここから作る
+- `ponte check --json`（エディタや AI のループ向け）
+- 道具: `avg of` / `abs` / `date of`（年月日の当たりを "2026/10/15" に）
+- `round` を本当の四捨五入に（2.5 → 3。前は Python の round で 2 になっていた）
+
 ## 洗練（2026-09-23）
 
 - shape の中で別の shape を名前で使える（`maybe Clock`）。自分に戻る使い方はエラー

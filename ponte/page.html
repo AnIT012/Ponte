@@ -191,7 +191,7 @@ const EMPTY_ICON = `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" 
 
 async function post(path, body){
   const r = await fetch(path, {method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({user:USER, ...body})});
-  const j = await r.json(); if(j.error) toast(j.error, true); return j;
+  const j = await r.json(); if(j.login){ location.href = "/login"; return j; } if(j.error) toast(j.error, true); return j;
 }
 function trimToasts(){ const box = document.getElementById("toasts"); while(box.children.length > 2) box.firstElementChild.remove(); }   // 積み上げない（古いものから消す）
 function toast(text, err){
@@ -295,6 +295,7 @@ async function render(){
   const qs = new URLSearchParams({scene:S.scene, user:USER, lang:LANG, state:JSON.stringify(st)});
   if(S.thisId) qs.set("this", S.thisId); if(S.origin) qs.set("origin", S.origin);
   const v = await (await fetch("/api/view?" + qs)).json();
+  if(v.login){ location.href = "/login"; return; }
   if(my !== renderSeq) return;
   if(v.error){ toast("画面を出せませんでした: " + esc(v.error), true); if(S.scene !== HOME) go(HOME); return; }
   S.states[S.scene] = Object.fromEntries(Object.entries(v.states || {}).map(([k, x]) => [k, x.current]));

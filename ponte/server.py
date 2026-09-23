@@ -709,7 +709,7 @@ def make_handler(app: App):
                 if not isinstance(state, dict):
                     self._json({"error": "state が読めません", "slots": [], "states": {}}, 400)
                     return
-                if (q.get("scene") or app.home) not in app.scenes:
+                if (q.get("scene") or app.home) not in app.scenes and (q.get("scene") or app.home) not in app.inputs:
                     self._json({"error": f"画面がありません: {q.get('scene')}", "slots": [], "states": {}}, 404)
                     return
                 try:

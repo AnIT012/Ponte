@@ -264,3 +264,33 @@ def test_reload_swaps_spec_and_keeps_data(tmp_path):
     assert reload_once(str(src), store, app) is True
     assert app.eng is not eng and app.version == 1 and woke
     assert [b.values["title"] for b in app.eng.boxes["Task"].values()] == ["牛乳"]
+
+
+def test_data_export_and_compact(tmp_path, capsys):
+    import csv
+    import json as _json
+    import shutil
+    from ponte.cli import main
+    src = tmp_path / "todo.ponte"
+    shutil.copy("spec/todo.ponte", src)
+    store = str(src) + ".data.jsonl"
+    spec = parse_file(str(src))
+    eng = Engine(spec, store=store)
+    u = eng.login("taro")
+    eng.submit(u, "AddTask", {"title": "牛乳"})
+    eng.submit(u, "AddTask", {"title": "卵"})
+    t = next(b for b in eng.boxes["Task"].values() if b.values["title"] == "卵")
+    eng.remove(t, u)
+    capsys.readouterr()
+    assert main(["data", "export", str(src)]) == 0
+    before = _json.loads(capsys.readouterr().out)
+    assert main(["data", "export", str(src), "--csv", str(tmp_path / "csv")]) == 0
+    rows = list(csv.DictReader(open(tmp_path / "csv" / "Task.csv", encoding="utf-8-sig")))
+    assert [r["title"] for r in rows] == [x["title"] for x in before["Task"]]
+    assert main(["data", "compact", str(src)]) == 0
+    capsys.readouterr()
+    main(["data", "export", str(src)])
+    assert _json.loads(capsys.readouterr().out) == before           # 詰めても中身は同じ
+    eng2 = Engine(parse_file(str(src)), store=store)
+    eng2.submit(eng2.login("taro"), "AddTask", {"title": "パン"})   # 番号がぶつからない
+    assert len({b.id for b in eng2.boxes["Task"].values()}) == len(before["Task"]) + 1

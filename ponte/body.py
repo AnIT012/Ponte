@@ -61,6 +61,8 @@ SHAPE_PARTS = [
     ("any 1", "何でも1文字"),
     ("名前 digits 1..2", "取り出す部分に名前を付ける（`名前 of 当たり` で使う）"),
     ("maybe ...", "あっても無くてもいい（行の残りまで）"),
+    ('one of "/" "-" "年"', "どれか1つの文字（`month one of \"1\" \"2\" …` のように名前も付けられる）"),
+    ("edge", "最初の行なら「数字・英字の続きから始まらない」、最後の行なら「続きで終わらない」（123-4567 が 0123-45678 の中に当たらない）"),
     ("Clock / maybe Clock", "別の shape を名前で使う（中の名前もそのまま取り出せる）"),
 ]
 
@@ -130,6 +132,19 @@ def _elements(tokens: list[str], line: int, ref=None) -> str:
         elif t == "space":
             out += r"\s+"
             i += 1
+        elif (t == "one" and i + 1 < len(tokens) and tokens[i + 1] == "of") or (
+                re.fullmatch(r"[a-z_]\w*", t) and i + 2 < len(tokens) and tokens[i + 1] == "one" and tokens[i + 2] == "of"):
+            name = None if t == "one" else t
+            opts = []
+            j = i + 2 if name is None else i + 3
+            while j < len(tokens) and tokens[j].startswith('"'):
+                opts.append(re.escape(tokens[j][1:-1]))
+                j += 1
+            if len(opts) < 2:
+                raise BodyError(line, 'shape: one of の後ろに "文字" を2つ以上（例: one of "/" "-" "年"）')
+            opts.sort(key=len, reverse=True)            # 長いものから（"12" を "1" より先に）
+            out += (f"(?P<{name}>" if name else "(?:") + "|".join(opts) + ")"
+            i = j
         elif t == "word" and i + 2 < len(tokens) and tokens[i + 1] == "with" and tokens[i + 2].startswith('"'):
             extra = re.escape(tokens[i + 2][1:-1]).replace("]", "\\]")     # word with "._-" 1..64 … 英数字（ASCII）と、書いた記号
             try:
@@ -161,7 +176,7 @@ def _elements(tokens: list[str], line: int, ref=None) -> str:
             out += f"(?:{ref(t, line)})"                     # 別の shape を名前で使う
             i += 1
         else:
-            raise BodyError(line, f"shape の書き方が分かりません: '{t}'（使えるのは \"文字\" / space / digits / letters / any / word / word with \"記号\" / maybe）")
+            raise BodyError(line, f"shape の書き方が分かりません: '{t}'（使えるのは \"文字\" / space / digits / letters / any / word / word with \"記号\" / one of / maybe / edge / 別の shape の名前）")
     return out
 
 
@@ -174,8 +189,17 @@ def _shape_pattern(shape: Node, shapes: dict[str, Node], stack: tuple[str, ...])
         return _shape_pattern(shapes[name], shapes, stack + (shape.name,))
 
     pat = ""
-    for c in shape.children:
+    kids = shape.children
+    for n, c in enumerate(kids):
         toks = _TOK.findall(c.raw)
+        if toks == ["edge"]:              # 数字や英字の続きの途中で始まらない・終わらない
+            if n == 0:
+                pat += r"(?<![0-9A-Za-z])"
+            elif n == len(kids) - 1:
+                pat += r"(?![0-9A-Za-z])"
+            else:
+                raise BodyError(c.line, f"shape {shape.name}: edge は最初か最後の行にだけ書けます")
+            continue
         if toks and toks[0] == "maybe":
             rest = toks[1:]
             pat += r"\s*" if rest == ["space"] else f"(?:{_elements(rest, c.line, ref)})?"

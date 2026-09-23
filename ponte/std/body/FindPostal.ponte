@@ -1,0 +1,20 @@
+# std/contact FindPostal の中身。郵便番号（123-4567）を1つだけ。電話番号の途中には当たらない
+
+do
+  clean = normalize text
+  hits  = find all Postal in clean
+  kind[one | none | many] = match count of hits
+    1    -> one
+    0    -> none
+    else -> many
+  answer = match kind
+    one  -> found join [head of first of hits, tail of first of hits] by "-"
+    none -> missing
+    many -> missing
+
+shape Postal
+  edge
+  head  digits 3
+  one of "-" "ー" "‐" "−"
+  tail  digits 4
+  edge

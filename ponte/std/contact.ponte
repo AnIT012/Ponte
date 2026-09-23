@@ -26,3 +26,18 @@ action FindPhone
   never    fail
   else     skip
   by       code "body/FindPhone.ponte"
+
+action FindPostal
+  in       text text
+  out      found text | missing
+  example  "〒150-0001 東京都渋谷区"          -> found 150-0001
+  example  "郵便番号：１５０－０００１"        -> found 150-0001
+  example  "150ー0001"                        -> found 150-0001
+  example  "TEL 03-1234-5678"                -> missing
+  example  "〒150-0001 と 〒530-0001"         -> missing
+  example  "住所はまだです"                  -> missing
+  never    depend on width
+  never    return empty
+  never    fail
+  else     skip
+  by       code "body/FindPostal.ponte"

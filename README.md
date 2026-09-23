@@ -92,7 +92,7 @@ pip install -e .                           # 入れると `ponte run spec/todo.p
 | コマンド | すること |
 |---|---|
 | `python -m ponte new myapp` | ひな形から新しいアプリを作る（最初から check も test も通る） |
-| `python -m ponte check 仕様.ponte` | 決めてないこと・間違いを探す（エラー32種） |
+| `python -m ponte check 仕様.ponte` | 決めてないこと・間違いを探す（エラー32種）。`--json` で機械向け |
 | `python -m ponte test 仕様.ponte` | example と never を全部流す。確かめていない所（穴）も出す。`--strict` で穴も失敗に |
 | `python -m ponte run 仕様.ponte` | 動かす（ブラウザの画面つき）。人に使ってもらうなら `--login`（`--signup` で画面から登録も）。作っている間は `--reload` で書き直すたびに読み直す |
 | `python -m ponte user add 仕様.ponte 名前` | ログインする人を足す（合言葉は scrypt で残す） |
@@ -137,11 +137,11 @@ pip install -e .                           # 入れると `ponte run spec/todo.p
 | `ponte/` | 言語の本体（パーサ・チェッカー・実行エンジン・画面・AIの穴埋め）→ [docs/仕組み.md](docs/仕組み.md) |
 | `ponte/std/` | 標準ライブラリ（中身もこの言語） |
 | `spec/` | 見本のアプリ |
-| `tests/` | テスト（270件ほど） |
+| `tests/` | テスト（320件ほど） |
 | `docs/` | 仕様書・入門・仕組み・決めごと・画面の写真 |
-| `site/` | ホームページ（`python site/build.py` で作る。main に入ると GitHub Pages へ） |
+| `site/` | ホームページ（`python site/make.py && python site/build.py` で作る。main に入ると GitHub Pages へ） |
 | `experiment/` | 比較実験（プロンプト・AIの返事・採点） |
-| `editor/vscode/` | エディタの色分け |
+| `editor/vscode/` | エディタの色分けと、保存時のエラー表示 |
 | `archive/v01/` | 最初の版（当時のまま） |
 
 記録: [CHANGELOG.md](CHANGELOG.md)（何が入ったか）/ [REPORT.md](REPORT.md)（作業の記録）/ [REVIEW.md](REVIEW.md)（ダメなパーツと欲しいもの）/ [docs/DECISIONS.md](docs/DECISIONS.md)（決めごと）

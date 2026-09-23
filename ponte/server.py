@@ -16,6 +16,7 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
+from .auth import COOKIE, SESSION_SECONDS, Sessions, Users, cookie_token, login_page
 from .body import Body, BodyError
 from .parser import Node, Spec, match_arms, parse_button, states_of, words_entries
 from .runtime import Box, Ctx, Engine, RuleError
@@ -45,6 +46,7 @@ class Env:
 class App:
     def __init__(self, spec: Spec, engine: Engine):
         self.spec, self.eng = spec, engine
+        self.auth = None                          # ponte run --login の時だけ
         self.scenes = {s.name: s for s in spec.decls("scene")}
         self.looks = {l.name: l for l in spec.decls("look")}
         self.parts = {p.name: p for p in spec.decls("part")}
@@ -572,12 +574,88 @@ def make_handler(app: App):
         def _json(self, obj, code=200):
             self._send(json.dumps(obj, ensure_ascii=False).encode(), "application/json; charset=utf-8", code)
 
+        def _session(self):
+            return app.auth.sessions.who(cookie_token(self.headers.get("cookie"))) if app.auth else None
+
         def _user(self, name):
+            if app.auth:                           # ログインが有る時は、送られてきた名前は使わない（cookie の鍵だけ信じる）
+                return app.eng.login(self._session())
             return app.eng.login(name or "me")
+
+        def _redirect(self, to, cookie=None):
+            self.send_response(303)
+            self.send_header("location", to)
+            if cookie is not None:
+                self.send_header("set-cookie", cookie)
+            self.send_header("content-length", "0")
+            self.end_headers()
+
+        def _cookie(self, token, max_age):
+            secure = "; Secure" if self.headers.get("x-forwarded-proto") == "https" else ""
+            return f"{COOKIE}={token}; Path=/; HttpOnly; SameSite=Lax; Max-Age={max_age}{secure}"
+
+        def _auth_get(self, path) -> bool:
+            """ログインの画面。処理したら True"""
+            if path in ("/login", "/signup"):
+                if path == "/signup" and not app.auth.signup:
+                    self._redirect("/login")
+                else:
+                    page = login_page(app.title(), signup=path == "/signup", allow_signup=app.auth.signup)
+                    self._send(page.encode(), "text/html; charset=utf-8")
+                return True
+            if path == "/logout":
+                app.auth.sessions.end(cookie_token(self.headers.get("cookie")))
+                self._redirect("/login", self._cookie("", 0))
+                return True
+            if self._session() is None:
+                if path == "/":
+                    self._redirect("/login")
+                else:
+                    self._json({"error": "ログインしてください", "login": True}, 401)
+                return True
+            return False
+
+        def _auth_post(self, path, raw: bytes) -> bool:
+            if path not in ("/login", "/signup"):
+                if self._session() is None:
+                    self._json({"error": "ログインしてください", "login": True}, 401)
+                    return True
+                if not (self.headers.get("content-type") or "").startswith("application/json"):
+                    self._json({"error": "json で送ってください"}, 415)     # よそのページのフォームから押させない
+                    return True
+                return False
+            f = {k: v[0] for k, v in parse_qs(raw.decode("utf-8", "replace")).items()}
+            name, pw = f.get("name", "").strip(), f.get("password", "")
+            ip = self.client_address[0]
+            signup = path == "/signup"
+            if not app.auth.allow(ip):
+                err = "何度も間違えたので、少し待ってからやり直してください"
+            elif signup and not app.auth.signup:
+                err = "登録は閉じています"
+            elif signup:
+                if app.auth.users.exists(name):
+                    err = "その名前はもう使われています"
+                else:
+                    try:
+                        app.auth.users.add(name, pw)
+                        err = ""
+                    except ValueError as e:
+                        err = str(e)
+            else:
+                err = "" if app.auth.users.verify(name, pw) else "名前か合言葉が違います"
+            if err:
+                app.auth.fail(ip)
+                page = login_page(app.title(), err, signup=signup, allow_signup=app.auth.signup)
+                self._send(page.encode(), "text/html; charset=utf-8", 401)
+            else:
+                self._redirect("/", self._cookie(app.auth.sessions.start(name), SESSION_SECONDS))
+            return True
 
         def do_GET(self):
             u = urlparse(self.path)
             q = {k: v[0] for k, v in parse_qs(u.query).items()}
+            if app.auth and u.path != "/favicon.ico" and self._auth_get(u.path):
+                return
             if u.path == "/":
                 lang = q.get("lang") or ("ja" if "ja" in app.words or not app.words else next(iter(app.words)))
                 page = (PAGE.replace("__TITLE__", app.title()).replace("__HOME__", app.home or "")
@@ -620,7 +698,10 @@ def make_handler(app: App):
 
         def do_POST(self):
             n = int(self.headers.get("content-length") or 0)
-            data = json.loads(self.rfile.read(n) or b"{}")
+            raw = self.rfile.read(n)
+            if app.auth and self._auth_post(self.path, raw):
+                return
+            data = json.loads(raw or b"{}")
             user = self._user(data.get("user"))
             try:
                 if self.path == "/api/tap":
@@ -698,8 +779,28 @@ def make_handler(app: App):
     return H
 
 
-def serve(spec: Spec, engine: Engine, port: int = 8000, host: str = "127.0.0.1", ticker: bool = True):
+class Auth:
+    """ログインの持ち物。間違いが続く IP は少し止める"""
+    def __init__(self, users: Users, signup: bool = False):
+        self.users, self.signup, self.sessions = users, signup, Sessions()
+        self.fails: dict[str, list[float]] = {}
+        self.lock = threading.Lock()
+
+    def allow(self, ip: str) -> bool:
+        with self.lock:
+            recent = [t for t in self.fails.get(ip, []) if t > time.time() - 600]
+            self.fails[ip] = recent
+            return len(recent) < 10
+
+    def fail(self, ip: str) -> None:
+        with self.lock:
+            self.fails.setdefault(ip, []).append(time.time())
+
+
+def serve(spec: Spec, engine: Engine, port: int = 8000, host: str = "127.0.0.1", ticker: bool = True,
+          auth: Auth | None = None):
     app = App(spec, engine)
+    app.auth = auth
     httpd = ThreadingHTTPServer((host, port), make_handler(app))
     httpd.daemon_threads = True
     if ticker:

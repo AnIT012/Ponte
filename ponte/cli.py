@@ -10,6 +10,7 @@
   python -m ponte guide                            AIに渡す書き方の説明（実装から作る。--spec で仕様書の表も）
   python -m ponte role  spec/lend.ponte taro admin   最初の管理者を決める（2人目からは画面で）
   python -m ponte explain E32                      エラーの意味と直し方
+  python -m ponte user add spec/lend.ponte taro      ログインする人を足す（ponte run --login）
 """
 from __future__ import annotations
 
@@ -24,6 +25,10 @@ from .parser import ParseError, parse_file
 
 def shape_path(spec_path: str) -> str:
     return spec_path + ".shape.json"
+
+
+def users_path(spec_path: str) -> str:
+    return spec_path + ".users.json"
 
 
 def cmd_check(args) -> int:
@@ -118,8 +123,21 @@ def cmd_run(args) -> int:
     if spec is None:
         return 1
     store = args.data or (args.spec + ".data.jsonl")
-    httpd = serve(spec, Engine(spec, store=store), port=args.port, host=args.host)
-    print(f"動いています: http://{args.host}:{args.port}/   （データ: {store}、止めるのは Ctrl+C）")
+    auth = None
+    if args.login or args.signup:
+        from .auth import Users
+        from .server import Auth
+        users = Users(users_path(args.spec))
+        if not users.data and not args.signup:
+            print(f"まだ誰も登録していません。先に: ponte user add {args.spec} 名前（か --signup で画面から登録）")
+            return 1
+        auth = Auth(users, signup=args.signup)
+    elif args.host not in ("127.0.0.1", "localhost", "::1"):
+        print(f"{args.host} で開くと、URL の ?user= で誰にでもなれてしまいます。外に出すなら --login を付けてください")
+        return 1
+    httpd = serve(spec, Engine(spec, store=store), port=args.port, host=args.host, auth=auth)
+    print(f"動いています: http://{args.host}:{args.port}/   （データ: {store}、止めるのは Ctrl+C）"
+          + ("\n  ログインあり（" + ("画面から登録できる" if args.signup else "登録は ponte user add") + "）" if auth else ""))
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
@@ -247,6 +265,35 @@ def cmd_build(args) -> int:
     return 0
 
 
+def cmd_user(args) -> int:
+    """ログインする人を足す（ponte run --login 用）。合言葉は画面に出さずに聞く"""
+    import getpass
+    from .auth import Users
+    users = Users(users_path(args.spec))
+    if args.action == "list":
+        for n in sorted(users.data):
+            print(f"  {n}")
+        return 0
+    if not args.name:
+        print("名前が要ります: ponte user add 仕様.ponte 名前")
+        return 1
+    if args.action == "remove":
+        if users.data.pop(args.name, None) is None:
+            print(f"{args.name} はいません")
+            return 1
+        users._save()
+        print(f"{args.name} を消しました")
+        return 0
+    pw = os.environ.get("PONTE_PASSWORD") or getpass.getpass("合言葉（8文字以上）: ")
+    try:
+        users.add(args.name, pw)
+    except ValueError as e:
+        print(e)
+        return 1
+    print(f"{args.name} を登録しました（{users_path(args.spec)}）")
+    return 0
+
+
 def cmd_explain(args) -> int:
     from .errors import ERRORS, explain
     if not args.code:
@@ -296,7 +343,14 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--port", type=int, default=8000)
     r.add_argument("--host", default="127.0.0.1")
     r.add_argument("--data", help="データを残すファイル（既定は <spec>.data.jsonl）")
+    r.add_argument("--login", action="store_true", help="名前と合言葉でログインする（登録は ponte user add）")
+    r.add_argument("--signup", action="store_true", help="--login に加えて、画面から誰でも登録できる")
     r.set_defaults(fn=cmd_run)
+    us = sub.add_parser("user", help="ログインする人（例: user add spec/lend.ponte taro）")
+    us.add_argument("action", choices=["add", "remove", "list"])
+    us.add_argument("spec")
+    us.add_argument("name", nargs="?")
+    us.set_defaults(fn=cmd_user)
     nw = sub.add_parser("new", help="ひな形から新しいアプリを作る")
     nw.add_argument("name")
     nw.set_defaults(fn=cmd_new)

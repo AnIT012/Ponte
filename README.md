@@ -94,7 +94,9 @@ pip install -e .                           # 入れると `ponte run spec/todo.p
 | `python -m ponte new myapp` | ひな形から新しいアプリを作る（最初から check も test も通る） |
 | `python -m ponte check 仕様.ponte` | 決めてないこと・間違いを探す（エラー32種） |
 | `python -m ponte test 仕様.ponte` | example と never を全部流す。確かめていない所（穴）も出す。`--strict` で穴も失敗に |
-| `python -m ponte run 仕様.ponte` | 動かす（ブラウザの画面つき） |
+| `python -m ponte run 仕様.ponte` | 動かす（ブラウザの画面つき）。人に使ってもらうなら `--login`（`--signup` で画面から登録も） |
+| `python -m ponte user add 仕様.ponte 名前` | ログインする人を足す（合言葉は scrypt で残す） |
+| `python -m ponte explain E32` | エラーの意味と直し方（無しなら一覧）。`check --json` で機械向けの出力も |
 | `python -m ponte fill 仕様.ponte` | AIに action の中身を書かせて、機械で確かめる（要 `ANTHROPIC_API_KEY`） |
 | `python -m ponte guide` | AIに渡す書き方の説明を出す（実装から作るので、実装とずれない）。`--rules` で rule の書き方 |
 | `python -m ponte fmt 仕様.ponte` | 見た目を整える（意味が変わるなら書かない） |
@@ -148,6 +150,6 @@ pip install -e .                           # 入れると `ponte run spec/todo.p
 
 ## いまの限界
 
-- **ログインが仮。** 今は URL の `?user=名前` で誰にでもなれる。人に使ってもらう前に、本当のログインが要る。
+- **ログインは合言葉だけ。** `ponte run --login` で名前と合言葉のログインになる（`--login` 無しで外に開こうとすると止まる）。メールでの確認や、合言葉を忘れた時の手続きはまだ無い。
 - **例と never に書いてないことは守れない。** 穴さがしで「書いていない所」は見えるが、書くのは人。
-- **道具はまだ少ない。** avg・each・json などは「まだ無い道具」（書くとエラー）。
+- **道具はまだ少ない。** each・group by・json などは「まだ無い道具」（書くとエラー）。

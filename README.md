@@ -93,7 +93,7 @@ pip install -e .                           # 入れると `ponte run spec/todo.p
 
 | コマンド | すること |
 |---|---|
-| `python -m ponte new myapp` | ひな形から新しいアプリを作る（最初から check も test も通る） |
+| `python -m ponte new myapp` | ひな形から新しいアプリを作る（最初から check も test も通る）。`--from lend` で見本のアプリから |
 | `python -m ponte check 仕様.ponte` | 決めてないこと・間違いを探す（エラー32種）。`--json` で機械向け |
 | `python -m ponte test 仕様.ponte` | example と never を全部流す。確かめていない所（穴）も出す。`--strict` で穴も失敗に |
 | `python -m ponte run 仕様.ponte` | 動かす（ブラウザの画面つき）。人に使ってもらうなら `--login`（`--signup` で画面から登録も）。作っている間は `--reload` で書き直すたびに読み直す |

@@ -100,3 +100,14 @@ def test_lsp_survives_garbage():
     out = io.BytesIO()
     assert serve(io.BytesIO(stream), out) == 0
     assert b'"id": 1' in out.getvalue()
+
+
+def test_new_from_sample(tmp_path, monkeypatch, capsys):
+    import filecmp
+    for n in ("todo", "lend", "kakeibo"):                    # ひな形は見本のアプリと同じ中身
+        assert filecmp.cmp(f"spec/{n}.ponte", f"ponte/templates/{n}.ponte", shallow=False), f"python: cp spec/{n}.ponte ponte/templates/"
+    monkeypatch.chdir(tmp_path)
+    assert main(["new", "rental", "--from", "lend"]) == 0
+    assert main(["check", "rental.ponte"]) == 0
+    assert main(["new", "x", "--from", "nope"]) == 1
+    assert "lend" in capsys.readouterr().out

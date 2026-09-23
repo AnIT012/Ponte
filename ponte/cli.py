@@ -272,7 +272,13 @@ def cmd_new(args) -> int:
     if path.exists():
         print(f"もうあります: {path}（上書きしません）")
         return 1
-    tpl = (Path(__file__).parent / "templates" / "start.ponte").read_text(encoding="utf-8")
+    tdir = Path(__file__).parent / "templates"
+    src = tdir / f"{args.from_ or 'start'}.ponte"
+    if not src.exists():
+        have = sorted(p.stem for p in tdir.glob("*.ponte"))
+        print(f"{args.from_} というひな形はありません（{' / '.join(have)}）")
+        return 1
+    tpl = src.read_text(encoding="utf-8")
     path.write_text(tpl, encoding="utf-8")
     print(f"作りました: {path}")
     print(f"  ponte run {path}     # 動かす")
@@ -573,6 +579,7 @@ def build_parser() -> argparse.ArgumentParser:
     us.set_defaults(fn=cmd_user)
     nw = sub.add_parser("new", help="ひな形から新しいアプリを作る")
     nw.add_argument("name")
+    nw.add_argument("--from", dest="from_", help="見本のアプリから始める（todo / lend / kakeibo）")
     nw.set_defaults(fn=cmd_new)
     g = sub.add_parser("guide", help="AIに渡す書き方の説明を出す（実装から作る）")
     g.add_argument("--spec", action="store_true", help="仕様書 10章の道具の表を書き直す")

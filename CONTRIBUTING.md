@@ -38,4 +38,4 @@ python site/make.py && python site/build.py     # ホームページを docs と
 
 - エラーの文は「何が・どこで・どう直す」を1文で。やさしい日本語で。
 - コメントは「なぜ」を書く。
-- 見本のアプリ（`spec/*.ponte`）は全部、check と test を通ったまま保つ（`tests/test_docs.py`）。
+- 見本のアプリ（`spec/*.ponte`）は全部、check と test を通ったまま保つ（`tests/test_docs.py`）。todo / lend / kakeibo を変えたら `ponte/templates/` にも写す（`ponte new --from` のひな形。ずれるとテストが落ちる）。

@@ -2,7 +2,7 @@
 
 仕様書 7章の色分けを VS Code で出す。依存は無い（文法ファイル1つと設定だけ）。
 
-入れ方: このフォルダを `~/.vscode/extensions/nameless-lang` にコピーして VS Code を開き直す。`.lang` のファイルに色が付く。
+入れ方: このフォルダを `~/.vscode/extensions/nameless-lang` にコピーして VS Code を開き直す。`.ponte` のファイルに色が付く。
 
 | 種類 | 色 |
 |---|---|

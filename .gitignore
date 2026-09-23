@@ -3,3 +3,5 @@ __pycache__/
 *.data.jsonl
 *.pyz
 .pytest_cache/
+*.egg-info/
+build/

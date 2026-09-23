@@ -1,0 +1,19 @@
+[project]
+name = "ponte"
+version = "0.3.0"
+description = "Ponte — 人は決めて、AIが書いて、言語が守る。"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+ponte = "ponte.cli:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["ponte*"]
+
+[tool.setuptools.package-data]
+ponte = ["page.html", "std/*.ponte", "std/body/*.ponte"]

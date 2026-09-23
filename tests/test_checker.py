@@ -1,7 +1,7 @@
 """仕様 v0.2 のエラーごとに「わざと壊した仕様」と「直した仕様」のペア。
 
-tests/cases/<コード>_<名前>/broken.lang  … 必ずそのコードで止まる（W は警告として出る）
-tests/cases/<コード>_<名前>/fixed.lang   … エラー0件、そのコードも出ない
+tests/cases/<コード>_<名前>/broken.ponte  … 必ずそのコードで止まる（W は警告として出る）
+tests/cases/<コード>_<名前>/fixed.ponte   … エラー0件、そのコードも出ない
   publish          があれば公開する時の検査（E26）
   prev.shape.json  があれば前回のビルドの thing の形（E21）
 """
@@ -10,8 +10,8 @@ from pathlib import Path
 
 import pytest
 
-from lang.checker import ALL_CHECKS, Options, check
-from lang.parser import parse_file
+from ponte.checker import ALL_CHECKS, Options, check
+from ponte.parser import parse_file
 
 CASES = sorted(p for p in (Path(__file__).parent / "cases").iterdir() if p.is_dir())
 
@@ -26,14 +26,14 @@ def run(case: Path, which: str) -> list[str]:
 @pytest.mark.parametrize("case", CASES, ids=[c.name for c in CASES])
 def test_broken_stops(case):
     code = case.name.split("_", 1)[0]
-    found = run(case, "broken.lang")
+    found = run(case, "broken.ponte")
     assert code in found, f"{code} で止まるはずが {found}"
 
 
 @pytest.mark.parametrize("case", CASES, ids=[c.name for c in CASES])
 def test_fixed_passes(case):
     code = case.name.split("_", 1)[0]
-    found = run(case, "fixed.lang")
+    found = run(case, "fixed.ponte")
     assert not [c for c in found if c.startswith("E")], found
     assert code not in found, found
 
@@ -47,7 +47,7 @@ def test_every_error_code_has_a_case():
 
 def test_spec_appendix():
     """仕様書 v0.2 の付録そのままは tbd だけで止まる。外した版は公開の検査まで通る。"""
-    found = [f.code for f in check(parse_file("spec/hub.lang"))]
+    found = [f.code for f in check(parse_file("spec/hub.ponte"))]
     assert found == ["E05"], found
-    found = [f.code for f in check(parse_file("spec/hub_ready.lang"), Options(publish=True))]
+    found = [f.code for f in check(parse_file("spec/hub_ready.ponte"), Options(publish=True))]
     assert found == [], found

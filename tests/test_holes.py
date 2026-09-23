@@ -1,6 +1,6 @@
-"""lang test の穴さがし：example で確かめていない所を出す。"""
-from lang.examples import holes, run_examples
-from lang.parser import parse, parse_file
+"""ponte test の穴さがし：example で確かめていない所を出す。"""
+from ponte.examples import holes, run_examples
+from ponte.parser import parse, parse_file
 
 SRC = '''
 thing Task
@@ -52,5 +52,5 @@ def test_holes_found():
 
 
 def test_full_app_has_no_holes():
-    s = parse_file("spec/hub_app.lang")
+    s = parse_file("spec/hub_app.ponte")
     assert holes(s, run_examples(s)) == []

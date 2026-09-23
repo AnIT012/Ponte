@@ -1,8 +1,8 @@
 {
-  "name": "nameless-lang",
-  "displayName": "人とAIの間の言語（仮）",
-  "version": "0.2.0",
-  "publisher": "nameless-lang",
+  "name": "ponte",
+  "displayName": "Ponte",
+  "version": "0.3.0",
+  "publisher": "ponte",
   "engines": {
     "vscode": "^1.80.0"
   },
@@ -12,75 +12,76 @@
   "contributes": {
     "languages": [
       {
-        "id": "nameless-lang",
+        "id": "ponte",
         "aliases": [
-          "人とAIの間の言語"
+          "Ponte",
+          "ponte"
         ],
         "extensions": [
-          ".lang"
+          ".ponte"
         ],
         "configuration": "./language-configuration.json"
       }
     ],
     "grammars": [
       {
-        "language": "nameless-lang",
-        "scopeName": "source.lang",
-        "path": "./syntaxes/lang.tmLanguage.json"
+        "language": "ponte",
+        "scopeName": "source.ponte",
+        "path": "./syntaxes/ponte.tmLanguage.json"
       }
     ],
     "configurationDefaults": {
       "editor.tokenColorCustomizations": {
         "textMateRules": [
           {
-            "scope": "keyword.declaration.lang",
+            "scope": "keyword.declaration.ponte",
             "settings": {
               "foreground": "#8E4EC6",
               "fontStyle": "bold"
             }
           },
           {
-            "scope": "keyword.clause.lang",
+            "scope": "keyword.clause.ponte",
             "settings": {
               "foreground": "#8B8D98"
             }
           },
           {
-            "scope": "keyword.guard.lang",
+            "scope": "keyword.guard.ponte",
             "settings": {
               "foreground": "#E5484D"
             }
           },
           {
-            "scope": "storage.type.lang",
+            "scope": "storage.type.ponte",
             "settings": {
               "foreground": "#30A46C"
             }
           },
           {
-            "scope": "entity.name.lang",
+            "scope": "entity.name.ponte",
             "settings": {
               "foreground": "#3E63DD"
             }
           },
           {
             "scope": [
-              "string.quoted.lang",
-              "constant.numeric.lang"
+              "string.quoted.ponte",
+              "constant.numeric.ponte"
             ],
             "settings": {
               "foreground": "#AD7F00"
             }
           },
           {
-            "scope": "comment.line.lang",
+            "scope": "comment.line.ponte",
             "settings": {
               "foreground": "#A0A4AB",
               "fontStyle": "italic"
             }
           },
           {
-            "scope": "invalid.blocking.lang",
+            "scope": "invalid.blocking.ponte",
             "settings": {
               "foreground": "#FFFFFF",
               "background": "#E5484D"

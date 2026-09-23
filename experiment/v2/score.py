@@ -16,8 +16,8 @@ from pathlib import Path
 HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE))
 import harness  # noqa: E402
-from lang.fill import extract_code, verify  # noqa: E402
-from lang.parser import parse_file  # noqa: E402
+from ponte.fill import extract_code, verify  # noqa: E402
+from ponte.parser import parse_file  # noqa: E402
 
 N_TESTS = len(harness.TESTS)
 

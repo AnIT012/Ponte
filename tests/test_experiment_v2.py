@@ -12,7 +12,7 @@ def test_reference_a_passes_all():
 
 
 def test_reference_b_passes_all():
-    code = open("spec/hub_app.lang.ai/ExtractDeadline.lang", encoding="utf-8").read()
+    code = open("spec/hub_app.ponte.ai/ExtractDeadline.ponte", encoding="utf-8").read()
     res = harness.run(harness.load_b(code))
     assert all(ok for _, ok, _, _ in res), [r for r in res if not r[1]]
 

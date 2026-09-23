@@ -1,9 +1,9 @@
-"""AIへの説明（lang guide）と仕様書 10章は、実装から作る。ずれたらここで落ちる。"""
+"""AIへの説明（ponte guide）と仕様書 10章は、実装から作る。ずれたらここで落ちる。"""
 import pytest
 
-from lang.body import TOOLS, TOOLS_HINT, BodyError, body_of
-from lang.guide import do_guide, spec_block
-from lang.parser import parse
+from ponte.body import TOOLS, TOOLS_HINT, BodyError, body_of
+from ponte.guide import do_guide, spec_block
+from ponte.parser import parse
 
 SHAPES = """
 shape D
@@ -38,7 +38,7 @@ def test_tools_listed_as_not_yet_are_errors(expr):
 
 def test_spec_chapter_10_is_generated_from_the_code():
     text = open("docs/言語仕様_v0.3.md", encoding="utf-8").read()
-    assert spec_block() in text, "仕様書の道具の表が実装とずれています。python -m lang guide --spec で書き直す"
+    assert spec_block() in text, "仕様書の道具の表が実装とずれています。python -m ponte guide --spec で書き直す"
 
 
 def test_guide_and_hint_list_every_tool():
@@ -49,9 +49,9 @@ def test_guide_and_hint_list_every_tool():
 
 
 def test_fill_prompt_uses_the_generated_guide():
-    from lang.fill import first_prompt as build_prompt
-    from lang.parser import parse_file
-    spec = parse_file("spec/hub_app.lang")
+    from ponte.fill import first_prompt as build_prompt
+    from ponte.parser import parse_file
+    spec = parse_file("spec/hub_app.ponte")
     assert do_guide() in build_prompt(spec, spec.find("action", "ExtractDeadline"))
 
 
@@ -77,8 +77,8 @@ def test_contains_answer_is_split_with_match():
 
 def test_rule_forms_examples_pass_the_checker():
     import re
-    from lang.checker import DO_FORMS as CHECKED_DO, _VALUE, is_event
-    from lang.forms import DO_FORMS, VALUE_FORMS, WHEN_FORMS
+    from ponte.checker import DO_FORMS as CHECKED_DO, _VALUE, is_event
+    from ponte.forms import DO_FORMS, VALUE_FORMS, WHEN_FORMS
     for rx, form, _, ex, works in WHEN_FORMS:
         assert re.fullmatch(rx, ex), form
         assert is_event(ex) == works, form          # 起きないものは check が通さない
@@ -90,17 +90,17 @@ def test_rule_forms_examples_pass_the_checker():
 
 
 def test_when_the_engine_does_not_fire_is_stopped(tmp_path):
-    from lang.checker import check
-    from lang.parser import parse_file
-    src = open("spec/lend.lang", encoding="utf-8").read().replace("user taps return-button on Loan", "user swipes card left", 1)
-    p = tmp_path / "x.lang"
+    from ponte.checker import check
+    from ponte.parser import parse_file
+    src = open("spec/lend.ponte", encoding="utf-8").read().replace("user taps return-button on Loan", "user swipes card left", 1)
+    p = tmp_path / "x.ponte"
     p.write_text(src, encoding="utf-8")
     msgs = [f.message for f in check(parse_file(str(p))) if f.code == "E07"]
     assert any("まだ実行エンジンが起こしません" in m for m in msgs), msgs
 
 
 def test_rules_guide_lists_everything():
-    from lang.forms import DO_FORMS, WHEN_FORMS
-    from lang.guide import rules_guide
+    from ponte.forms import DO_FORMS, WHEN_FORMS
+    from ponte.guide import rules_guide
     g = rules_guide()
     assert all(f[1] in g for f in DO_FORMS) and all(f[1] in g for f in WHEN_FORMS)

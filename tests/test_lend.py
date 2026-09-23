@@ -1,12 +1,12 @@
 """2つ目のアプリ（備品かしだし）で足した言語の道具。"""
 from datetime import datetime
 
-from lang.checker import check
-from lang.examples import holes, run_examples
-from lang.parser import parse_file
-from lang.runtime import Engine
+from ponte.checker import check
+from ponte.examples import holes, run_examples
+from ponte.parser import parse_file
+from ponte.runtime import Engine
 
-SPEC = parse_file("spec/lend.lang")
+SPEC = parse_file("spec/lend.ponte")
 
 
 def eng_at(now=datetime(2026, 9, 21, 10, 0)):
@@ -40,7 +40,7 @@ def test_rule_where_skips_quietly():
 
 
 def test_button_disabled_by_rule_where():
-    from lang.server import App
+    from ponte.server import App
     e = eng_at()
     me = e.login("me")
     cam = e.create("Item", {"name": "カメラ", "status": "lent"}, me, check=False)
@@ -65,7 +65,7 @@ def test_undo_not_offered_when_tap_changed_other_boxes():
     import json
     import threading
     import urllib.request
-    from lang.server import serve
+    from ponte.server import serve
     e = eng_at()
     httpd = serve(SPEC, e, port=0, ticker=False)
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
@@ -86,10 +86,10 @@ def test_undo_not_offered_when_tap_changed_other_boxes():
 
 
 def test_roles_come_from_user_role(tmp_path):
-    from lang.cli import main
+    from ponte.cli import main
     store = str(tmp_path / "d.jsonl")
-    assert main(["role", "spec/lend.lang", "taro", "admin", "--data", store]) == 0
-    assert main(["role", "spec/lend.lang", "taro", "king", "--data", store]) == 1       # 無い役割
+    assert main(["role", "spec/lend.ponte", "taro", "admin", "--data", store]) == 0
+    assert main(["role", "spec/lend.ponte", "taro", "king", "--data", store]) == 1       # 無い役割
     e = Engine(SPEC, store=store, parallel=False)
     taro, hana = e.login("taro"), e.login("hanako")
     assert "admin" in taro.roles and "admin" not in hana.roles
@@ -105,7 +105,7 @@ def test_roles_come_from_user_role(tmp_path):
 
 
 def test_add_button_only_for_those_who_can_create(tmp_path):
-    from lang.server import App
+    from ponte.server import App
     store = str(tmp_path / "d.jsonl")
     e = Engine(SPEC, store=store, parallel=False)
     e.set_role("taro", "admin")

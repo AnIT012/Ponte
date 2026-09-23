@@ -18,10 +18,10 @@ jobs:
         run: python -m pytest -q
       - name: 見本のアプリ（穴も失敗に）
         run: |
-          for f in spec/todo.lang spec/lend.lang spec/kakeibo.lang spec/hub_app.lang; do
-            python -m lang check "$f" && python -m lang test "$f" --strict || exit 1
+          for f in spec/todo.ponte spec/lend.ponte spec/kakeibo.ponte spec/hub_app.ponte; do
+            python -m ponte check "$f" && python -m ponte test "$f" --strict || exit 1
           done
       - name: 仕様書の道具の表が実装とずれていない
         run: |
-          python -m lang guide --spec
+          python -m ponte guide --spec
           git diff --exit-code docs/

@@ -1,4 +1,4 @@
-"""tests/cases/ を作り直す。spec/hub_ready.lang を土台に、エラーごとに壊した／直した仕様を作る。
+"""tests/cases/ を作り直す。spec/hub_ready.ponte を土台に、エラーごとに壊した／直した仕様を作る。
 
   python tests/make_cases.py
 """
@@ -9,11 +9,11 @@ import shutil
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from lang.checker import shape_of  # noqa: E402
-from lang.parser import parse  # noqa: E402
+from ponte.checker import shape_of  # noqa: E402
+from ponte.parser import parse  # noqa: E402
 
 ROOT = os.path.join(os.path.dirname(__file__), "..")
-base = open(os.path.join(ROOT, "spec/hub_ready.lang"), encoding="utf-8").read()
+base = open(os.path.join(ROOT, "spec/hub_ready.ponte"), encoding="utf-8").read()
 
 
 def rep(old, new, s=None):
@@ -78,7 +78,7 @@ send = conn + '\nrule SendDigest\n  when  every day at 8:00\n  do    Gmail send 
 cases["E23_connect_fallback"] = (send, send + "\nrelate\n  SendDigest else Remind\n")
 det = base + "\nscene Detail\n  main  DueSoon as detail\n\nrule OpenDetail\n  when  user taps card on DueSoon\n  do    go Detail with this\n"
 cases["E24_scene_move"] = (det, det.replace("  Home -> AddApplication\n", "  Home -> AddApplication\n  Home -> Detail\n"))
-from lang.checker import ui_texts  # noqa: E402
+from ponte.checker import ui_texts  # noqa: E402
 _texts = sorted({t for t, _ in ui_texts(parse(base))})
 
 
@@ -121,8 +121,8 @@ if __name__ == "__main__":
     for name, (bad, ok) in cases.items():
         d = os.path.join(out, name)
         os.makedirs(d)
-        open(os.path.join(d, "broken.lang"), "w", encoding="utf-8").write(bad)
-        open(os.path.join(d, "fixed.lang"), "w", encoding="utf-8").write(ok)
+        open(os.path.join(d, "broken.ponte"), "w", encoding="utf-8").write(bad)
+        open(os.path.join(d, "fixed.ponte"), "w", encoding="utf-8").write(ok)
         if name.startswith("E26"):
             open(os.path.join(d, "publish"), "w").close()
         if name == SHAPE:

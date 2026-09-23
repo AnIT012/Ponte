@@ -1,11 +1,11 @@
 """整形のテスト。"""
 import pytest
 
-from lang.fmt import FormatError, dwidth, format_source
-from lang.parser import parse
+from ponte.fmt import FormatError, dwidth, format_source
+from ponte.parser import parse
 
 
-@pytest.mark.parametrize("path", ["spec/hub_app.lang", "spec/hub.lang", "spec/hub_ready.lang"])
+@pytest.mark.parametrize("path", ["spec/hub_app.ponte", "spec/hub.ponte", "spec/hub_ready.ponte"])
 def test_specs_are_formatted_and_idempotent(path):
     src = open(path, encoding="utf-8").read()
     assert format_source(src) == src               # もう整っている
@@ -39,7 +39,7 @@ def test_display_width_counts_fullwidth_as_two():
 
 
 def test_refuses_when_meaning_would_change(monkeypatch):
-    import lang.fmt as F
+    import ponte.fmt as F
     monkeypatch.setattr(F, "_signature", lambda spec: [id(spec)])   # 前と後が必ず違う、とみなす
     with pytest.raises(FormatError):
         F.format_source("thing A\n  x text\n")

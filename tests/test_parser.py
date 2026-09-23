@@ -1,11 +1,11 @@
 import pytest
 
-from lang.cli import main
-from lang.parser import ParseError, flow_parts, parse, parse_file, relate_lines, states_of, thing_fields
+from ponte.cli import main
+from ponte.parser import ParseError, flow_parts, parse, parse_file, relate_lines, states_of, thing_fields
 
 
 def test_tree_and_fields():
-    spec = parse_file("spec/hub_ready.lang")
+    spec = parse_file("spec/hub_ready.ponte")
     app = spec.find("thing", "Application")
     fields = {f.name: f for f in thing_fields(app)}
     assert fields["status"].states == ["draft", "submitted", "passed", "failed"]
@@ -46,13 +46,13 @@ def test_errors_have_line_numbers():
 
 
 def test_cli(capsys, tmp_path):
-    assert main(["check", "spec/hub.lang"]) == 1
+    assert main(["check", "spec/hub.ponte"]) == 1
     assert "渡せません（1件）" in capsys.readouterr().out
-    assert main(["check", "spec/hub_ready.lang"]) == 0
+    assert main(["check", "spec/hub_ready.ponte"]) == 0
     assert "AIに渡せます" in capsys.readouterr().out
     # 形を残して、次に thing を変えたら change を求められる
-    p = tmp_path / "a.lang"
-    src = open("spec/hub_ready.lang", encoding="utf-8").read()
+    p = tmp_path / "a.ponte"
+    src = open("spec/hub_ready.ponte", encoding="utf-8").read()
     p.write_text(src, encoding="utf-8")
     assert main(["check", str(p), "--save-shape"]) == 0
     p.write_text(src.replace("  deadline  monthday\n", "  deadline  monthday\n  memo      text\n"), encoding="utf-8")

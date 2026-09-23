@@ -82,3 +82,22 @@ def test_set_value_is_checked():
     src = open("spec/kakeibo.ponte", encoding="utf-8").read().replace("do    set yen to result", "do    set yen to (result)")
     found = [f.code for f in check(parse(src))]
     assert "E31" in found and spec is not None
+
+
+def test_shape_uses_other_shape():
+    b = body(HEAD + "  do\n    hits = find all D in t\n    h = hour of first of hits\n\nshape D\n  digits 1..2\n  \"/\"\n  digits 1..2\n  maybe Clock\n\nshape Clock\n  space\n  hour digits 1..2\n  \":\"\n  digits 2\n")
+    assert b.run({"t": "締切 10/15 18:30"}) == "18"
+
+
+def test_shape_cycle_is_error():
+    import pytest
+    from ponte.body import BodyError
+    with pytest.raises(BodyError, match="自分に戻って"):
+        body(HEAD + "  do\n    hits = find all A in t\n    n = count of hits\n\nshape A\n  \"a\"\n  maybe B\n\nshape B\n  A\n")
+
+
+def test_single_language_app_writes_ui_text_directly(tmp_path):
+    from ponte.checker import check
+    s = open("spec/todo.ponte", encoding="utf-8").read()
+    s = s[:s.index("words ja")].replace("named finish", 'named "終わった"').replace("empty   todo-empty", 'empty   "まだありません"')
+    assert not [f for f in check(parse(s)) if f.code.startswith("E")]

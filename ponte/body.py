@@ -41,6 +41,8 @@ TOOLS = [
     ("数", "sum of X / min of X / max of X", "合計 / 一番小さい / 一番大きい（空の sum は 0）", 'sum of split t by ","', "1,2,3", 6),
     ("数", "round X", "四捨五入して整数に", "round number of t", "7", 7),
     ("日時", "monthday of X", "月・日（・時・分）を取り出した当たりを \"10/15 12:00\" に", "monthday of first of find all M in t", "締切10/15まで", "10/15"),
+    ("日時", "add 3 days to X", "年の入った日付に日を足す（年の無い日付は止まる。年は推測しない）", "add 3 days to t", "2026/12/30", "2027/1/2"),
+    ("日時", "weekday of X", "年の入った日付の曜日（mon〜sun。match で分ける）", "weekday of t", "2026/9/23", "wed"),
     ("日時", "days until X", "今日から X まで何日（part の中で。今の時刻が要る）", None, None, None),
 ]
 
@@ -55,6 +57,7 @@ SHAPE_PARTS = [
     ("any 1", "何でも1文字"),
     ("名前 digits 1..2", "取り出す部分に名前を付ける（`名前 of 当たり` で使う）"),
     ("maybe ...", "あっても無くてもいい（行の残りまで）"),
+    ("Clock / maybe Clock", "別の shape を名前で使う（中の名前もそのまま取り出せる）"),
 ]
 
 TOOLS_HINT = "（使える道具: " + " / ".join(t[1] for t in TOOLS) + "）"
@@ -112,7 +115,7 @@ def _range(tok: str) -> str:
     raise ValueError(tok)
 
 
-def _elements(tokens: list[str], line: int) -> str:
+def _elements(tokens: list[str], line: int, ref=None) -> str:
     out, i = "", 0
     classes = {"digits": r"\d", "any": r".", "letters": r"[^\W\d_]", "word": r"\w"}
     while i < len(tokens):
@@ -150,21 +153,35 @@ def _elements(tokens: list[str], line: int) -> str:
             except (IndexError, ValueError):
                 raise BodyError(line, f"shape: {name} {cls} の後ろに数か範囲（1..2）が要ります")
             i += 3
+        elif ref is not None and re.fullmatch(r"[A-Z]\w*", t):
+            out += f"(?:{ref(t, line)})"                     # 別の shape を名前で使う
+            i += 1
         else:
             raise BodyError(line, f"shape の書き方が分かりません: '{t}'（使えるのは \"文字\" / space / digits / letters / any / word / word with \"記号\" / maybe）")
     return out
 
 
-def compile_shape(shape: Node) -> re.Pattern:
+def _shape_pattern(shape: Node, shapes: dict[str, Node], stack: tuple[str, ...]) -> str:
+    def ref(name: str, line: int) -> str:
+        if name in stack or name == shape.name:
+            raise BodyError(line, f"shape {shape.name}: {' → '.join(stack + (shape.name, name))} で自分に戻ってしまいます")
+        if name not in shapes:
+            raise BodyError(line, f"shape {shape.name}: 「{name}」という shape はありません")
+        return _shape_pattern(shapes[name], shapes, stack + (shape.name,))
+
     pat = ""
     for c in shape.children:
         toks = _TOK.findall(c.raw)
         if toks and toks[0] == "maybe":
             rest = toks[1:]
-            inner = _elements(rest, c.line) if rest != ["space"] else r"\s"
-            pat += f"(?:{inner})?" if rest != ["space"] else r"\s*"
+            pat += r"\s*" if rest == ["space"] else f"(?:{_elements(rest, c.line, ref)})?"
         else:
-            pat += _elements(toks, c.line)
+            pat += _elements(toks, c.line, ref)
+    return pat
+
+
+def compile_shape(shape: Node, shapes: dict[str, Node] | None = None) -> re.Pattern:
+    pat = _shape_pattern(shape, shapes or {}, ())
     try:
         return re.compile(pat)
     except re.error as e:
@@ -196,7 +213,7 @@ class Body:
     def __init__(self, do: Node, shapes: dict[str, Node], inputs: list[str], out_states: dict[str, bool],
                  single_result: bool = True, lines: list[Node] | None = None):
         """out_states: out の状態名 → 値を持つか（found monthday なら True、missing なら False）"""
-        self.shapes = {n: compile_shape(s) for n, s in shapes.items()}
+        self.shapes = {n: compile_shape(s, shapes) for n, s in shapes.items()}
         self.inputs = inputs
         self.out_states = out_states
         self.steps: dict[str, Step] = {}
@@ -332,6 +349,24 @@ class Body:
                 raise BodyError(line, f"shape {m.group(1)} がありません")
             text = str(ev(m.group(2)))
             return [dict(mm.groupdict(), text=mm.group(0)) for mm in self.shapes[m.group(1)].finditer(text)]
+        m = re.fullmatch(r"add (\d+) days? to (.+)|weekday of (.+)", e)
+        if m:
+            from datetime import timedelta
+            from .values import _FULL
+            raw = str(ev(m.group(2) or m.group(3))).strip()
+            mm = _FULL.match(raw)
+            if not mm:
+                raise BodyError(line, f"年の入った日付（2026/9/24）が要ります: '{raw}'（年は推測しません）")
+            y, mo, d, h, mi = mm.groups()
+            from datetime import datetime as _dt
+            try:
+                t = _dt(int(y), int(mo), int(d))
+            except ValueError:
+                raise BodyError(line, f"無い日付です: '{raw}'")
+            if m.group(3):
+                return ["mon", "tue", "wed", "thu", "fri", "sat", "sun"][t.weekday()]
+            t += timedelta(days=int(m.group(1)))
+            return f"{t.year}/{t.month}/{t.day}" + (f" {int(h)}:{mi}" if h is not None else "")
         m = re.fullmatch(r"days until (.+)", e)
         if m:
             from .values import parse_time

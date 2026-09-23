@@ -30,7 +30,7 @@ def test_every_tool_example_really_works(tool):
     assert run(expr, inp) == want
 
 
-@pytest.mark.parametrize("expr", ["avg of t", "abs t", "weekday of t", "each t", "group by t"])
+@pytest.mark.parametrize("expr", ["avg of t", "abs t", "weekday of t", "add 1 days to t", "each t", "group by t"])
 def test_tools_listed_as_not_yet_are_errors(expr):
     with pytest.raises(BodyError):
         run(expr, "a")

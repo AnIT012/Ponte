@@ -76,6 +76,22 @@ def test_homepage_is_generated_from_docs_and_code():
     assert Path("site/landing.html").read_text(encoding="utf-8") == make.landing()
     assert Path("site/learn.src.html").read_text(encoding="utf-8") == make.doc_page(Path("docs/入門.md"), "入門 — やることアプリを作る", "learn")
     assert Path("site/reference.src.html").read_text(encoding="utf-8") == make.reference()
+    for name, md_name, title, depth in make.DOCS:
+        assert Path(f"site/{name}.src.html").read_text(encoding="utf-8") == make.doc_page(Path("docs") / md_name, title, name, depth), name
     ref = make.reference()
     for code in ("E01", "E32", "W09"):
         assert f'id="{code}"' in ref
+
+
+def test_markdown_tables_have_even_rows():
+    """表の中の | がエスケープされていないと、行の列数がずれる（GitHub でもホームページでも崩れる）"""
+    import glob
+    for p in glob.glob("docs/*.md") + ["README.md"]:
+        rows = []
+        for line in open(p, encoding="utf-8").read().splitlines() + [""]:
+            if line.startswith("|"):
+                rows.append(len(re.split(r"(?<!\\)\|", line.strip())) - 2)
+            elif rows:
+                bad = [n for n in rows if n != rows[0]]
+                assert not bad, f"{p}: 列数がずれている表があります {rows}"
+                rows = []

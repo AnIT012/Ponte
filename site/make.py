@@ -4,6 +4,8 @@
 
   landing.html    … トップ（構文の見本 site/samples と page.body.html から）
   learn.src.html      … 入門（docs/入門.md から）
+  spec.src.html       … 仕様書（docs/言語仕様_v0.3.md から）
+  how.src.html        … しくみ（docs/仕組み.md から）
   reference.src.html  … 道具とエラー（ponte の TOOLS・forms・errors・std・コマンドの一覧から）
 
 どれも head.html（フォントと色）+ page.css + header.html を共有する。
@@ -41,7 +43,7 @@ DOCS_CSS = (HERE / "docs.css").read_text(encoding="utf-8")
 
 def header(current: str) -> str:
     h = (HERE / "header.html").read_text(encoding="utf-8").replace("{REPO}", REPO).replace("{DOC}", DOC)
-    for name in ("learn", "reference"):
+    for name in ("learn", "reference", "spec"):
         h = h.replace("{CUR_%s}" % name, ' aria-current="page"' if name == current else "")
     return h
 
@@ -93,15 +95,25 @@ def link(url: str) -> str:
     m = re.fullmatch(r"screenshots/(\w+)\.png", url)
     if m:
         return "{{IMG:%s}}" % m.group(1)
-    if url == "入門.md":
-        return "learn.html"
+    pages = {"入門.md": "learn.html", "言語仕様_v0.3.md": "spec.html", "仕組み.md": "how.html"}
+    base, _, frag = url.partition("#")
+    if base in pages:
+        return pages[base] + ("#" + frag if frag else "")
     if url.startswith("../"):
         return BLOB + url[3:]
     return DOC + url
 
 
-def doc_page(md_path: Path, title: str, current: str) -> str:
+FOOT = {
+    "learn": "この入門の出力は、実際にコマンドを流したものです（テストで確かめています）。",
+    "spec": "10章の道具と13章のエラーの表は、実装から作っています。",
+    "how": "v0.3 ・ Python 3.11",
+}
+
+
+def doc_page(md_path: Path, title: str, current: str, depth: int = 3) -> str:
     content, toc = render(md_path.read_text(encoding="utf-8"), link)
+    toc = [t for t in toc if t[0] <= depth]
     content = re.sub(r"^<h1[^>]*>.*?</h1>\n", "", content)        # 見出しはページの上に出す
     content = content.replace("<p>", '<p class="lead">', 1)       # 最初の段落を、見出しの下の一文に
     nav = "".join(f'<li class="d{d}"><a href="#{i}">{html.escape(t)}</a></li>' for d, i, t in toc)
@@ -115,7 +127,7 @@ def doc_page(md_path: Path, title: str, current: str) -> str:
 {content}
   </article>
 </div>
-<footer><p>この入門の出力は、実際にコマンドを流したものです（テストで確かめています）。</p></footer>
+<footer><p>{FOOT[current]}</p></footer>
 </div>
 """
     return page(f"{title} — Ponte", current, body, DOCS_CSS)
@@ -242,8 +254,13 @@ def reference() -> str:
 """, DOCS_CSS)
 
 
+DOCS = [("spec", "言語仕様_v0.3.md", "仕様書 v0.3", 2), ("how", "仕組み.md", "しくみ — ponte/ の中", 2)]
+
+
 if __name__ == "__main__":
     (HERE / "landing.html").write_text(landing(), encoding="utf-8")
     (HERE / "learn.src.html").write_text(doc_page(ROOT / "docs" / "入門.md", "入門 — やることアプリを作る", "learn"), encoding="utf-8")
     (HERE / "reference.src.html").write_text(reference(), encoding="utf-8")
-    print("site/landing.html・learn.src.html・reference.src.html を作りました")
+    for name, md_name, title, depth in DOCS:
+        (HERE / f"{name}.src.html").write_text(doc_page(ROOT / "docs" / md_name, title, name, depth), encoding="utf-8")
+    print("site/landing.html と *.src.html を作りました")

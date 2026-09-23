@@ -1,13 +1,13 @@
 # ボタンを押したら終わりにする。例を書くとテストになる
 rule Finish
-  when  user taps done-button on Task
-  where status is todo
-  do    move this to done
+  when   user taps done-button on Task
+  where  status is todo
+  do     move this to done
   example
-    given Task
+    given   Task
       title   "牛乳を買う"
       status  todo
-    taps done-button on Task
-      title "牛乳を買う"
-    expect Task is done
-      title "牛乳を買う"
+    taps    done-button on Task
+      title   "牛乳を買う"
+    expect  Task is done
+      title   "牛乳を買う"

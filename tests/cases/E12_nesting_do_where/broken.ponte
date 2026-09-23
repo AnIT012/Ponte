@@ -7,16 +7,16 @@ thing Application
   status[draft | submitted | passed | failed]
 
 thing User
-  name text
+  name  text
 
 flow Application.status
   draft -> submitted -> passed | failed
   failed > passed
 
 who
-  user  can see    Application where owner is me
-  user  can change Application where owner is me
-  user  can see    User where it is me
+  user  can see     Application  where owner is me
+  user  can change  Application  where owner is me
+  user  can see     User         where it is me
 
 list DueSoon
   of     Application
@@ -67,13 +67,13 @@ rule MarkSubmitted
   do    move this to submitted
     where company is "x"
   example
-    given Application
+    given   Application
       company  "Osaka Gas"
       status   draft
-    taps submitted-button on Application
-      company "Osaka Gas"
-    expect Application is submitted
-      company "Osaka Gas"
+    taps    submitted-button on Application
+      company  "Osaka Gas"
+    expect  Application is submitted
+      company  "Osaka Gas"
 
 relate
   MarkSubmitted > Remind
@@ -89,10 +89,10 @@ flow scene
   Home -> AddApplication
 
 part Header
-  show text "就活Hub"
+  show  text "就活Hub"
 
 part EmptyNote
-  show text "3日以内に締切の下書きはありません"
+  show  text "3日以内に締切の下書きはありません"
 
 look DueSoon as cards
   title   company

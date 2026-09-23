@@ -58,7 +58,9 @@ section{padding-block:56px}
 .slide[hidden]{display:none}
 .slide{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:26px;align-items:center;min-height:310px}
 .code{background:var(--code);color:var(--codeink);border-radius:18px;border:3px solid var(--line);padding:18px 20px;font-size:14px;line-height:1.75;overflow-x:auto;margin:0}
-.code .k{color:#FF8A6E}.code .s{color:#FFD35C}.code .c{color:#8F95C9}.code .t{color:#5FE3D0}
+.code .head{color:#6BB6FF;font-weight:700}.code .clause{color:#C9A7FF}.code .guard{color:#FF9D5C;font-weight:700}
+.code .type{color:#2FD1BF}.code .name{color:#FF8FC7}.code .val{color:#FFD35C}.code .field{color:#FFFFFF}.code .op{color:#8A90C4}
+.code .c{color:#7C83BA;font-style:italic}.code .block{background:#E0412A;color:#fff;border-radius:4px;padding:0 4px}
 .explain h2{font-size:clamp(22px,3vw,28px);margin-bottom:12px}
 .explain p{line-height:1.95}
 .explain code,.col code{font-family:var(--mono);font-size:13px;background:var(--ground);padding:1px 6px;border-radius:6px}
@@ -70,7 +72,7 @@ section{padding-block:56px}
 .dots button{width:34px;height:34px;padding:0;font-size:13px}
 
 /* ---- tagline ---- */
-.tagline{text-align:center;padding-block:40px;font-family:var(--pop);font-size:clamp(18px,2.6vw,23px);line-height:1.7;max-width:34em;margin:0 auto}
+.tagline{text-align:center;padding-block:26px 30px;font-family:var(--pop);font-size:clamp(18px,2.6vw,23px);line-height:1.7;max-width:34em;margin:0 auto}
 .tagline a{color:var(--tomato);text-decoration:none;white-space:nowrap}
 
 /* ---- columns ---- */
@@ -110,75 +112,77 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
   </nav>
 </header>
 
+<p class="tagline">Ponte は、アプリの決まりを書いて、そのまま動かすためのプログラミング言語です。決まっていないことがあれば、動かす前に教えてくれます。 <a href="https://github.com/AnIT012/nameless-lang/blob/main/docs/言語仕様_v0.3.md">詳しく ›</a></p>
+
 <section class="show sticker" aria-label="書き方の見本">
     <div class="slide">
       <pre class="code"><span class="c"># データの形：やることと、その持ち主</span>
-<span class="k">thing</span> <span class="t">Task</span>
-  title   text
-  due     monthday
-  owner   User  gone[remove too]
-  status[todo | done]
+<span class="head">thing</span> <span class="name">Task</span>
+  <span class="field">title</span>  <span class="type">text</span>
+  <span class="field">due</span>    <span class="type">monthday</span>
+  <span class="field">owner</span>  <span class="name">User</span>  <span class="guard">gone</span><span class="guard">[</span><span class="guard">remove</span> <span class="guard">too</span><span class="guard">]</span>
+  <span class="field">status</span><span class="op">[</span><span class="val">todo</span> <span class="op">|</span> <span class="val">done</span><span class="op">]</span>
 
-<span class="k">thing</span> <span class="t">User</span>
-  name  text</pre>
+<span class="head">thing</span> <span class="name">User</span>
+  <span class="field">name</span>  <span class="type">text</span></pre>
       <div class="explain"><h2>データの形を書く</h2><p>thing には、アプリが持つデータの形を書きます。項目の名前と型を並べておけば、保存や読み書きは Ponte が引き受けます。状態は <code>[todo | done]</code> のように、取りうる値を全部書いておきます。</p></div>
     </div>
     <div class="slide" hidden>
       <pre class="code"><span class="c"># 状態の流れと、誰が何をできるか</span>
-<span class="k">flow</span> Task.status
-  todo -&gt; done -&gt; todo
+<span class="head">flow</span> <span class="name">Task</span>.status
+  <span class="val">todo</span> <span class="op">-&gt;</span> <span class="val">done</span> <span class="op">-&gt;</span> <span class="val">todo</span>
 
-<span class="k">who</span>
-  user  can see     Task where owner is me
-  user  can change  Task where owner is me
-  user  can see     User where it is me</pre>
+<span class="head">who</span>
+  user  can see     <span class="name">Task</span>  where owner is me
+  user  can change  <span class="name">Task</span>  where owner is me
+  user  can see     <span class="name">User</span>  where it is me</pre>
       <div class="explain"><h2>流れと、誰が何をできるか</h2><p>flow には状態がどう移れるかを、who には誰が何をしてよいかを書きます。who に書いていない操作は誰にもできないので、権限の書き忘れはエラーとして見つかります。</p></div>
     </div>
     <div class="slide" hidden>
       <pre class="code"><span class="c"># 毎朝8時に、明日までのやることを知らせる</span>
-<span class="k">list</span> <span class="t">Soon</span>
-  <span class="k">of</span>     Task
-  <span class="k">where</span>  status is todo
-  <span class="k">where</span>  due within 1 days
+<span class="head">list</span> <span class="name">Soon</span>
+  <span class="clause">of</span>     <span class="name">Task</span>
+  <span class="clause">where</span>  status is <span class="val">todo</span>
+  <span class="clause">where</span>  due within <span class="val">1 days</span>
 
-<span class="k">rule</span> <span class="t">Remind</span>
-  <span class="k">why</span>   明日までのものを忘れない
-  <span class="k">when</span>  every day at 8:00
-  <span class="k">do</span>    notify owner each of Soon</pre>
+<span class="head">rule</span> <span class="name">Remind</span>
+  <span class="clause">why</span>   明日までのものを忘れない
+  <span class="clause">when</span>  every day at <span class="val">8:00</span>
+  <span class="clause">do</span>    notify owner each of <span class="name">Soon</span></pre>
       <div class="explain"><h2>きっかけと、やること</h2><p>rule には、きっかけとやることを一組で書きます。when に書けるのは時刻やボタンのような出来事だけで、「明日まで」のような条件は list の where で絞ります。</p></div>
     </div>
     <div class="slide" hidden>
       <pre class="code"><span class="c"># ボタンを押したら終わりにする。例を書くとテストになる</span>
-<span class="k">rule</span> <span class="t">Finish</span>
-  <span class="k">when</span>  user taps done-button on Task
-  <span class="k">where</span> status is todo
-  <span class="k">do</span>    move this to done
-  <span class="k">example</span>
-    <span class="k">given</span> Task
-      title   <span class="s">"牛乳を買う"</span>
-      status  todo
-    <span class="k">taps</span> done-button on Task
-      title <span class="s">"牛乳を買う"</span>
-    <span class="k">expect</span> Task is done
-      title <span class="s">"牛乳を買う"</span></pre>
+<span class="head">rule</span> <span class="name">Finish</span>
+  <span class="clause">when</span>   user taps done-button on <span class="name">Task</span>
+  <span class="clause">where</span>  status is <span class="val">todo</span>
+  <span class="clause">do</span>     move this to <span class="val">done</span>
+  <span class="clause">example</span>
+    <span class="clause">given</span>   <span class="name">Task</span>
+      <span class="field">title</span>   <span class="val">"牛乳を買う"</span>
+      <span class="field">status</span>  <span class="val">todo</span>
+    <span class="clause">taps</span>    done-button on <span class="name">Task</span>
+      <span class="field">title</span>   <span class="val">"牛乳を買う"</span>
+    <span class="clause">expect</span>  <span class="name">Task</span> is <span class="val">done</span>
+      <span class="field">title</span>   <span class="val">"牛乳を買う"</span></pre>
       <div class="explain"><h2>例がそのままテストになる</h2><p>rule の下に example を書くと、それがテストになります。<code>ponte test</code> は例が通るかを確かめるだけでなく、まだ例で確かめていないルールや状態の変化も教えてくれます。</p></div>
     </div>
     <div class="slide" hidden>
       <pre class="code"><span class="c"># AIに任せる処理には、例と禁止事項を先に書く</span>
-<span class="k">action</span> <span class="t">FindDeadline</span>
-  <span class="k">in</span>       mail text
-  <span class="k">out</span>      found monthday | missing
-  <span class="k">example</span>  <span class="s">"10/15(木)12:00まで"</span>      -&gt; found 10/15 12:00
-  <span class="k">example</span>  <span class="s">"来週中にご提出ください"</span>  -&gt; missing
-  <span class="k">never</span>    guess the year
-  <span class="k">never</span>    fail
-  <span class="k">else</span>     ask user
-  <span class="k">by</span>       ai</pre>
+<span class="head">action</span> <span class="name">FindDeadline</span>
+  <span class="clause">in</span>       mail <span class="type">text</span>
+  <span class="clause">out</span>      <span class="val">found</span> <span class="type">monthday</span> <span class="op">|</span> <span class="val">missing</span>
+  <span class="clause">example</span>  <span class="val">"10/15(木)12:00まで"</span>      <span class="op">-&gt;</span> <span class="val">found</span> <span class="val">10/15</span> <span class="val">12:00</span>
+  <span class="clause">example</span>  <span class="val">"来週中にご提出ください"</span>  <span class="op">-&gt;</span> <span class="val">missing</span>
+  <span class="guard">never</span>    guess the year
+  <span class="guard">never</span>    fail
+  <span class="guard">else</span>     ask user
+  <span class="clause">by</span>       ai</pre>
       <div class="explain"><h2>AIに任せる部分には約束を</h2><p>処理の中身をAIに書いてもらうときは、action に入力と答えの例、してはいけないことを先に書きます。AIが書いた中身はこの約束に照らして機械で確かめられ、守れていなければ書き直しになります。</p></div>
     </div>
     <div class="slide" hidden>
       <pre class="code"><span class="c"># まだ決めていないことは tbd に書く。残っているうちは動かない</span>
-<span class="k">tbd</span>
+<span class="guard">tbd</span>
   締切を過ぎたやることは、一覧に残すか消すか</pre>
       <div class="explain"><h2>決めていないことは tbd に</h2><p>まだ決めていないことは tbd に書いておけます。tbd が残っているあいだは <code>ponte check</code> が通らないので、決め忘れたまま動き出すことはありません。</p></div>
     </div>
@@ -189,7 +193,6 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
   </div>
 </section>
 
-<p class="tagline">Ponte は、アプリの決まりを書いて、そのまま動かすためのプログラミング言語です。決まっていないことがあれば、動かす前に教えてくれます。 <a href="https://github.com/AnIT012/nameless-lang/blob/main/docs/言語仕様_v0.3.md">詳しく ›</a></p>
 
 <section class="cols">
   <div class="col sticker"><h3>はじめる</h3><p>入門では、やることアプリをエラーを見ながら少しずつ作っていきます。はじめての方はここからどうぞ。</p><a class="more" href="https://github.com/AnIT012/nameless-lang/blob/main/docs/入門.md">入門を読む ›</a></div>

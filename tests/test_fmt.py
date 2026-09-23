@@ -5,7 +5,13 @@ from ponte.fmt import FormatError, dwidth, format_source
 from ponte.parser import parse
 
 
-@pytest.mark.parametrize("path", ["spec/hub_app.ponte", "spec/hub.ponte", "spec/hub_ready.ponte"])
+import glob
+
+ALL = sorted(glob.glob("spec/*.ponte") + glob.glob("spec/*.ponte.ai/*.ponte") + glob.glob("ponte/std/**/*.ponte", recursive=True)
+             + glob.glob("ponte/templates/*.ponte") + glob.glob("site/samples/*.ponte"))
+
+
+@pytest.mark.parametrize("path", ALL)
 def test_specs_are_formatted_and_idempotent(path):
     src = open(path, encoding="utf-8").read()
     assert format_source(src) == src               # もう整っている
@@ -28,7 +34,7 @@ match A.status to color
       b    -> blue
 """
     out = format_source(src)
-    assert out.startswith("# 頭のコメント\n\nthing A\n  x text  # 項目のコメント\n")
+    assert out.startswith("# 頭のコメント\n\nthing A\n  x  text  # 項目のコメント\n")
     assert "## 承認待ち" in out and "\n\n## 承認待ち\nlist L\n  of     A\n  where  x is \"1\"\n  sort   x\n" in out
     assert "\n  a -> red\n  b -> blue\n" in out
     assert parse(out).blocking == [(out.splitlines().index("## 承認待ち") + 1, "承認待ち")]

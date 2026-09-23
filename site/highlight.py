@@ -77,9 +77,16 @@ def states_in(src: str) -> frozenset:
 
 def highlight(src: str, states: frozenset | None = None) -> str:
     states = states_in(src) if states is None else states
-    rows, in_fields = [], False
+    rows, in_fields, rec = [], False, None
     for l in src.rstrip("\n").split("\n"):
+        ind = len(l) - len(l.lstrip(" "))
         if l and l[0] != " " and not l.startswith("#"):
             in_fields = l.split()[0] in ("thing", "input")
-        rows.append(line(l, in_fields, states))
+        if rec is not None and l.strip() and ind < rec:
+            rec = None
+        in_rec = rec is not None and ind >= rec          # given / taps / expect / create の下は「項目 値」
+        rows.append(line(l, in_fields or in_rec, states))
+        words = l.split()
+        if words and words[0] in ("given", "taps", "expect", "adds") or (len(words) >= 2 and words[:2] == ["do", "create"]):
+            rec = ind + 2
     return "\n".join(rows)

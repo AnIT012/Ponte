@@ -137,7 +137,8 @@ def section(runs: Path, title: str) -> tuple[list[str], dict]:
 
 
 def main():
-    rounds = [("runs", "1回目の実験（そのままの条件）"), ("runs2", "2回目の実験（粗を直した後。日本語の要件も同じだけはっきり書いた）")]
+    rounds = [("runs", "1回目の実験（そのままの条件）"), ("runs2", "2回目の実験（粗を直した後。日本語の要件も同じだけはっきり書いた）"),
+              ("runs3", "3回目の実験（別のモデル Haiku で。条件は2回目と同じ。各6回・1回ごとに別のエージェント）")]
     parts, sums = [], []
     for d, t in rounds:
         if (HERE / d).exists():

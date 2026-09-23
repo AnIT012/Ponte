@@ -10,14 +10,14 @@
 
 ## まとめ
 
-| 項目 | 1回目の実験 (A) | 1回目の実験 (B)1回目 | 1回目の実験 (B)ループ後 | 2回目の実験 (A) | 2回目の実験 (B)1回目 | 2回目の実験 (B)ループ後 |
-|---|---|---|---|---|---|---|
-| 14テスト全部通った | 0/5 | 4/5 | 4/5 | 3/5 | 5/5 | 5/5 |
-| 仕様の例を全部通った | 0/5 | 5/5 | 5/5 | 4/5 | 5/5 | 5/5 |
-| バグ数の平均 | 2.2 | 0.2 | 0.2 | 1.0 | 0.0 | 0.0 |
-| 推測で埋めた所の合計 | 37 | 0 | — | 35 | 0 | — |
-| AIが書いた行数の平均 | 159 | 21 | — | 166 | 20 | — |
-| ブレ（差分行数の平均 / 書いた1行あたり） | 238 / 1.50 | — | 23 / 1.09 | 264 / 1.59 | — | 12 / 0.59 |
+| 項目 | 1回目の実験 (A) | 1回目の実験 (B)1回目 | 1回目の実験 (B)ループ後 | 2回目の実験 (A) | 2回目の実験 (B)1回目 | 2回目の実験 (B)ループ後 | 3回目の実験 (A) | 3回目の実験 (B)1回目 | 3回目の実験 (B)ループ後 |
+|---|---|---|---|---|---|---|---|---|---|
+| 14テスト全部通った | 0/5 | 4/5 | 4/5 | 3/5 | 5/5 | 5/5 | 1/6 | 3/6 | 6/6 |
+| 仕様の例を全部通った | 0/5 | 5/5 | 5/5 | 4/5 | 5/5 | 5/5 | 1/6 | 3/6 | 6/6 |
+| バグ数の平均 | 2.2 | 0.2 | 0.2 | 1.0 | 0.0 | 0.0 | 3.5 | 0.8 | 0.0 |
+| 推測で埋めた所の合計 | 37 | 0 | — | 35 | 0 | — | 27 | 0 | — |
+| AIが書いた行数の平均 | 159 | 21 | — | 166 | 20 | — | 176 | 20 | — |
+| ブレ（差分行数の平均 / 書いた1行あたり） | 238 / 1.50 | — | 23 / 1.09 | 264 / 1.59 | — | 12 / 0.59 | 318 / 1.81 | — | 17 / 0.83 |
 
 ## 1回目の実験（そのままの条件）
 
@@ -62,16 +62,16 @@
 
 ### 失敗の中身
 
-- A1: 仕様の例: 9/21 21:00 に 9/24 23:59 の下書きが通知される — AssertionError: <bound method System.tick of <a_6376404373028296963.System object at 0x7f6c284ab4d0>>
+- A1: 仕様の例: 9/21 21:00 に 9/24 23:59 の下書きが通知される — AssertionError: <bound method System.tick of <a_4623666828966651753.System object at 0x7f6896e064d0>>
 - A1: 締切が近い: 下書きだけ・3日を超えるものと過ぎたものは入らない — AssertionError: 
 - A1: 締切の取り出し: 全角の数字（例に無い） — AssertionError: 
-- A2: 仕様の例: 9/21 21:00 に 9/24 23:59 の下書きが通知される — AssertionError: <bound method System.tick of <a_7637877985774368195.System object at 0x7f6c284bc650>>
+- A2: 仕様の例: 9/21 21:00 に 9/24 23:59 の下書きが通知される — AssertionError: <bound method System.tick of <a_5754995161956478230.System object at 0x7f6896e06f10>>
 - A2: 締切の取り出し: 全角の数字（例に無い） — AssertionError: 
-- A3: 仕様の例: 9/21 21:00 に 9/24 23:59 の下書きが通知される — AssertionError: <bound method System.tick of <a_4725666799068170877.System object at 0x7f6c284bd210>>
+- A3: 仕様の例: 9/21 21:00 に 9/24 23:59 の下書きが通知される — AssertionError: <bound method System.tick of <a_3661313885970413780.System object at 0x7f6896e07b50>>
 - A3: 締切の取り出し: 全角の数字（例に無い） — AssertionError: 
-- A4: 仕様の例: 9/21 21:00 に 9/24 23:59 の下書きが通知される — AssertionError: <bound method System.tick of <a_7274499729564597927.System object at 0x7f6c284be090>>
+- A4: 仕様の例: 9/21 21:00 に 9/24 23:59 の下書きが通知される — AssertionError: <bound method System.tick of <a_491145441900504908.System object at 0x7f6896e31cd0>>
 - A4: 締切の取り出し: 全角の数字（例に無い） — AssertionError: 
-- A5: 仕様の例: 9/21 21:00 に 9/24 23:59 の下書きが通知される — AssertionError: <bound method System.tick of <a_6272155875274173449.System object at 0x7f6c284e8250>>
+- A5: 仕様の例: 9/21 21:00 に 9/24 23:59 の下書きが通知される — AssertionError: <bound method System.tick of <a_8965028002147151955.System object at 0x7f6896e32810>>
 - A5: 締切の取り出し: 全角の数字（例に無い） — AssertionError: 
 - B3: 言語が返した問題 → 
 - B5（1回目）: 締切の取り出し: 全角の数字（例に無い） — AssertionError: 
@@ -204,6 +204,111 @@
 - A5: Q: 年をまたぐ締切（deadline の年は常に「今の年」固定、add() 時点の now.year を使用）。
 - A5: Q: color() の「それ以外」は未知の status 文字列が渡された場合を想定し gray とした。
 
+## 3回目の実験（別のモデル Haiku で。条件は2回目と同じ。各6回・1回ごとに別のエージェント）
+
+### (A) 日本語で頼む（6回）
+
+| run | 動いた | 仕様の例を通過 | バグ数 | 推測で埋めた所（Q:） | AIが書いた行数 |
+|---|---|---|---|---|---|
+| A1 | ✓ | ✓ | 0 | 4 | 165 |
+| A2 | ✓ | ✗ | 2 | 7 | 188 |
+| A3 | ✓ | ✗ | 2 | 4 | 206 |
+| A4 | ✓ | ✗ | 4 | 7 | 187 |
+| A5 | ✓ | ✗ | 6 | 0 | 154 |
+| A6 | ✓ | ✗ | 7 | 5 | 157 |
+
+### (B) この言語で頼む（6回）
+
+| run | 動いた | 仕様の例を通過 | バグ数（1回目） | 推測で埋めた所（Q:） | 言語のループの回数 | バグ数（ループ後） | AIが書いた行数 |
+|---|---|---|---|---|---|---|---|
+| B1 | ✓ | ✗ | 1 | 0 | 2 | 0 | 21 |
+| B2 | ✓ | ✗ | 2 | 0 | 2 | 0 | 20 |
+| B3 | ✓ | ✓ | 0 | 0 | 1 | 0 | 20 |
+| B4 | ✓ | ✗ | 2 | 0 | 2 | 0 | 20 |
+| B5 | ✓ | ✓ | 0 | 0 | 1 | 0 | 20 |
+| B6 | ✓ | ✓ | 0 | 0 | 1 | 0 | 20 |
+
+### どの要件で間違えたか（落ちた回数）
+
+| 要件 | (A) | (B) 1回目 | (B) ループ後 |
+|---|---|---|---|
+| 仕様の例: 9/21 21:00 に 9/24 23:59 の下書きが通知される | 2 | 0 | 0 |
+| 締切が近い: 下書きだけ・3日を超えるものと過ぎたものは入らない | 2 | 0 | 0 |
+| 締切が近い: 締切の早い順 | 1 | 0 | 0 |
+| 通知は21時だけ・持ち主にだけ届く | 2 | 0 | 0 |
+| flow: draft から passed へは飛べない | 1 | 0 | 0 |
+| ぶつかったら failed が勝つ（passed の後の failed は上書き） | 1 | 0 | 0 |
+| ぶつかったら failed が勝つ（failed の後の passed はエラーにせず何もしない） | 1 | 0 | 0 |
+| 自分の応募しか見えない・動かせない | 0 | 0 | 0 |
+| 色の表（それ以外は gray） | 0 | 0 | 0 |
+| 締切の取り出し: 仕様の例2つ | 5 | 3 | 0 |
+| 締切の取り出し: 見つからなければ聞き返す | 0 | 0 | 0 |
+| 締切の取り出し: 2つあったら決めずに聞き返す | 1 | 0 | 0 |
+| 締切の取り出し: 全角の数字（例に無い） | 5 | 2 | 0 |
+| 同じ応募への同時の書き換えで壊れない | 0 | 0 | 0 |
+
+### 失敗の中身
+
+- A2: 締切の取り出し: 仕様の例2つ — AssertionError: 
+- A2: 締切の取り出し: 全角の数字（例に無い） — AssertionError: 
+- A3: 締切の取り出し: 仕様の例2つ — AssertionError: 
+- A3: 締切の取り出し: 全角の数字（例に無い） — AssertionError: 
+- A4: 仕様の例: 9/21 21:00 に 9/24 23:59 の下書きが通知される — 10秒たっても終わりません（止まっている。デッドロックなど）
+- A4: 通知は21時だけ・持ち主にだけ届く — 10秒たっても終わりません（止まっている。デッドロックなど）
+- A4: 締切の取り出し: 仕様の例2つ — AssertionError: 
+- A4: 締切の取り出し: 全角の数字（例に無い） — AssertionError: 
+- A5: 締切が近い: 下書きだけ・3日を超えるものと過ぎたものは入らない — ValueError: Unknown status draft
+- A5: flow: draft から passed へは飛べない — ValueError: Unknown status draft
+- A5: ぶつかったら failed が勝つ（passed の後の failed は上書き） — ValueError: Unknown status draft
+- A5: ぶつかったら failed が勝つ（failed の後の passed はエラーにせず何もしない） — ValueError: Unknown status draft
+- A5: 締切の取り出し: 仕様の例2つ — AssertionError: 
+- A5: 締切の取り出し: 全角の数字（例に無い） — AssertionError: 
+- A6: 仕様の例: 9/21 21:00 に 9/24 23:59 の下書きが通知される — AttributeError: 'datetime.date' object has no attribute 'date'
+- A6: 締切が近い: 下書きだけ・3日を超えるものと過ぎたものは入らない — AttributeError: 'datetime.date' object has no attribute 'date'
+- A6: 締切が近い: 締切の早い順 — AttributeError: 'datetime.date' object has no attribute 'date'
+- A6: 通知は21時だけ・持ち主にだけ届く — AttributeError: 'datetime.date' object has no attribute 'date'
+- A6: 締切の取り出し: 仕様の例2つ — AssertionError: 
+- A6: 締切の取り出し: 2つあったら決めずに聞き返す — AssertionError: 
+- A6: 締切の取り出し: 全角の数字（例に無い） — AssertionError: 
+- B1（1回目）: 締切の取り出し: 仕様の例2つ — AssertionError: 
+- B1: 言語が返した問題 → example L5: "【締切9/24 23:59】" → found 9/24 23:59 のはずが found 9/24 3:59
+- B2（1回目）: 締切の取り出し: 仕様の例2つ — AssertionError: 
+- B2（1回目）: 締切の取り出し: 全角の数字（例に無い） — AssertionError: 
+- B2: 言語が返した問題 → example L4: "10/15(木)12:00まで" → found 10/15 12:00 のはずが found 10/15
+- B4（1回目）: 締切の取り出し: 仕様の例2つ — AssertionError: 
+- B4（1回目）: 締切の取り出し: 全角の数字（例に無い） — AssertionError: 
+- B4: 言語が返した問題 → example L4: "10/15(木)12:00まで" → found 10/15 12:00 のはずが found 10/15 2:00 / example L5: "【締切9/24 23:59】" → found 9/24 23:59 のはずが found 9/24 3:59
+
+### 推測で埋めた所（AIが書いた Q:）
+
+- A1: Q: When adding a deadline like "9/24 23:59" while in October, the year is assumed to be the current year. If the deadline date has already passed this year (e.g., adding "9/24 23:59" on 10/1), it will be a past deadline.
+- A1: Q: The tick() method sends notifications only once per day when called at 21:00. Multiple calls to tick() at 21:00 on the same day will only send notifications on the first call.
+- A1: Q: Full-width characters (０-９, ／, ：, （, ）) are converted to half-width equivalents. Other full-width symbols are not handled.
+- A1: Q: The extract_deadline() method returns the first deadline pattern found. If multiple patterns exist with "or"/"または" between them (ambiguous), it returns None. Otherwise, multiple patterns without "or" between them result in the first one being returned.
+- A2: Q: Applications stored in-memory with no persistence across restarts
+- A2: Q: Thread-safe using per-user locks for concurrent access
+- A2: Q: Deadline returned as string in "月/日 時:分" format (without leading zeros)
+- A2: Q: "3 days within" means from now (exclusive) to 3 days later at 23:59 (inclusive)
+- A2: Q: extract_deadline returns None if zero or multiple matches found (user confirmation needed)
+- A2: Q: Full-width digits/symbols converted to half-width for email parsing
+- A2: Q: Notification at 21:00 means exactly hour=21 and minute=0
+- A3: Q: For "3日以内" (within 3 days), interpreting as: from current time to end-of-day (23:59)
+- A3: Q: Thread safety: using per-application locks for move() operations to prevent concurrent
+- A3: Q: For tick(), checking if hour==21 and minute==0. Returns list of (user, company) tuples
+- A3: Q: For extract_deadline(), if multiple matches found, returning None (ambiguous).
+- A4: Q: Applications are stored in-memory (dict by user), no persistence to disk
+- A4: Q: IDs are generated as incremental integers per user (uuid not needed per requirements)
+- A4: Q: "3 days" is interpreted as: today + 2 more days, so 3 calendar days total
+- A4: Q: Deadline extraction handles full-width characters by converting them to half-width
+- A4: Q: Thread-safe via threading.Lock on each application's state
+- A4: Q: If both passed and failed transitions arrive, failed wins (no error thrown)
+- A4: Q: Notifications at 21:00 check if any admin/system user has a pending notification queue
+- A6: Q: Applications are identified by a simple incrementing integer ID
+- A6: Q: Thread safety is implemented per-application using locks, not a global lock
+- A6: Q: Deadline string input uses "M/D H:MM" or "MM/DD HH:MM" format; year is assumed current year
+- A6: Q: When extracting deadline, full-width digits/symbols are converted to half-width equivalents
+- A6: Q: The "3 days within" calculation: if today is 9/21, 3 days within means up to 9/24 23:59
+
 ## 読み方と、正直な注意
 
 ### 表の数字について（大事）
@@ -234,8 +339,14 @@
 - **例と never に書いてないことは守れない。** 1回目の B5 は全角で落ちた。`never depend on width` を足して止められるようにしたが、「書いてないことは守れない」性質そのものは変わらない。
 - **(B) の強さの一部は、私が作った実行エンジンのおかげ。** flow・ぶつかった時・who・通知は、AIでなくエンジンが動かしている。エンジンにバグがあれば (B) は全部同じように落ちる（エンジンは別のテスト166件で確かめている）。
 
+### 3回目（別のモデル Haiku）で分かったこと
+- **モデルを変えても、差は同じ向きで、もっと大きく出た。** (A) は全部通ったのが 1/6、バグ平均 3.5。(B) は1回目で 3/6（バグ平均 0.8）、ループの後で 6/6・バグ0。
+- **(A) の失敗は、要件の中身そのもの。** 6回中5回が締切の取り出しを間違え、A4・A6 は通知や「3日以内」も外した。A5 は flow と「ぶつかったら failed が勝つ」を丸ごと外した。
+- **(B) の失敗は、shape の書き方だけ。** 3回とも `maybe any` が時刻の数字を食う形の間違いで、言語が返した「found 9/24 3:59 になった」を見て、1回で直した。flow・通知・who はエンジンが持っているので、そもそも間違える場所が無い。
+- **最初のやり方は捨てた。** 最初は1つのエージェントに6回書かせたが、6本とも同じ所で同じように落ちた（独立していない）。1回ごとに別のエージェントを立ててやり直した。捨てた方の中に、ロックを2重に取って止まる（デッドロック）コードがあり、採点が止まったので、採点に1テスト10秒の時間制限を足した（止まったら落とす）。
+
 ### 実験の限界
-- 各条件5回ずつ、2回。モデルは Sonnet の1つだけ。temperature は固定できない（サブエージェントなので）。
+- 各条件5回ずつを2回（Sonnet）と、6回ずつを1回（Haiku）。合わせて各条件16回。temperature は固定できない（サブエージェントなので）。
 - AIは Claude のサブエージェント。「渡したファイル1つだけ読む・コードを動かさない」と頼んだ。1回目の A2 は自分のコードをコンパイルしたと報告している。
 - 採点のテストは私が書いた。両方の参照実装（人が書いたもの）が14個全部通ることを先に確かめた。
 - AIの返事は全部 `experiment/v2/runs/`（1回目）と `experiment/v2/runs2/`（2回目）に残してある。`python experiment/v2/score.py` で同じ採点をやり直せる。

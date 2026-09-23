@@ -2,184 +2,241 @@ from datetime import datetime, timedelta
 import re
 import threading
 
+# Q: For "3日以内" (within 3 days), interpreting as: from current time to end-of-day (23:59)
+#    of the date 3 days from now. Example: 9/21 21:00 → includes deadlines up to 9/24 23:59.
+# Q: Thread safety: using per-application locks for move() operations to prevent concurrent
+#    modifications to the same application. Each app gets a unique lock created atomically.
+# Q: For tick(), checking if hour==21 and minute==0. Returns list of (user, company) tuples
+#    for all due-soon applications at that moment, one tuple per application.
+# Q: For extract_deadline(), if multiple matches found, returning None (ambiguous).
+#    Converting full-width to half-width digits and symbols before pattern matching.
+#    Output format preserves variable-length month/day/hour but always 2-digit minutes.
+
 class System:
     def __init__(self, now: datetime):
-        self.current_time = now
-        self.users = {}  # user -> {app_id -> app_info}
-        self.user_order = {}  # user -> [app_ids]
-        self.id_gen = 0
+        self.now = now
+        self.applications = {}  # user -> list of app dicts
+        self.next_id = 0
         self.lock = threading.Lock()
+        self.app_locks = {}  # app_id -> threading.Lock for per-app thread safety
 
     def set_now(self, now: datetime) -> None:
-        self.current_time = now
+        with self.lock:
+            self.now = now
 
     def add(self, user: str, company: str, deadline: str) -> str:
+        """Add a new application and return its id.
+        deadline format: "9/24 23:59" (month/day hour:minute, year is current year)
+        """
         with self.lock:
-            if user not in self.users:
-                self.users[user] = {}
-                self.user_order[user] = []
+            app_id = str(self.next_id)
+            self.next_id += 1
 
-            app_id = str(self.id_gen)
-            self.id_gen += 1
+            if user not in self.applications:
+                self.applications[user] = []
 
-            self.users[user][app_id] = {
+            deadline_dt = self._parse_deadline(deadline)
+
+            app = {
+                "id": app_id,
                 "company": company,
                 "deadline": deadline,
+                "deadline_dt": deadline_dt,
                 "status": "draft"
             }
-            self.user_order[user].append(app_id)
+
+            self.applications[user].append(app)
+            self.app_locks[app_id] = threading.Lock()
+
             return app_id
 
+    def _parse_deadline(self, deadline_str: str) -> datetime:
+        """Parse deadline string 'M/D H:MM' to datetime using current year."""
+        parts = deadline_str.split()
+        date_parts = parts[0].split("/")
+        time_parts = parts[1].split(":")
+
+        month = int(date_parts[0])
+        day = int(date_parts[1])
+        hour = int(time_parts[0])
+        minute = int(time_parts[1])
+        year = self.now.year
+
+        return datetime(year, month, day, hour, minute)
+
     def apps(self, user: str) -> list[dict]:
+        """Return all applications for user in order added."""
         with self.lock:
-            if user not in self.users:
+            if user not in self.applications:
                 return []
+            return [
+                {
+                    "id": app["id"],
+                    "company": app["company"],
+                    "deadline": app["deadline"],
+                    "status": app["status"]
+                }
+                for app in self.applications[user]
+            ]
 
-            apps_list = []
-            for app_id in self.user_order[user]:
-                app_info = self.users[user][app_id]
-                apps_list.append({
-                    "id": app_id,
-                    "company": app_info["company"],
-                    "deadline": app_info["deadline"],
-                    "status": app_info["status"]
-                })
-            return apps_list
-
-    def due_soon(self, user: str) -> list[dict]:
-        with self.lock:
-            if user not in self.users:
-                return []
-
-            due_apps = []
-
-            for app_id in self.user_order[user]:
-                app_info = self.users[user][app_id]
-
-                if app_info["status"] != "draft":
-                    continue
-
-                deadline_dt = self._parse_deadline(app_info["deadline"])
-                if deadline_dt is None:
-                    continue
-
-                # Check if within 3 days: now < deadline <= (now + 3 days at 23:59)
-                cutoff = self.current_time + timedelta(days=3)
-                cutoff = cutoff.replace(hour=23, minute=59, second=59)
-
-                if self.current_time < deadline_dt <= cutoff:
-                    due_apps.append({
-                        "id": app_id,
-                        "company": app_info["company"],
-                        "deadline": app_info["deadline"],
-                        "status": app_info["status"],
-                        "_deadline_dt": deadline_dt
-                    })
-
-            # Sort by deadline
-            due_apps.sort(key=lambda x: x["_deadline_dt"])
-
-            # Remove temp field
-            for app in due_apps:
-                del app["_deadline_dt"]
-
-            return due_apps
-
-    def _parse_deadline(self, deadline: str) -> datetime | None:
-        try:
-            parts = deadline.split()
-            if len(parts) != 2:
-                return None
-
-            date_str, time_str = parts
-            month, day = map(int, date_str.split('/'))
-            hour, minute = map(int, time_str.split(':'))
-
-            year = self.current_time.year
-            return datetime(year, month, day, hour, minute)
-        except (ValueError, AttributeError, IndexError):
-            return None
-
-    def tick(self) -> list[tuple[str, str]]:
-        if self.current_time.hour != 21 or self.current_time.minute != 0:
+    def _get_due_soon_internal(self, user: str) -> list[dict]:
+        """Internal method to get due-soon applications (assumes lock is held).
+        Returns list with deadline_dt for sorting purposes.
+        """
+        if user not in self.applications:
             return []
 
-        notifications = []
+        due_apps = []
+        now = self.now
+        three_days_later = now + timedelta(days=3)
+        three_days_end = three_days_later.replace(hour=23, minute=59, second=59)
 
+        for app in self.applications[user]:
+            if app["status"] == "draft":
+                deadline_dt = app["deadline_dt"]
+                # Deadline must be in the future and within 3 days
+                if now < deadline_dt <= three_days_end:
+                    due_apps.append({
+                        "id": app["id"],
+                        "company": app["company"],
+                        "deadline": app["deadline"],
+                        "status": app["status"],
+                        "deadline_dt": deadline_dt
+                    })
+
+        due_apps.sort(key=lambda x: x["deadline_dt"])
+        return due_apps
+
+    def due_soon(self, user: str) -> list[dict]:
+        """Return user's applications with nearby deadlines (draft status, within 3 days),
+        sorted by earliest deadline first.
+        """
         with self.lock:
-            for user in self.users:
-                due_apps = self.due_soon(user)
+            due_apps = self._get_due_soon_internal(user)
+            return [
+                {
+                    "id": app["id"],
+                    "company": app["company"],
+                    "deadline": app["deadline"],
+                    "status": app["status"]
+                }
+                for app in due_apps
+            ]
+
+    def tick(self) -> list[tuple[str, str]]:
+        """If current time is 21:00, return list of (user, company) for all due-soon
+        applications to notify. Otherwise return empty list.
+        """
+        with self.lock:
+            if self.now.hour != 21 or self.now.minute != 0:
+                return []
+
+            notifications = []
+            for user in self.applications:
+                due_apps = self._get_due_soon_internal(user)
                 for app in due_apps:
                     notifications.append((user, app["company"]))
 
-        return notifications
+            return notifications
 
     def move(self, user: str, app_id: str, to: str) -> None:
-        with self.lock:
-            if user not in self.users:
-                raise ValueError("User not found")
-            if app_id not in self.users[user]:
-                raise ValueError("Application not found")
+        """Change application status. Raises ValueError if invalid transition or
+        application doesn't belong to user.
 
-            app = self.users[user][app_id]
+        Valid transitions:
+        - draft → submitted
+        - submitted → passed or failed
+        - passed → failed (failed has priority)
+        - failed → passed is allowed but stays failed (no error)
+        """
+        # Find app and verify ownership (with lock)
+        app = None
+        with self.lock:
+            if user not in self.applications:
+                raise ValueError(f"User {user} not found")
+
+            for a in self.applications[user]:
+                if a["id"] == app_id:
+                    app = a
+                    break
+
+            if app is None:
+                raise ValueError(f"Application {app_id} does not belong to user {user}")
+
+        # Use per-app lock for thread-safe status modification
+        with self.app_locks[app_id]:
             current = app["status"]
 
-            # Validate transitions
             if current == "draft":
                 if to != "submitted":
-                    raise ValueError(f"Cannot move from draft to {to}")
+                    raise ValueError(f"Cannot move from {current} to {to}")
             elif current == "submitted":
-                if to not in ("passed", "failed"):
-                    raise ValueError(f"Cannot move from submitted to {to}")
+                if to not in ["passed", "failed"]:
+                    raise ValueError(f"Cannot move from {current} to {to}")
             elif current == "passed":
-                if to == "failed":
-                    app["status"] = to
-                else:
-                    raise ValueError(f"Cannot move from passed to {to}")
+                if to != "failed":
+                    raise ValueError(f"Cannot move from {current} to {to}")
             elif current == "failed":
-                # Failed is terminal; failed takes priority
                 if to == "passed":
-                    # Ignore - don't update
-                    return
+                    return  # Stay in failed state (failed has priority)
                 else:
-                    raise ValueError(f"Cannot move from failed to {to}")
-                return
+                    raise ValueError(f"Cannot move from {current} to {to}")
+            else:
+                raise ValueError(f"Unknown status {current}")
 
             app["status"] = to
 
     def color(self, status: str) -> str:
-        status_colors = {
+        """Return color for a given status."""
+        colors = {
             "draft": "orange",
             "submitted": "blue",
             "passed": "green",
             "failed": "gray"
         }
-        return status_colors.get(status, "gray")
+        return colors.get(status, "gray")
 
     def extract_deadline(self, mail: str) -> str | None:
-        # Normalize full-width characters
-        normalized = self._normalize_fw(mail)
+        """Extract deadline from email body.
 
-        # Pattern: m/d h:mm or mm/dd hh:mm
+        Returns format "M/D H:MM" if exactly one deadline found.
+        Returns None if zero matches, multiple matches (ambiguous), or if unsure.
+        Converts full-width digits/symbols to half-width before extraction.
+        """
+        # Convert full-width to half-width
+        mail = self._to_half_width(mail)
+
+        # Pattern: month/day hour:minute (single or double digits for month/day/hour, 2 for minute)
         pattern = r'(\d{1,2})/(\d{1,2})\s+(\d{1,2}):(\d{2})'
+        matches = re.findall(pattern, mail)
 
-        match = re.search(pattern, normalized)
-        if match:
-            m, d, h, min = match.groups()
-            return f"{m}/{d} {h}:{min}"
+        if len(matches) == 0:
+            return None
+        elif len(matches) == 1:
+            month, day, hour, minute = matches[0]
+            return f"{int(month)}/{int(day)} {int(hour)}:{minute}"
+        else:
+            # Multiple matches - ambiguous, return None
+            return None
 
-        return None
-
-    def _normalize_fw(self, text: str) -> str:
-        # Map full-width to half-width
-        fw_chars = {
-            '０': '0', '１': '1', '２': '2', '３': '3', '４': '4',
-            '５': '5', '６': '6', '７': '7', '８': '8', '９': '9',
-            '／': '/', '：': ':', '（': '(', '）': ')'
+    def _to_half_width(self, text: str) -> str:
+        """Convert full-width digits and symbols to half-width."""
+        zen_digit = "０１２３４５６７８９"
+        han_digit = "0123456789"
+        zen_symbols = {
+            "（": "(",
+            "）": ")",
+            "／": "/",
+            "：": ":"
         }
 
-        chars = []
-        for c in text:
-            chars.append(fw_chars.get(c, c))
+        result = []
+        for char in text:
+            if char in zen_digit:
+                result.append(han_digit[zen_digit.index(char)])
+            elif char in zen_symbols:
+                result.append(zen_symbols[char])
+            else:
+                result.append(char)
 
-        return ''.join(chars)
+        return "".join(result)

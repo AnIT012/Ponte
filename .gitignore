@@ -8,3 +8,4 @@ build/
 site/artifact.html
 *.users.json
 *.users.json.tmp
+site/ponte.zip

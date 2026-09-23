@@ -97,11 +97,31 @@ def _load_checked(path: str):
 
 def cmd_test(args) -> int:
     from .examples import run_examples
-    spec = _load_checked(args.spec)
+    if args.json:                                   # 機械向けの時は、止まった理由も JSON で
+        try:
+            spec = parse_file(args.spec)
+        except (ParseError, FileNotFoundError) as e:
+            print(json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False))
+            return 1
+        errs = [f for f in check(spec) if f.is_error]
+        if errs:
+            print(json.dumps({"ok": False, "error": "先に check を通してください",
+                              "findings": [{"code": f.code, "line": spec.where(f.line)[1], "message": f.message} for f in errs]},
+                             ensure_ascii=False, indent=2))
+            return 1
+    spec = _load_checked(args.spec) if not args.json else spec
     if spec is None:
         return 1
     results = run_examples(spec)
     bad = [r for r in results if not r.ok]
+    if args.json:
+        from .examples import holes
+        hs = holes(spec, results)
+        rows = [{"rule": r.rule, "line": spec.where(r.line)[1], "file": spec.where(r.line)[0], "ok": r.ok, "message": r.message} for r in results]
+        print(json.dumps({"ok": not bad and not (hs and args.strict), "results": rows,
+                          "holes": [{"file": spec.where(h.line)[0], "line": spec.where(h.line)[1], "message": h.message} for h in hs]},
+                         ensure_ascii=False, indent=2))
+        return 1 if bad or (hs and args.strict) else 0
     for r in results:
         kind = "action" if r.rule in {a.name for a in spec.decls("action")} else "rule"
         path, line = spec.where(r.line)
@@ -413,6 +433,7 @@ def build_parser() -> argparse.ArgumentParser:
     t = sub.add_parser("test", help="rule の example を全部流す")
     t.add_argument("spec")
     t.add_argument("--strict", action="store_true", help="穴（example で確かめていない所）があれば失敗にする")
+    t.add_argument("--json", action="store_true", help="結果を JSON で出す")
     t.set_defaults(fn=cmd_test)
     fl = sub.add_parser("fill", help="by ai の action の中身をAIに書かせる（example と never を通るまで）")
     fl.add_argument("spec")

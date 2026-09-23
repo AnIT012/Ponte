@@ -46,3 +46,12 @@ def test_typos_get_a_suggestion():
     assert any("もしかして submitted？" in f.message for f in check(parse(src)))
     far = src.replace("move this to submited", "move this to banana")
     assert not any("もしかして" in f.message for f in check(parse(far)))
+
+
+def test_test_json(capsys):
+    assert main(["test", "--json", "spec/todo.ponte"]) == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["ok"] and all(r["ok"] for r in out["results"]) and out["holes"] == []
+    assert main(["test", "--json", "tests/cases/E32_unknown_state/broken.ponte"]) == 1
+    out = json.loads(capsys.readouterr().out)
+    assert out["ok"] is False and out["findings"][0]["code"] == "E32"

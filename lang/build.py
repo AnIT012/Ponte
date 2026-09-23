@@ -17,9 +17,11 @@ if zipfile.is_zipfile(here):
     out = tempfile.mkdtemp(prefix="lang-app-")
     with zipfile.ZipFile(here) as z:
         for n in z.namelist():
-            if n.startswith("app/"):
+            if n.startswith(("app/", "lang/std/")):     # 標準ライブラリ（use std/...）も外へ
                 z.extract(n, out)
     spec = os.path.join(out, "app", {spec!r})
+    import lang.parser
+    lang.parser.STD_DIR = os.path.join(out, "lang", "std")
 else:
     spec = os.path.join(here, "app", {spec!r})
 from lang.cli import main

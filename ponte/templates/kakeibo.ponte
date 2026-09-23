@@ -1,0 +1,135 @@
+# 家計メモ — 3つ目のアプリ。標準ライブラリ（std/money）を使う
+# メモを書くと金額を拾う。拾えなければ空のまま（あとで直せる）。
+
+use std/money
+
+thing Expense
+  memo   text
+  yen    number
+  owner  User  gone[remove too]
+  kind[food | daily | fun | other]
+
+thing User
+  name  text
+
+who
+  user  can see     Expense  where owner is me
+  user  can change  Expense  where owner is me
+  user  can remove  Expense  where owner is me
+  user  can see     User     where it is me
+
+list Mine
+  of     Expense
+  where  owner is me
+  sort   memo
+
+list ByKind
+  of     Expense
+  where  owner is me
+
+rule ReadYen
+  why   書いたメモから金額を拾う
+  when  Expense is created
+  do    FindYen with memo
+  example
+    adds    Expense
+      memo  "ランチ 1,200円"
+    expect  Expense
+      memo  "ランチ 1,200円"
+      yen   "1200"
+  example
+    adds    Expense
+      memo  "ランチ"
+    expect  Expense
+      memo  "ランチ"
+      yen   ""
+
+rule SaveYen
+  do  set yen to result
+
+relate
+  ReadYen then SaveYen
+
+rule OpenAdd
+  when  user taps add on Home
+  do    go AddExpense
+  example
+    taps    add on Home
+    expect  scene AddExpense
+
+rule Remove
+  when  user taps delete-button on Expense
+  do    remove this
+  example
+    given   Expense
+      memo  "コーヒー ¥480"
+    taps    delete-button on Expense
+      memo  "コーヒー ¥480"
+    expect  no Expense
+
+# ---- 画面 ----
+
+scene Home
+  top     Header
+  main    stats Mine, sum yen of Mine
+  main    Mine as list
+  side    ByKind as chart
+  bottom  button add named add-expense icon plus
+
+part Header
+  show  text app-name
+
+input AddExpense
+  memo  required
+  kind
+
+flow scene
+  Home -> AddExpense -> Home
+
+look ByKind as chart
+  group  by kind
+  sum    yen
+
+look Mine as list
+  title   memo
+  sub     yen
+  button  delete-button  named delete  icon trash  tone quiet  confirm delete-confirm
+  empty   mine-empty
+
+words ja
+  memo            メモ
+  yen             金額
+  owner           持ち主
+  name            名前
+  Mine            メモの数
+  app-name        家計メモ
+  add-expense     書く
+  AddExpense      メモを書く
+  delete          消す
+  delete-confirm  このメモを消しますか？
+  mine-empty      まだメモがありません
+  kind            費目
+  food            食費
+  daily           日用品
+  fun             楽しみ
+  other           そのほか
+  ByKind          費目ごとの合計
+
+words en
+  memo            Memo
+  yen             Amount
+  owner           Owner
+  name            Name
+  Mine            Notes
+  app-name        Expense notes
+  add-expense     Write
+  AddExpense      New note
+  delete          Delete
+  delete-confirm  Delete this note?
+  mine-empty      No notes yet
+  kind            Category
+  food            Food
+  daily           Daily goods
+  fun             Fun
+  other           Other
+  ByKind          Total by category

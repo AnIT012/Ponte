@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Ponte — 人は決めて、AIが書いて、言語が守る。">
+</head>
+<body>
+<title>入門 — やることアプリを作る — Ponte</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Cdefs%3E%3ClinearGradient id="pi" x1="0" x2="1"%3E%3Cstop offset=".15" stop-color="#FF7355"/%3E%3Cstop offset=".85" stop-color="#83C3FF"/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="100" height="100" rx="24" fill="#1F2340"/%3E%3Cpath d="M24 62 C 38 28, 62 28, 76 62" stroke="url%28#pi%29" stroke-width="9" fill="none" stroke-linecap="round"/%3E%3Ccircle cx="24" cy="62" r="13" fill="#FF7355"/%3E%3Ccircle cx="76" cy="62" r="13" fill="#83C3FF"/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+:root{
+  --ground:#F6F7FB; --panel:#FFFFFF; --ink:#1F2340; --muted:#5E6385;
+  --tomato:#FF5A36; --mint:#17B3A3; --lemon:#FFC93C; --sky:#2F6FD6;
+  --err:#E0412A; --ok:#12997F; --line:#DADCE8; --code:#1E2238; --codeink:#F3F5FF;
+  --pop:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;
+  --body:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#14172A; --panel:#1C2036; --ink:#E8EAF6; --muted:#A3A8C8; --line:#2E3350;
+  --tomato:#FF7355; --mint:#2FD1BF; --lemon:#FFD35C; --sky:#83C3FF; --err:#FF6B55; --ok:#3FE0B8;
+  --code:#0C0F22; --codeink:#E9ECFF; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --ground:#14172A; --panel:#1C2036; --ink:#E8EAF6; --muted:#A3A8C8; --line:#2E3350;
+  --tomato:#FF7355; --mint:#2FD1BF; --lemon:#FFD35C; --sky:#83C3FF; --err:#FF6B55; --ok:#3FE0B8;
+  --code:#0C0F22; --codeink:#E9ECFF; color-scheme:dark;}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.8;padding-inline:16px}
+.wrap{max-width:1040px;margin:0 auto}
+a{color:inherit}
+h1,h2,h3{font-family:var(--pop);font-weight:700;line-height:1.3;text-wrap:balance;margin:0}
+h2{font-size:clamp(24px,4vw,34px)}
+p{margin:0}
+code,pre{font-family:var(--mono)}
+.sticker{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 3px rgba(20,24,50,.06)}
+section{padding-block:56px}
+.eyebrow{font-family:var(--pop);font-size:13px;letter-spacing:.08em;color:var(--tomato)}
+
+/* ---- top bar ---- */
+.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-block:18px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo svg{width:44px;height:auto}
+.logo .word{font-size:28px}
+.nav{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--pop);font-size:14px}
+.nav a{text-decoration:none;padding:4px 2px;border-bottom:3px solid transparent}
+.nav a:hover{border-bottom-color:var(--ink)}
+.word{font-family:var(--pop);letter-spacing:.02em;line-height:1}
+.word{color:var(--ink);font-weight:500}
+
+/* ---- slides ---- */
+.show{padding:22px;margin-top:8px}
+.slide[hidden]{display:none}
+.slide{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:26px;align-items:center;min-height:310px}
+.code{background:var(--code);color:var(--codeink);border-radius:10px;border:0;padding:18px 20px;font-size:clamp(11.5px,1.35vw,14px);line-height:1.75;overflow-x:auto;margin:0}
+.code .c{white-space:pre-wrap}
+.code .head{color:#6BB6FF;font-weight:700}.code .clause{color:#C9A7FF}.code .guard{color:#FF9D5C;font-weight:700}
+.code .type{color:#2FD1BF}.code .name{color:#FF8FC7}.code .val{color:#FFD35C}.code .field{color:#FFFFFF}.code .op{color:#8A90C4}
+.code .c{color:#7C83BA;font-style:italic}.code .block{background:#E0412A;color:#fff;border-radius:4px;padding:0 4px}
+.explain h2{font-size:clamp(22px,3vw,28px);margin-bottom:12px}
+.explain p{line-height:1.95}
+.explain code,.col code{font-family:var(--mono);font-size:13px;background:var(--ground);padding:1px 6px;border-radius:6px}
+.ctrl{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:18px;flex-wrap:wrap}
+.ctrl button{font-family:var(--pop);border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--ink);padding:6px 14px;cursor:pointer}
+.ctrl button[aria-current="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.ctrl button:focus-visible{outline:3px dashed var(--tomato);outline-offset:3px}
+.dots{display:flex;gap:8px}
+.dots button{width:34px;height:34px;padding:0;font-size:13px}
+
+/* ---- tagline ---- */
+.tagline{text-align:center;padding-block:26px 30px;font-family:var(--pop);font-size:clamp(17px,2.3vw,21px);line-height:1.7;max-width:34em;margin:0 auto}
+.tagline a{color:var(--sky);text-decoration:none;white-space:nowrap}
+.tagline a + a{margin-left:1.2em}
+
+/* ---- columns ---- */
+.cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;padding-bottom:30px}
+.col{padding:20px;display:flex;flex-direction:column;gap:10px}
+.col h3{font-size:18px}
+.col p{font-size:14.5px;line-height:1.85}
+.col a.more{font-family:var(--pop);font-size:13px;color:var(--sky);text-decoration:none;margin-top:auto}
+.col pre{margin:0;font-family:var(--mono);font-size:13px;background:var(--code);color:var(--codeink);border-radius:10px;padding:8px 10px;overflow-x:auto}
+
+footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13.5px}
+
+@media (max-width:1100px){
+  .slide{grid-template-columns:minmax(0,1fr);min-height:0}
+  .code{font-size:clamp(11.5px,1.9vw,14px)}
+}
+@media (max-width:860px){
+  .cols{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:520px){
+  .cols{grid-template-columns:minmax(0,1fr)}
+  .show{padding:12px}
+  .code{padding:14px 12px;font-size:11.5px;white-space:pre-wrap;overflow-wrap:anywhere}
+  .ctrl{gap:6px}.dots{gap:5px}.dots button,.ctrl button{width:30px;height:30px;padding:0;font-size:12px}
+}
+/* ---- 読みものページ（入門・道具とエラー） ---- */
+.nav a[aria-current="page"]{border-bottom-color:var(--sky)}
+.doc{display:grid;grid-template-columns:200px minmax(0,1fr);gap:40px;padding-block:18px 40px;align-items:start}
+.toc{position:sticky;top:16px;font-size:13.5px;max-height:calc(100vh - 32px);overflow:auto}
+.toc-h{font-family:var(--pop);font-weight:700;color:var(--muted);margin-bottom:6px}
+.toc ol{list-style:none;margin:0;padding:0;border-left:2px solid var(--line)}
+.toc li a{display:block;padding:4px 0 4px 12px;text-decoration:none;color:var(--muted);line-height:1.5}
+.toc li.d3 a{padding-left:24px;font-size:12.5px}
+.toc li a:hover{color:var(--ink)}
+.toc li a.on{color:var(--sky);border-left:2px solid var(--sky);margin-left:-2px}
+
+.prose{min-width:0;max-width:760px}
+.prose .eyebrow{margin-bottom:6px}
+.prose h1{font-size:clamp(26px,4vw,36px);margin-bottom:12px}
+.prose .lead{font-size:17px;color:var(--muted);margin-bottom:28px;line-height:1.9}
+.prose h2{font-size:clamp(21px,3vw,26px);margin:44px 0 14px;padding-top:6px;scroll-margin-top:16px}
+.prose h3{font-size:18px;margin:30px 0 10px;scroll-margin-top:16px}
+.prose p{margin:0 0 14px;line-height:1.95}
+.prose ul,.prose ol{margin:0 0 16px;padding-left:1.4em;line-height:1.9}
+.prose li{margin:4px 0}
+.prose hr{border:0;border-top:1px solid var(--line);margin:34px 0}
+.prose img{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);margin:8px 0 18px}
+.prose a{color:var(--sky)}
+.prose blockquote{margin:0 0 16px;padding:10px 16px;border-left:4px solid var(--lemon);background:var(--panel);border-radius:0 10px 10px 0}
+.prose :not(pre)>code{font-size:.88em;background:var(--panel);border:1px solid var(--line);padding:1px 6px;border-radius:6px;overflow-wrap:anywhere}
+.prose .code{margin:0 0 18px;font-size:13.5px}
+.prose .code:has(+ .try){margin-bottom:4px}
+.prose .try{text-align:right;font-size:13px;margin:0 0 18px}
+.prose .try a{text-decoration:none}
+.term{margin:0 0 18px;background:#101326;color:#D7DBF5;border-radius:10px;padding:14px 18px;font-size:13px;line-height:1.7;overflow-x:auto;white-space:pre}
+.term .prompt{color:#6BE3A4;user-select:none}
+.term .ecode{color:#FF9D5C;font-weight:700}
+.note{font-size:14px;color:var(--muted)}
+.muted{color:var(--muted);font-size:.92em}
+.arrow{color:var(--muted);font-size:.9em;white-space:nowrap}
+
+.table{overflow-x:auto;margin:0 0 20px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.table table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.7}
+.table th{text-align:left;font-family:var(--pop);font-weight:700;background:var(--ground);white-space:nowrap}
+.table th,.table td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.table tr:last-child td{border-bottom:0}
+.table td:first-child{white-space:nowrap}
+
+.ref{padding-block:0}
+.errs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.errcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;scroll-margin-top:16px}
+.errcard:target{outline:3px solid var(--lemon)}
+.errcard p{margin:0 0 6px;font-size:14px;line-height:1.8}
+.errcard b{font-family:var(--pop);font-size:12.5px;color:var(--muted);margin-right:4px}
+.ehead{font-family:var(--pop);font-weight:700;font-size:15px!important}
+.badge{display:inline-block;font-family:var(--mono);font-size:12px;border-radius:6px;padding:0 7px;margin-right:6px;color:#fff}
+.badge.err{background:var(--err)}.badge.warn{background:var(--muted)}
+
+@media (max-width:860px){
+  .doc{grid-template-columns:minmax(0,1fr);gap:8px}
+  .toc{position:static;max-height:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:18px}
+  .toc ol{columns:2;column-gap:16px;border-left:0}
+  .toc li a{padding-left:0}
+  .toc li.d3{display:none}
+  .errs{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:520px){
+  .toc ol{columns:1}
+  .prose .code,.term{font-size:12px;padding:12px}
+  .table td:first-child{white-space:normal}
+}
+
+</style>
+
+<div class="wrap">
+<header class="bar">
+  <a class="logo" href="index.html" aria-label="Ponte">
+    <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="pg" x1="0" x2="1"><stop offset=".15" stop-color="#FF5A36"/><stop offset=".85" stop-color="#2F6FD6"/></linearGradient></defs><rect x="2" y="2" width="96" height="96" rx="24" fill="#fff" stroke="#DADCE8" stroke-width="2"/><path d="M24 62 C 38 28, 62 28, 76 62" stroke="url(#pg)" stroke-width="11" fill="none" stroke-linecap="round"/><circle cx="24" cy="62" r="13" fill="#FF5A36"/><circle cx="76" cy="62" r="13" fill="#2F6FD6"/></svg>
+    <span class="word">Ponte</span>
+  </a>
+  <nav class="nav">
+    <a href="play.html">試す</a>
+    <a href="learn.html" aria-current="page">入門</a>
+    <a href="reference.html">道具とエラー</a>
+    <a href="spec.html">仕様書</a>
+    <a href="https://github.com/AnIT012/nameless-lang">GitHub</a>
+  </nav>
+</header>
+
+<div class="doc">
+  <aside class="toc" aria-label="目次"><p class="toc-h">目次</p><ol><li class="d2"><a href="#1-データの形を書く">1. データの形を書く</a></li><li class="d2"><a href="#2-誰が何をできるかを書く">2. 誰が何をできるかを書く</a></li><li class="d2"><a href="#3-ボタンを押したら終わりにする">3. ボタンを押したら終わりにする</a></li><li class="d2"><a href="#4-確かめる-example">4. 確かめる（example）</a></li><li class="d2"><a href="#5-きっかけには出来事だけを書く">5. きっかけには出来事だけを書く</a></li><li class="d2"><a href="#6-画面を作る">6. 画面を作る</a></li><li class="d2"><a href="#7-人に使ってもらう">7. 人に使ってもらう</a></li><li class="d2"><a href="#次に読むもの">次に読むもの</a></li></ol></aside>
+  <article class="prose">
+    <p class="eyebrow">LEARN</p>
+    <h1>入門 — やることアプリを作る</h1>
+<p class="lead">やることアプリを、エラーを見ながら1歩ずつ作ります。できあがりは <a href="https://github.com/AnIT012/nameless-lang/blob/main/spec/todo.ponte">spec/todo.ponte</a> です。ここに載せたエラーは、<code>python -m ponte check</code> / <code>test</code> を実際に流したときの出力です。</p>
+<p>必要なのは Python 3.11 だけです。インストールする前に試したいときは、ホームページの「試す」を使うと、ブラウザの中で書いて確かめられます。</p>
+<hr>
+<h2 id="1-データの形を書く">1. データの形を書く</h2>
+<pre class="code"><span class="head">thing</span> <span class="name">Task</span>
+  <span class="field">title</span>   <span class="type">text</span>
+  <span class="field">due</span>     <span class="type">monthday</span>
+  <span class="field">owner</span>   <span class="name">User</span>  <span class="guard">gone</span><span class="guard">[</span><span class="guard">remove</span> <span class="guard">too</span><span class="guard">]</span>
+  <span class="field">status</span>  <span class="op">[</span><span class="val">todo</span> <span class="op">|</span> <span class="val">done</span><span class="op">]</span>
+
+<span class="head">thing</span> <span class="name">User</span>
+  <span class="field">name</span> <span class="type">text</span>
+
+<span class="head">flow</span> <span class="name">Task</span>.<span class="val">status</span>
+  <span class="val">todo</span> <span class="op">-&gt;</span> <span class="val">done</span> <span class="op">-&gt;</span> <span class="val">todo</span></pre><p class="try"><a href="play.html#code=dGhpbmcgVGFzawogIHRpdGxlICAgdGV4dAogIGR1ZSAgICAgbW9udGhkYXkKICBvd25lciAgIFVzZXIgIGdvbmVbcmVtb3ZlIHRvb10KICBzdGF0dXMgIFt0b2RvIHwgZG9uZV0KCnRoaW5nIFVzZXIKICBuYW1lIHRleHQKCmZsb3cgVGFzay5zdGF0dXMKICB0b2RvIC0-IGRvbmUgLT4gdG9kbw">このコードを試す ›</a></p>
+<ul><li><code>thing</code> はデータの形です。<code>status [todo | done]</code> は「この2つのどれか」という状態です。</li><li><code>owner User</code> は、別の thing である User を指す項目です。<code>gone[remove too]</code> は「User が消えたら、この Task も消す」という意味です。</li><li><code>flow</code> は状態の流れです。状態は矢印のとおりにしか移りません。</li></ul>
+<p>チェックしてみます。</p>
+<pre class="term"><span class="prompt">$</span> python -m ponte check todo.ponte
+渡せません（2件）
+  todo.ponte:1  <span class="ecode">E19</span>  thing Task: 誰が何をできるか（who）が1行もありません。書いてないことは誰もできません
+  todo.ponte:7  <span class="ecode">E19</span>  thing User: 誰が何をできるか（who）が1行もありません。書いてないことは誰もできません
+  （直し方: ponte explain <span class="ecode">E19</span>）</pre>
+<p><strong>書いていないことは、誰にもできません。</strong> そのため「誰が何をできるか」を決めないと、先へ進めません。</p>
+<h2 id="2-誰が何をできるかを書く">2. 誰が何をできるかを書く</h2>
+<pre class="code"><span class="head">who</span>
+  user  can see     <span class="name">Task</span> where owner is me
+  user  can change  <span class="name">Task</span> where owner is me
+  user  can see     <span class="name">User</span> where it is me</pre><p class="try"><a href="play.html#code=d2hvCiAgdXNlciAgY2FuIHNlZSAgICAgVGFzayB3aGVyZSBvd25lciBpcyBtZQogIHVzZXIgIGNhbiBjaGFuZ2UgIFRhc2sgd2hlcmUgb3duZXIgaXMgbWUKICB1c2VyICBjYW4gc2VlICAgICBVc2VyIHdoZXJlIGl0IGlzIG1l">このコードを試す ›</a></p>
+<p>これで、自分のやることだけが見え、自分のものだけを変えられます。消せるようにするなら <code>user can remove Task where owner is me</code> も足します。</p>
+<h2 id="3-ボタンを押したら終わりにする">3. ボタンを押したら終わりにする</h2>
+<pre class="code"><span class="head">rule</span> <span class="name">Finish</span>
+  <span class="clause">when</span>  user taps done-button on <span class="name">Task</span>
+  <span class="clause">do</span>    move this to finished</pre><p class="try"><a href="play.html#code=cnVsZSBGaW5pc2gKICB3aGVuICB1c2VyIHRhcHMgZG9uZS1idXR0b24gb24gVGFzawogIGRvICAgIG1vdmUgdGhpcyB0byBmaW5pc2hlZA">このコードを試す ›</a></p>
+<pre class="term"><span class="prompt">$</span> python -m ponte check todo.ponte
+渡せません（1件）
+  todo.ponte:20  <span class="ecode">E32</span>  rule Finish: Task に「finished」という状態はありません（todo / done）
+  （直し方: ponte explain <span class="ecode">E32</span>）</pre>
+<p>打ち間違いは、動かす前にエラーになります。<code>done</code> に直すと通ります。エラーの意味がわからないときは、<code>python -m ponte explain E32</code> を実行すると、止めた理由と直し方が表示されます。</p>
+<pre class="term"><span class="prompt">$</span> python -m ponte check todo.ponte
+決めてないことなし。AIに渡せます</pre>
+<h2 id="4-確かめる-example">4. 確かめる（example）</h2>
+<p>check が通っても、<strong>本当にそう動くか</strong>はまだ確かめていません。test を流すと、確かめていない部分（穴）が表示されます。</p>
+<pre class="term"><span class="prompt">$</span> python -m ponte test todo.ponte
+example 0件中 0件通過
+穴（example で確かめていない所 3件）
+  todo.ponte:18  rule Finish: when があるのに example がありません
+  todo.ponte:10  flow Task.status: todo -&gt; done をどの example も通っていません
+  todo.ponte:10  flow Task.status: done -&gt; todo をどの example も通っていません</pre>
+<p>example を書きます。「前の状態」「出来事」「期待する結果」の順に書きます。</p>
+<pre class="code"><span class="head">rule</span> <span class="name">Finish</span>
+  <span class="clause">why</span>   終わったら消えてほしい
+  <span class="clause">when</span>  user taps done-button on <span class="name">Task</span>
+  <span class="clause">where</span> <span class="val">status</span> is <span class="val">todo</span>
+  <span class="clause">do</span>    move this to <span class="val">done</span>
+  <span class="clause">example</span>
+    <span class="clause">given</span> <span class="name">Task</span>
+      <span class="field">title</span>  <span class="val">"牛乳を買う"</span>
+      <span class="field">status</span> <span class="val">todo</span>
+    <span class="clause">taps</span> done-button on <span class="name">Task</span>
+      <span class="field">title</span> <span class="val">"牛乳を買う"</span>
+    <span class="clause">expect</span> <span class="name">Task</span> is <span class="val">done</span>
+      <span class="field">title</span> <span class="val">"牛乳を買う"</span></pre><p class="try"><a href="play.html#code=cnVsZSBGaW5pc2gKICB3aHkgICDntYLjgo_jgaPjgZ_jgonmtojjgYjjgabjgbvjgZfjgYQKICB3aGVuICB1c2VyIHRhcHMgZG9uZS1idXR0b24gb24gVGFzawogIHdoZXJlIHN0YXR1cyBpcyB0b2RvCiAgZG8gICAgbW92ZSB0aGlzIHRvIGRvbmUKICBleGFtcGxlCiAgICBnaXZlbiBUYXNrCiAgICAgIHRpdGxlICAi54mb5Lmz44KS6LK344GGIgogICAgICBzdGF0dXMgdG9kbwogICAgdGFwcyBkb25lLWJ1dHRvbiBvbiBUYXNrCiAgICAgIHRpdGxlICLniZvkubPjgpLosrfjgYYiCiAgICBleHBlY3QgVGFzayBpcyBkb25lCiAgICAgIHRpdGxlICLniZvkubPjgpLosrfjgYYi">このコードを試す ›</a></p>
+<p><code>where status is todo</code> は「まだのときだけ」という意味です。条件に合わないとき、この rule は何もせずに終わり、ボタンも押せなくなります。</p>
+<p><code>done -&gt; todo</code> の穴は、「戻す」ボタンの rule（Reopen）とその example で埋まります。できあがりのファイルで確かめてください。</p>
+<h2 id="5-きっかけには出来事だけを書く">5. きっかけには出来事だけを書く</h2>
+<p>「期限が明日なら知らせる」を次のように書くと、エラーになります。</p>
+<pre class="code"><span class="head">rule</span> <span class="name">Remind</span>
+  <span class="clause">when</span>  due within <span class="val">1 days</span>
+  <span class="clause">do</span>    notify owner <span class="val">"{title} の期限です"</span></pre><p class="try"><a href="play.html#code=cnVsZSBSZW1pbmQKICB3aGVuICBkdWUgd2l0aGluIDEgZGF5cwogIGRvICAgIG5vdGlmeSBvd25lciAie3RpdGxlfSDjga7mnJ_pmZDjgafjgZki">このコードを試す ›</a></p>
+<pre class="term"><span class="prompt">$</span> python -m ponte check todo.ponte
+渡せません（1件）
+  todo.ponte:23  <span class="ecode">E07</span>  rule Remind: when は出来事だけです。「due within 1 days」は状態なので where に書いてください
+  （直し方: ponte explain <span class="ecode">E07</span>）</pre>
+<p>「期限が近い」は<strong>状態</strong>であり、いつ起きるかが決まっていません。そこで、きっかけ（出来事）は「毎朝8時」にし、状態は一覧（list）で絞ります。</p>
+<pre class="code"><span class="head">list</span> <span class="name">Soon</span>
+  <span class="clause">of</span>     <span class="name">Task</span>
+  <span class="clause">where</span>  <span class="val">status</span> is <span class="val">todo</span>
+  <span class="clause">where</span>  due within <span class="val">1 days</span>
+
+<span class="head">rule</span> <span class="name">Remind</span>
+  <span class="clause">why</span>   明日までのものを忘れない
+  <span class="clause">when</span>  every day at <span class="val">8:00</span>
+  <span class="clause">do</span>    notify owner each of <span class="name">Soon</span></pre><p class="try"><a href="play.html#code=bGlzdCBTb29uCiAgb2YgICAgIFRhc2sKICB3aGVyZSAgc3RhdHVzIGlzIHRvZG8KICB3aGVyZSAgZHVlIHdpdGhpbiAxIGRheXMKCnJ1bGUgUmVtaW5kCiAgd2h5ICAg5piO5pel44G-44Gn44Gu44KC44Gu44KS5b-Y44KM44Gq44GECiAgd2hlbiAgZXZlcnkgZGF5IGF0IDg6MDAKICBkbyAgICBub3RpZnkgb3duZXIgZWFjaCBvZiBTb29u">このコードを試す ›</a></p>
+<p><code>notify owner each of Soon</code> は「Soon のそれぞれを、その Task の owner に知らせる」という意味です。</p>
+<h2 id="6-画面を作る">6. 画面を作る</h2>
+<pre class="code"><span class="head">scene</span> <span class="name">Home</span>
+  tab<span class="op">[</span><span class="val">todo</span> <span class="op">|</span> <span class="val">done</span><span class="op">]</span> = <span class="val">todo</span>
+  <span class="clause">top</span>     <span class="name">Header</span>
+  <span class="clause">top</span>     tabs tab
+  <span class="clause">main</span>    stats <span class="name">Todo</span>, <span class="name">Done</span>
+  <span class="clause">main</span>    match tab
+    <span class="val">todo</span> <span class="op">-&gt;</span> <span class="name">Todo</span> <span class="val">as</span> <span class="val">list</span>
+    <span class="val">done</span> <span class="op">-&gt;</span> <span class="name">Done</span> <span class="val">as</span> <span class="val">list</span>
+  <span class="clause">bottom</span>  button add named add-task icon plus
+
+<span class="head">input</span> <span class="name">AddTask</span>
+  <span class="field">title</span>  required
+  <span class="field">due</span>    from now
+
+<span class="head">look</span> <span class="name">Todo</span> <span class="val">as</span> <span class="val">list</span>
+  <span class="clause">title</span>   title
+  <span class="clause">sub</span>     due
+  <span class="clause">button</span>  done-button  named finish  icon check  tone good
+  <span class="clause">empty</span>   todo-empty</pre><p class="try"><a href="play.html#code=c2NlbmUgSG9tZQogIHRhYlt0b2RvIHwgZG9uZV0gPSB0b2RvCiAgdG9wICAgICBIZWFkZXIKICB0b3AgICAgIHRhYnMgdGFiCiAgbWFpbiAgICBzdGF0cyBUb2RvLCBEb25lCiAgbWFpbiAgICBtYXRjaCB0YWIKICAgIHRvZG8gLT4gVG9kbyBhcyBsaXN0CiAgICBkb25lIC0-IERvbmUgYXMgbGlzdAogIGJvdHRvbSAgYnV0dG9uIGFkZCBuYW1lZCBhZGQtdGFzayBpY29uIHBsdXMKCmlucHV0IEFkZFRhc2sKICB0aXRsZSAgcmVxdWlyZWQKICBkdWUgICAgZnJvbSBub3cKCmxvb2sgVG9kbyBhcyBsaXN0CiAgdGl0bGUgICB0aXRsZQogIHN1YiAgICAgZHVlCiAgYnV0dG9uICBkb25lLWJ1dHRvbiAgbmFtZWQgZmluaXNoICBpY29uIGNoZWNrICB0b25lIGdvb2QKICBlbXB0eSAgIHRvZG8tZW1wdHk">このコードを試す ›</a></p>
+<ul><li><code>scene</code> は画面、<code>look</code> は一覧の見せ方、<code>input</code> は入力です。</li><li>画面に出る文字は <code>words ja</code> / <code>words en</code> に書きます。書き忘れもエラーになります。日本語だけのアプリなら、words を書かずに <code>named &quot;終わった&quot;</code> のように直接書いてもかまいません。</li></ul>
+<p>動かしてみます。</p>
+<pre class="term"><span class="prompt">$</span> python -m ponte run todo.ponte
+動いています: http://127.0.0.1:8000/</pre>
+<p><img src="img/todo.png" alt="やること" loading="lazy"></p>
+<h2 id="7-人に使ってもらう">7. 人に使ってもらう</h2>
+<p>公開する前に、次の3つを確かめます。</p>
+<pre class="term"><span class="prompt">$</span> python -m ponte check todo.ponte --publish    # 公開する時の検査（読み上げ対応も）
+<span class="prompt">$</span> python -m ponte test todo.ponte --strict      # 穴が1つでもあれば失敗
+<span class="prompt">$</span> python -m ponte build todo.ponte              # 1つのファイルに → python todo.pyz</pre>
+<p>仕様を、コードを読まない人に見てもらうこともできます。<code>ponte doc</code> は、データ、流れ、権限、ルールとその理由、残っていることを1枚のページにまとめます。</p>
+<pre class="term"><span class="prompt">$</span> python -m ponte doc todo.ponte                # → todo.html</pre>
+<p>ほかの人にも使ってもらうときは、ログインを付けて動かします。<code>--login</code> を付けずに外に開こうとすると、Ponte はエラーを出して起動しません。</p>
+<pre class="term"><span class="prompt">$</span> python -m ponte user add todo.ponte taro      # 合言葉を聞かれます
+<span class="prompt">$</span> python -m ponte run todo.ponte --login --host 0.0.0.0</pre>
+<hr>
+<h2 id="次に読むもの">次に読むもの</h2>
+<ul><li>AI に中身を書かせる（action）: 仕様書 5章の action と、<a href="https://github.com/AnIT012/nameless-lang/blob/main/spec/hub_app.ponte">spec/hub_app.ponte</a> の ExtractDeadline</li><li>標準ライブラリ: <a href="https://github.com/AnIT012/nameless-lang/blob/main/spec/kakeibo.ponte">spec/kakeibo.ponte</a>（<code>use std/money</code> で金額を拾います）</li><li>役割と2つの thing: <a href="https://github.com/AnIT012/nameless-lang/blob/main/spec/lend.ponte">spec/lend.ponte</a></li><li>言語のすべて: <a href="spec.html">仕様書 v0.3</a></li><li>書き方の一覧: <code>python -m ponte guide --rules</code>（rule）/ <code>python -m ponte guide</code>（action の中身）</li></ul>
+  </article>
+</div>
+<footer><p>この入門に載せた出力は、実際にコマンドを流した結果です。テストで一致を確かめています。</p></footer>
+</div>
+<script>
+(() => {   // 目次の、いま読んでいる所に印を付ける
+  const links = [...document.querySelectorAll(".toc a")], map = new Map(links.map(a => [a.hash.slice(1), a]));
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if(!e.isIntersecting) return;
+    links.forEach(a => a.classList.remove("on")); const a = map.get(e.target.id); if(a) a.classList.add("on");
+  }), {rootMargin: "0px 0px -70% 0px"});
+  document.querySelectorAll(".prose h2[id], .prose h3[id], .prose section[id]").forEach(h => map.has(h.id) && io.observe(h));
+})();
+</script>
+</body>
+</html>

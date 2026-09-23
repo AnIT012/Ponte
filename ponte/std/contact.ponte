@@ -1,0 +1,43 @@
+# std/contact — 文の中からメールアドレスと電話番号を取り出す（use std/contact）
+
+action FindEmail
+  in       text text
+  out      found text | missing
+  example  "連絡先: taro.yamada@example.co.jp まで"    -> found taro.yamada@example.co.jp
+  example  "ｈａｎａｋｏ＠ｅｘａｍｐｌｅ．ｃｏｍ"      -> found hanako@example.com
+  example  "メールはtaro@x.comまで"                     -> found taro@x.com
+  example  "メールはまだありません"                    -> missing
+  example  "a@x.com か b@y.com へ"                     -> missing
+  never    depend on width
+  never    return empty
+  never    fail
+  else     skip
+  by       code "body/FindEmail.ponte"
+
+action FindPhone
+  in       text text
+  out      found text | missing
+  example  "TEL 03-1234-5678"             -> found 0312345678
+  example  "携帯：090-1111-2222 まで"     -> found 09011112222
+  example  "０６（１２３４）５６７８"      -> found 0612345678
+  example  "電話はありません"             -> missing
+  never    depend on width
+  never    return empty
+  never    fail
+  else     skip
+  by       code "body/FindPhone.ponte"
+
+action FindPostal
+  in       text text
+  out      found text | missing
+  example  "〒150-0001 東京都渋谷区"          -> found 150-0001
+  example  "郵便番号：１５０－０００１"        -> found 150-0001
+  example  "150ー0001"                        -> found 150-0001
+  example  "TEL 03-1234-5678"                -> missing
+  example  "〒150-0001 と 〒530-0001"         -> missing
+  example  "住所はまだです"                  -> missing
+  never    depend on width
+  never    return empty
+  never    fail
+  else     skip
+  by       code "body/FindPostal.ponte"

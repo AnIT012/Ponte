@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Ponte — 人は決めて、AIが書いて、言語が守る。">
+</head>
+<body>
+<title>仕様書 v0.3 — Ponte</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Cdefs%3E%3ClinearGradient id="pi" x1="0" x2="1"%3E%3Cstop offset=".15" stop-color="#FF7355"/%3E%3Cstop offset=".85" stop-color="#83C3FF"/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="100" height="100" rx="24" fill="#1F2340"/%3E%3Cpath d="M24 62 C 38 28, 62 28, 76 62" stroke="url%28#pi%29" stroke-width="9" fill="none" stroke-linecap="round"/%3E%3Ccircle cx="24" cy="62" r="13" fill="#FF7355"/%3E%3Ccircle cx="76" cy="62" r="13" fill="#83C3FF"/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+:root{
+  --ground:#F6F7FB; --panel:#FFFFFF; --ink:#1F2340; --muted:#5E6385;
+  --tomato:#FF5A36; --mint:#17B3A3; --lemon:#FFC93C; --sky:#2F6FD6;
+  --err:#E0412A; --ok:#12997F; --line:#DADCE8; --code:#1E2238; --codeink:#F3F5FF;
+  --pop:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;
+  --body:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#14172A; --panel:#1C2036; --ink:#E8EAF6; --muted:#A3A8C8; --line:#2E3350;
+  --tomato:#FF7355; --mint:#2FD1BF; --lemon:#FFD35C; --sky:#83C3FF; --err:#FF6B55; --ok:#3FE0B8;
+  --code:#0C0F22; --codeink:#E9ECFF; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --ground:#14172A; --panel:#1C2036; --ink:#E8EAF6; --muted:#A3A8C8; --line:#2E3350;
+  --tomato:#FF7355; --mint:#2FD1BF; --lemon:#FFD35C; --sky:#83C3FF; --err:#FF6B55; --ok:#3FE0B8;
+  --code:#0C0F22; --codeink:#E9ECFF; color-scheme:dark;}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.8;padding-inline:16px}
+.wrap{max-width:1040px;margin:0 auto}
+a{color:inherit}
+h1,h2,h3{font-family:var(--pop);font-weight:700;line-height:1.3;text-wrap:balance;margin:0}
+h2{font-size:clamp(24px,4vw,34px)}
+p{margin:0}
+code,pre{font-family:var(--mono)}
+.sticker{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 3px rgba(20,24,50,.06)}
+section{padding-block:56px}
+.eyebrow{font-family:var(--pop);font-size:13px;letter-spacing:.08em;color:var(--tomato)}
+
+/* ---- top bar ---- */
+.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-block:18px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo svg{width:44px;height:auto}
+.logo .word{font-size:28px}
+.nav{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--pop);font-size:14px}
+.nav a{text-decoration:none;padding:4px 2px;border-bottom:3px solid transparent}
+.nav a:hover{border-bottom-color:var(--ink)}
+.word{font-family:var(--pop);letter-spacing:.02em;line-height:1}
+.word{color:var(--ink);font-weight:500}
+
+/* ---- slides ---- */
+.show{padding:22px;margin-top:8px}
+.slide[hidden]{display:none}
+.slide{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:26px;align-items:center;min-height:310px}
+.code{background:var(--code);color:var(--codeink);border-radius:10px;border:0;padding:18px 20px;font-size:clamp(11.5px,1.35vw,14px);line-height:1.75;overflow-x:auto;margin:0}
+.code .c{white-space:pre-wrap}
+.code .head{color:#6BB6FF;font-weight:700}.code .clause{color:#C9A7FF}.code .guard{color:#FF9D5C;font-weight:700}
+.code .type{color:#2FD1BF}.code .name{color:#FF8FC7}.code .val{color:#FFD35C}.code .field{color:#FFFFFF}.code .op{color:#8A90C4}
+.code .c{color:#7C83BA;font-style:italic}.code .block{background:#E0412A;color:#fff;border-radius:4px;padding:0 4px}
+.explain h2{font-size:clamp(22px,3vw,28px);margin-bottom:12px}
+.explain p{line-height:1.95}
+.explain code,.col code{font-family:var(--mono);font-size:13px;background:var(--ground);padding:1px 6px;border-radius:6px}
+.ctrl{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:18px;flex-wrap:wrap}
+.ctrl button{font-family:var(--pop);border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--ink);padding:6px 14px;cursor:pointer}
+.ctrl button[aria-current="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.ctrl button:focus-visible{outline:3px dashed var(--tomato);outline-offset:3px}
+.dots{display:flex;gap:8px}
+.dots button{width:34px;height:34px;padding:0;font-size:13px}
+
+/* ---- tagline ---- */
+.tagline{text-align:center;padding-block:26px 30px;font-family:var(--pop);font-size:clamp(17px,2.3vw,21px);line-height:1.7;max-width:34em;margin:0 auto}
+.tagline a{color:var(--sky);text-decoration:none;white-space:nowrap}
+.tagline a + a{margin-left:1.2em}
+
+/* ---- columns ---- */
+.cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;padding-bottom:30px}
+.col{padding:20px;display:flex;flex-direction:column;gap:10px}
+.col h3{font-size:18px}
+.col p{font-size:14.5px;line-height:1.85}
+.col a.more{font-family:var(--pop);font-size:13px;color:var(--sky);text-decoration:none;margin-top:auto}
+.col pre{margin:0;font-family:var(--mono);font-size:13px;background:var(--code);color:var(--codeink);border-radius:10px;padding:8px 10px;overflow-x:auto}
+
+footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13.5px}
+
+@media (max-width:1100px){
+  .slide{grid-template-columns:minmax(0,1fr);min-height:0}
+  .code{font-size:clamp(11.5px,1.9vw,14px)}
+}
+@media (max-width:860px){
+  .cols{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:520px){
+  .cols{grid-template-columns:minmax(0,1fr)}
+  .show{padding:12px}
+  .code{padding:14px 12px;font-size:11.5px;white-space:pre-wrap;overflow-wrap:anywhere}
+  .ctrl{gap:6px}.dots{gap:5px}.dots button,.ctrl button{width:30px;height:30px;padding:0;font-size:12px}
+}
+/* ---- 読みものページ（入門・道具とエラー） ---- */
+.nav a[aria-current="page"]{border-bottom-color:var(--sky)}
+.doc{display:grid;grid-template-columns:200px minmax(0,1fr);gap:40px;padding-block:18px 40px;align-items:start}
+.toc{position:sticky;top:16px;font-size:13.5px;max-height:calc(100vh - 32px);overflow:auto}
+.toc-h{font-family:var(--pop);font-weight:700;color:var(--muted);margin-bottom:6px}
+.toc ol{list-style:none;margin:0;padding:0;border-left:2px solid var(--line)}
+.toc li a{display:block;padding:4px 0 4px 12px;text-decoration:none;color:var(--muted);line-height:1.5}
+.toc li.d3 a{padding-left:24px;font-size:12.5px}
+.toc li a:hover{color:var(--ink)}
+.toc li a.on{color:var(--sky);border-left:2px solid var(--sky);margin-left:-2px}
+
+.prose{min-width:0;max-width:760px}
+.prose .eyebrow{margin-bottom:6px}
+.prose h1{font-size:clamp(26px,4vw,36px);margin-bottom:12px}
+.prose .lead{font-size:17px;color:var(--muted);margin-bottom:28px;line-height:1.9}
+.prose h2{font-size:clamp(21px,3vw,26px);margin:44px 0 14px;padding-top:6px;scroll-margin-top:16px}
+.prose h3{font-size:18px;margin:30px 0 10px;scroll-margin-top:16px}
+.prose p{margin:0 0 14px;line-height:1.95}
+.prose ul,.prose ol{margin:0 0 16px;padding-left:1.4em;line-height:1.9}
+.prose li{margin:4px 0}
+.prose hr{border:0;border-top:1px solid var(--line);margin:34px 0}
+.prose img{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);margin:8px 0 18px}
+.prose a{color:var(--sky)}
+.prose blockquote{margin:0 0 16px;padding:10px 16px;border-left:4px solid var(--lemon);background:var(--panel);border-radius:0 10px 10px 0}
+.prose :not(pre)>code{font-size:.88em;background:var(--panel);border:1px solid var(--line);padding:1px 6px;border-radius:6px;overflow-wrap:anywhere}
+.prose .code{margin:0 0 18px;font-size:13.5px}
+.prose .code:has(+ .try){margin-bottom:4px}
+.prose .try{text-align:right;font-size:13px;margin:0 0 18px}
+.prose .try a{text-decoration:none}
+.term{margin:0 0 18px;background:#101326;color:#D7DBF5;border-radius:10px;padding:14px 18px;font-size:13px;line-height:1.7;overflow-x:auto;white-space:pre}
+.term .prompt{color:#6BE3A4;user-select:none}
+.term .ecode{color:#FF9D5C;font-weight:700}
+.note{font-size:14px;color:var(--muted)}
+.muted{color:var(--muted);font-size:.92em}
+.arrow{color:var(--muted);font-size:.9em;white-space:nowrap}
+
+.table{overflow-x:auto;margin:0 0 20px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.table table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.7}
+.table th{text-align:left;font-family:var(--pop);font-weight:700;background:var(--ground);white-space:nowrap}
+.table th,.table td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.table tr:last-child td{border-bottom:0}
+.table td:first-child{white-space:nowrap}
+
+.ref{padding-block:0}
+.errs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.errcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;scroll-margin-top:16px}
+.errcard:target{outline:3px solid var(--lemon)}
+.errcard p{margin:0 0 6px;font-size:14px;line-height:1.8}
+.errcard b{font-family:var(--pop);font-size:12.5px;color:var(--muted);margin-right:4px}
+.ehead{font-family:var(--pop);font-weight:700;font-size:15px!important}
+.badge{display:inline-block;font-family:var(--mono);font-size:12px;border-radius:6px;padding:0 7px;margin-right:6px;color:#fff}
+.badge.err{background:var(--err)}.badge.warn{background:var(--muted)}
+
+@media (max-width:860px){
+  .doc{grid-template-columns:minmax(0,1fr);gap:8px}
+  .toc{position:static;max-height:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:18px}
+  .toc ol{columns:2;column-gap:16px;border-left:0}
+  .toc li a{padding-left:0}
+  .toc li.d3{display:none}
+  .errs{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:520px){
+  .toc ol{columns:1}
+  .prose .code,.term{font-size:12px;padding:12px}
+  .table td:first-child{white-space:normal}
+}
+
+</style>
+
+<div class="wrap">
+<header class="bar">
+  <a class="logo" href="index.html" aria-label="Ponte">
+    <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="pg" x1="0" x2="1"><stop offset=".15" stop-color="#FF5A36"/><stop offset=".85" stop-color="#2F6FD6"/></linearGradient></defs><rect x="2" y="2" width="96" height="96" rx="24" fill="#fff" stroke="#DADCE8" stroke-width="2"/><path d="M24 62 C 38 28, 62 28, 76 62" stroke="url(#pg)" stroke-width="11" fill="none" stroke-linecap="round"/><circle cx="24" cy="62" r="13" fill="#FF5A36"/><circle cx="76" cy="62" r="13" fill="#2F6FD6"/></svg>
+    <span class="word">Ponte</span>
+  </a>
+  <nav class="nav">
+    <a href="play.html">試す</a>
+    <a href="learn.html">入門</a>
+    <a href="reference.html">道具とエラー</a>
+    <a href="spec.html" aria-current="page">仕様書</a>
+    <a href="https://github.com/AnIT012/nameless-lang">GitHub</a>
+  </nav>
+</header>
+
+<div class="doc">
+  <aside class="toc" aria-label="目次"><p class="toc-h">目次</p><ol><li class="d2"><a href="#0-コンセプト">0. コンセプト</a></li><li class="d2"><a href="#1-設計原則">1. 設計原則</a></li><li class="d2"><a href="#2-型">2. 型</a></li><li class="d2"><a href="#3-記号とコメント">3. 記号とコメント</a></li><li class="d2"><a href="#4-パーツ一覧">4. パーツ一覧</a></li><li class="d2"><a href="#5-各パーツ">5. 各パーツ</a></li><li class="d2"><a href="#6-画面">6. 画面</a></li><li class="d2"><a href="#7-データと人">7. データと人</a></li><li class="d2"><a href="#8-外とつながる-connect">8. 外とつながる（connect）</a></li><li class="d2"><a href="#9-テスト-example">9. テスト（example）</a></li><li class="d2"><a href="#9-5-標準ライブラリ">9.5 標準ライブラリ</a></li><li class="d2"><a href="#10-do-で使える道具">10. do で使える道具</a></li><li class="d2"><a href="#11-実行モデル">11. 実行モデル</a></li><li class="d2"><a href="#11-5-確定した細かいルール">11.5 確定した細かいルール</a></li><li class="d2"><a href="#12-ビルド手順">12. ビルド手順</a></li><li class="d2"><a href="#12-5-道具">12.5 道具</a></li><li class="d2"><a href="#13-エラー一覧-決めていないことはエラー">13. エラー一覧（決めていないことはエラー）</a></li><li class="d2"><a href="#14-色分け">14. 色分け</a></li><li class="d2"><a href="#15-未決-次に決めること">15. 未決（次に決めること）</a></li><li class="d2"><a href="#16-変更の記録">16. 変更の記録</a></li><li class="d2"><a href="#付録-就活hub-メール-締切-通知-を-v0-3-で書いたもの">付録: 就活Hub（メール→締切→通知）を v0.3 で書いたもの</a></li><li class="d2"><a href="#v0-3-整理メモ">v0.3 整理メモ</a></li></ol></aside>
+  <article class="prose">
+    <p class="eyebrow">SPEC</p>
+    <h1>仕様書 v0.3</h1>
+<p class="lead">v0.2 と、その後の追補を1つにまとめたものです。内容（ルールと書き方）は v0.2 から変えていません。 0〜2章、5章の主なパーツ、6章の「画面の小さな部品」、11〜12章、14章は確定しています。</p>
+<hr>
+<h2 id="0-コンセプト">0. コンセプト</h2>
+<p>Ponte は、人と AI の間に立つ言語です。<strong>人は決めて、AIが書いて、言語が守る。</strong></p>
+<ul><li>これまでの言語は「人と機械の間」に立ち、どうやるかを書くものでした。</li><li>この言語は「人と AI の間」に立ち、何が欲しいか、何をしてはいけないか、何がまだ決まっていないかを書きます。</li><li>この言語で書いたものが、そのまま動くプロダクトになります。Python や Go は、利用者からは見えない下の層に置きます。</li><li>if、for、true/false はありません。これらは「どうやるか」を書くための道具だからです。</li></ul>
+<p>目標は次の2つです。</p>
+<ul><li>9割は言語の中で自由に書けるようにします。普通のアプリは、画面も含めてこの言語だけで作れます。</li><li>残りの1割は action の中身に閉じ込めます。契約だけを書き、中身は AI か自分が埋めます。</li></ul>
+<hr>
+<h2 id="1-設計原則">1. 設計原則</h2>
+<ol><li>パーツは少なくし、1つのパーツには1つの仕事だけを持たせます。複雑さはパーツを増やして出すのではなく、組み合わせで出します。</li><li>「何を」は必須、「どうやるか」は任意です。どうやるかは how と style にだけ書けます。書かなければ AI が決め、書いたらその通りにしか作れません。</li><li>順序は書きません。並列が標準です。thing の1件は、それぞれ独立した1つのレコードです。レコードをまたぐ処理はすべて並列に、同じレコードの中の処理は1つずつ行います。順序が必要なときは、flow（状態）か relate（ルールの関係）で表します。</li><li>決めていないことはエラーになります。曖昧なまま渡すことはできません。</li><li>入れ子は禁止です。条件の中に条件を書かず、名前を付けて段階的に積み上げます。</li><li>何でも作れますが、危ないことは action の中身に閉じ込めます。外側（仕様と契約）は絞り、内側（action の中身）は契約を守れば何を書いてもかまいません。</li><li>同じ意味の語は1つだけにします。else はどこでも「逃げ道」、do はどこでも「やること」を表します。<code>&gt;</code> はどこでも「ぶつかったらこちらが勝つ」、<code>|</code> はどこでも「どれか1つ」を表します。</li></ol>
+<hr>
+<h2 id="2-型">2. 型</h2>
+<div class="table"><table><tr><th>型</th><th>意味</th></tr><tr><td>text</td><td>文字</td></tr><tr><td>number</td><td>数</td></tr><tr><td>count</td><td>0以上の整数</td></tr><tr><td>money</td><td>お金。通貨付きで、小数の誤差なし。<code>money yen</code></td></tr><tr><td>percent</td><td>割合</td></tr><tr><td>date</td><td>日時</td></tr><tr><td>monthday</td><td>年のない月日と時刻。<code>10/15 12:00</code></td></tr><tr><td>duration</td><td>期間。<code>3 days</code> <code>5 seconds</code></td></tr><tr><td>file / image / pdf</td><td>ファイル</td></tr><tr><td><code>[a | b | c]</code></td><td>決まった状態のどれか1つ（旧 <code>one of [a, b, c]</code>）</td></tr><tr><td>thing の名前</td><td>別のレコードを1つ指す。<code>owner User</code>（旧 <code>ref User</code>）</td></tr><tr><td><code>list of thing の名前</code></td><td>別のレコードを複数指す（旧 <code>many</code>）</td></tr></table></div>
+<ul><li>true / false はありません。<code>done [todo | done]</code> のように、すべて名前の付いた状態にします。if を生まないためです。</li><li>組み込みの値には <code>now</code> と <code>me</code> があります。<code>me</code> は今使っている人を指します（旧 current user）。</li></ul>
+<hr>
+<h2 id="3-記号とコメント">3. 記号とコメント</h2>
+<div class="table"><table><tr><th>記号</th><th>意味</th><th>使うところ</th></tr><tr><td><code>|</code></td><td>または（どれか1つ）</td><td>状態、flow の分かれ道、出力、match の左側</td></tr><tr><td><code>-&gt;</code></td><td>移る・対応する</td><td>flow、match、example</td></tr><tr><td><code>&gt;</code></td><td>ぶつかったらこちらが勝つ</td><td>flow、relate</td></tr><tr><td><code>[ ]</code></td><td>状態を並べる</td><td>状態の宣言だけ</td></tr><tr><td><code>{ }</code></td><td>取り出した値</td><td>user says など</td></tr><tr><td><code>#</code></td><td>普通のコメント</td><td>どこでも。ビルドに関係しない</td></tr><tr><td><code>##</code></td><td>止めるコメント</td><td>1つでも残っていたらビルドできない</td></tr></table></div>
+<ul><li>and を表す記号はありません。and は行を重ねて書きます。where を2行書けば、両方を満たすものが対象になります。</li><li><code>##</code> は次のように使います。AI が仕様の穴に気づいたら、答えの案を <code>##</code> で書き、理由を後ろの <code>#</code> に書きます。人は <code>##</code> を外せば承認、行ごと消せば却下したことになります。人が「後で必ず見直す」ための印として使ってもかまいません。</li></ul>
+<pre class="code"><span class="head">list</span> <span class="name">DueSoon</span>
+  <span class="clause">of</span>    <span class="name">Application</span>
+  <span class="clause">where</span> status is <span class="val">draft</span>
+  <span class="clause">where</span> deadline within <span class="val">3 days</span>
+<span class="block">  ## where deadline is after now    # 締切が過ぎた応募も通知する？</span></pre>
+<hr>
+<h2 id="4-パーツ一覧">4. パーツ一覧</h2>
+<p>見出し（行頭に書くもの）: thing, flow, list, match, rule, relate, action, group, tbd, never, scene, look, part, style, input, words, who, change, connect</p>
+<p>節（見出しの中に字下げして書くもの）: of, where, sort, when, do, why, in, out, example, by, how, given, expect</p>
+<p>守り（言語が守らせるもの。赤で表示）: never, else, <code>&gt;</code>, <code>##</code>, tbd, who, gone, limit</p>
+<hr>
+<h2 id="5-各パーツ">5. 各パーツ</h2>
+<h3 id="thing-データの形-旧-entity">thing（データの形。旧 entity）</h3>
+<pre class="code"><span class="head">thing</span> <span class="name">Application</span>
+  <span class="field">company</span>   <span class="name">Company</span>   <span class="guard">gone</span><span class="guard">[</span><span class="guard">block</span><span class="guard">]</span>
+  <span class="field">deadline</span>  <span class="type">date</span>
+  <span class="field">owner</span>     <span class="name">User</span>      <span class="guard">gone</span><span class="guard">[</span><span class="guard">remove</span> <span class="guard">too</span><span class="guard">]</span>
+  <span class="field">memo</span>      <span class="val">text</span>
+  <span class="field">status</span>    <span class="op">[</span><span class="val">draft</span> <span class="op">|</span> <span class="val">submitted</span> <span class="op">|</span> <span class="val">passed</span> <span class="op">|</span> <span class="val">failed</span><span class="op">]</span></pre>
+<ul><li>1件が1つのレコードです。レコードの中の書き換えは1つずつ処理されます。</li><li>項目は <code>名前 型</code> を並べて書きます。<code>:</code> は付けません。名前と型は色分けで見分けます。</li><li>状態は <code>名前[a | b]</code> と書きます。</li><li>別のレコードを指す項目には、指した先が消えたときにどうするかを <code>gone[...]</code> で必ず書きます（7.3）。</li></ul>
+<h3 id="flow-状態の流れ">flow（状態の流れ）</h3>
+<pre class="code"><span class="head">flow</span> <span class="name">Application</span>.status
+  <span class="val">draft</span> <span class="op">-&gt;</span> <span class="val">submitted</span> <span class="op">-&gt;</span> <span class="val">passed</span> <span class="op">|</span> <span class="val">failed</span>
+  <span class="val">failed</span> <span class="guard">&gt;</span> <span class="val">passed</span></pre>
+<ul><li>状態は <code>-&gt;</code> の通りにしか動けません。たとえば draft から passed へは飛べません。</li><li>flow で管理する項目は move でしか変えられず、set は禁止です。</li><li><code>failed &gt; passed</code> は、同じレコードに矛盾する move が同時に来たときの勝者を表します（旧 <code>on conflict failed wins over passed</code>）。同時に来る可能性があるのに書いていなければ、エラーになります。</li><li>flow には「状態の流れ」だけを書きます。動作の順番は書きません。</li></ul>
+<h3 id="list-条件で絞った集まり">list（条件で絞った集まり）</h3>
+<pre class="code"><span class="head">list</span> <span class="name">DueSoon</span>
+  <span class="clause">of</span>    <span class="name">Application</span>
+  <span class="clause">where</span> status is <span class="val">draft</span>
+  <span class="clause">where</span> deadline within <span class="val">3 days</span>
+  <span class="clause">sort</span>  deadline</pre>
+<ul><li>where を複数行書くと、すべてを満たすもの（and）が対象になります。1行の中に and / or / かっこは書けません。</li><li>list から list を作って積み重ねられます。循環参照はエラーです。</li><li>for の代わりになるのが list です。ルールや通知は「当てはまるものすべて」に効きます。</li><li><code>within 3 days</code> は暦日で数え、今から3日後の日の終わりまでを含みます。</li><li><code>sort deadline desc</code> と書くと逆の順（新しい順）になります。書かなければ昇順です。</li><li><code>from</code> は <code>of</code> に、<code>sort by</code> は <code>sort</code> に変わりました（16章）。</li></ul>
+<h3 id="match-値ごとの結果">match（値ごとの結果）</h3>
+<pre class="code"><span class="head">match</span> <span class="name">Application</span>.status <span class="val">to</span> color
+  <span class="val">draft</span>     <span class="op">-&gt;</span> <span class="val">red</span>
+  <span class="val">submitted</span> <span class="op">-&gt;</span> <span class="val">gray</span>
+  <span class="val">passed</span>    <span class="op">-&gt;</span> <span class="val">blue</span>
+  <span class="guard">else</span>      <span class="op">-&gt;</span> <span class="val">gray</span></pre>
+<ul><li>else がないとエラーになります。ただし、宣言された状態をすべて書いた match は else を省略できます。</li><li>宣言にない状態を左側に書くとエラーになります。打ち間違いを止めるためです。</li><li>左側は <code>|</code> でまとめられます（<code>saturday | sunday -&gt; weekend</code>）。</li><li>match の中に match は書けません（入れ子）。</li></ul>
+<h3 id="rule-きっかけとやること">rule（きっかけとやること）</h3>
+<pre class="code"><span class="head">rule</span> <span class="name">Remind</span>
+  <span class="clause">why</span>   締切を落とさないため
+  <span class="clause">when</span>  every day at <span class="val">21:00</span>
+  <span class="clause">do</span>    notify owner each <span class="val">of</span> <span class="name">DueSoon</span>
+  <span class="clause">example</span>
+    <span class="clause">given</span>   <span class="name">Application</span>
+      <span class="field">company</span>   <span class="val">"Osaka Gas"</span>
+      <span class="field">deadline</span>  <span class="val">"9/24 23:59"</span>
+      <span class="field">status</span>    <span class="val">draft</span>
+    <span class="clause">at</span>      <span class="val">"9/21 21:00"</span>
+    <span class="clause">expect</span>  notify <span class="val">"Osaka Gas"</span></pre>
+<ul><li>rule は <code>why</code>（任意）、<code>when</code>、<code>where</code>（任意）、<code>do</code>、<code>example</code> で書きます。</li></ul>
+<h4 id="when-きっかけ">when（きっかけ）</h4>
+<p>when に書けるのは出来事だけです。状態は where に書きます（<code>when deadline within 3 days</code> は禁止です）。</p>
+<p>when に書ける出来事は次のものに限られます。</p>
+<ul><li>時間: <code>every day at 21:00</code> / <code>every monday at 9:00</code> / <code>at 9/24 23:00</code></li><li>人: <code>user says &quot;...&quot;</code> / <code>user taps X on 画面か thing</code></li><li>書き方は決まっているものの、まだ実行エンジンが起こさない出来事もあります（check で E07 になります）。 <code>user holds X</code> / <code>user swipes X left</code> / <code>user drags X to Y</code> / <code>user types in X</code> / <code>user opens Scene</code> / <code>user leaves Scene</code> がこれにあたります。board の列の移動は <code>〇〇 moves to 状態</code> として起きます。</li><li>データ: <code>〇〇 is created</code> / <code>〇〇 moves to 状態</code> / <code>〇〇 is removed</code></li><li>外: <code>Gmail gives new message</code>（connect の gives）</li></ul>
+<p>一覧の元は <code>ponte/forms.py</code> にあり、<code>python -m ponte guide --rules</code> で表にして出せます。</p>
+<p><code>{...}</code> で取り出した値は変数になります。このとき、対象のレコードは必ず絞ります。 <code>when user says &quot;submitted {company}&quot;</code> → <code>do move Application where company is {company} to submitted</code></p>
+<p>画面で押された1件は <code>this</code> で指します。</p>
+<h4 id="where-起きる条件">where（起きる条件）</h4>
+<p>rule の where は、押された1件（this）の条件です。条件に合わないとき、その rule は<strong>静かに起きません</strong>。失敗の通知も出ず、画面のボタンも押せなくなります。</p>
+<pre class="code"><span class="head">rule</span> <span class="name">Borrow</span>
+  <span class="clause">when</span>  user taps borrow-button on <span class="name">Item</span>
+  <span class="clause">where</span> status is free
+  <span class="clause">do</span>    create <span class="name">Loan</span>
+          <span class="field">item</span>  this
+          <span class="field">due</span>   <span class="val">7 days</span> from now</pre>
+<h4 id="do-やること">do（やること）</h4>
+<p>do は1つだけ書けます。2つやりたいときは rule を分けて、relate の <code>then</code> でつなぎます。書ける形は次の表のものだけで、ほかの書き方は check でエラー（E31）になります。</p>
+<div class="table"><table><tr><th>書き方</th><th>すること</th></tr><tr><td><code>notify me &quot;...&quot;</code></td><td>きっかけの人に通知する</td></tr><tr><td><code>notify owner each of DueSoon</code></td><td>一覧のそれぞれのレコードの owner が指す人に通知する</td></tr><tr><td><code>move this to submitted</code></td><td>押された1件の状態を動かす</td></tr><tr><td><code>move item of this to lent</code></td><td>this の item 項目が指すレコードを動かす</td></tr><tr><td><code>move Application where company is {company} to submitted</code></td><td>絞ったレコードを動かす</td></tr><tr><td><code>remove this</code></td><td>押された1件を消す（7.3）</td></tr><tr><td><code>go Detail</code> / <code>go Detail with this</code></td><td>画面を移る</td></tr><tr><td><code>create Loan</code>（下に字下げして「項目 値」）</td><td>レコードを作る</td></tr><tr><td><code>set yen to result</code></td><td>項目を書き換える（状態は set でなく move で変える）</td></tr><tr><td><code>FindYen</code> / <code>FindYen with memo</code></td><td>action を呼ぶ。with で、入力を this の項目から渡す</td></tr><tr><td>connect の does（<code>Gmail send mail</code> など）</td><td>外に頼む</td></tr></table></div>
+<p>通知には宛先を書きます。宛先は <code>me</code> か、項目の名前（<code>notify borrower &quot;...&quot;</code>）です。通知の文に入れる <code>{item}</code> は、this の項目か when の <code>{…}</code> です。その項目が別のレコードを指す場合は、指しているレコードの名前が入ります。</p>
+<h4 id="値の書き方">値の書き方</h4>
+<p>create の「項目 値」と set の値には、次のものを書けます。</p>
+<div class="table"><table><tr><th>値</th><th>意味</th></tr><tr><td><code>this</code></td><td>押された1件</td></tr><tr><td><code>me</code></td><td>今使っている人</td></tr><tr><td><code>&quot;文字&quot;</code></td><td>書いた文字そのもの</td></tr><tr><td><code>7 days from now</code></td><td>今からの期間（minutes / hours / days / weeks）。年まで入れて保存し、推測はしない</td></tr><tr><td><code>{名前}</code></td><td>when で取り出した値</td></tr><tr><td><code>項目 of this</code></td><td>this の項目の値</td></tr><tr><td><code>result</code></td><td>直前の action の答え（set でだけ使える。std の例は 9.5）</td></tr></table></div>
+<h4 id="そのほか">そのほか</h4>
+<ul><li>ルール同士の関係は relate に書きます。</li><li>flow の状態ごとにルールを書いていて抜けがあると、「passed のときは？」という警告が出ます。</li></ul>
+<h3 id="relate-ルール同士の関係">relate（ルール同士の関係）</h3>
+<pre class="code"><span class="head">relate</span>
+  <span class="name">ReadMail</span>     then    <span class="name">FileMail</span>
+  <span class="name">ManualAdd</span>    then no <span class="name">FileMail</span>
+  <span class="name">CheckSpam</span>    before  <span class="name">FileMail</span>
+  <span class="name">NotifyFailed</span> <span class="guard">&gt;</span>       <span class="name">Remind</span>
+  <span class="name">LineNotify</span>   <span class="guard">else</span>    <span class="name">MailNotify</span></pre>
+<p>どの行も「左が先、右が後」です。</p>
+<div class="table"><table><tr><th>書き方</th><th>意味</th></tr><tr><td><code>A then B</code></td><td>A が終わったら B が動く</td></tr><tr><td><code>A then no B</code></td><td>A をやったら、この後 B は動かない。B がすでに済んでいても取り消さない</td></tr><tr><td><code>A before B</code></td><td>B が動くとき、A は済んでいる。A が終わっても B は勝手に動かない</td></tr><tr><td><code>A &gt; B</code></td><td>同時に当てはまったら A が勝つ</td></tr><tr><td><code>A else B</code></td><td>A が失敗したら B をやる</td></tr></table></div>
+<ul><li><code>A then B</code> の途中で処理が落ちても、言語が裏で「このレコードで A は済んだ」ことを記録しているので、続きから再開できます。</li><li>action に else があり、relate でも同じ action に else を書いた場合はエラーになります。逃げ道は1つだけです。</li></ul>
+<h3 id="action-中身が空の部品-契約だけを書く">action（中身が空の部品。契約だけを書く）</h3>
+<pre class="code"><span class="head">action</span> <span class="name">ExtractDeadline</span>
+  <span class="clause">in</span>      <span class="val">mail</span> <span class="val">text</span>
+  <span class="clause">out</span>     <span class="val">found</span> <span class="val">monthday</span> <span class="op">|</span> <span class="val">missing</span>
+  <span class="clause">example</span> <span class="val">"10/15(木)12:00まで"</span>            <span class="op">-&gt;</span> <span class="val">found</span> <span class="val">10/15</span> <span class="val">12:00</span>
+  <span class="clause">example</span> <span class="val">"【締切9/24 23:59】"</span>            <span class="op">-&gt;</span> <span class="val">found</span> <span class="val">9/24</span> <span class="val">23:59</span>
+  <span class="clause">example</span> <span class="val">"来週中にご提出ください"</span>        <span class="op">-&gt;</span> <span class="val">missing</span>
+  <span class="clause">example</span> <span class="val">"9/24 23:59 または 9/30 23:59"</span>  <span class="op">-&gt;</span> <span class="val">missing</span>
+  <span class="guard">never</span>   guess the year
+  <span class="guard">else</span>    ask user
+  <span class="clause">by</span>      ai
+  <span class="clause">how</span>
+    <span class="guard">limit</span> <span class="val">5 seconds</span></pre>
+<ul><li>旧 input / output は in / out になりました。</li><li>example は最低2つ必要です。中身は、すべての例を通らないと採用されません。</li><li>else も必須です。自信がないときの逃げ道（<code>ask user</code> / <code>use default ...</code> / <code>skip</code>）を書きます。</li><li>契約の矛盾はエラーになります。たとえば、example の答えが out の型に合わない場合や、never と out の型がぶつかる場合です。<code>never guess the year</code> なのに out が年の必要な date になっているのが後者の例です。</li><li>次の表の never は、中身ができたときに機械が大量の入力で確かめます。それ以外の never は、今は機械では確かめられません。ただし AI への指示にはなります。</li></ul>
+<div class="table"><table><tr><th>never</th><th>確かめ方</th></tr><tr><td><code>guess the year</code></td><td>例の入力と、年のない入力をいくつか流して、答えに年（4桁の数）が出ないか</td></tr><tr><td><code>depend on width</code></td><td>例の入力を全角にして流し、半角のときと同じ答えになるか</td></tr><tr><td><code>return empty</code></td><td>例の入力とおかしな入力を流して、値が空の答えを返さないか</td></tr><tr><td><code>fail</code></td><td>おかしな入力（空、長すぎる、絵文字、ありえない日付など）でも止まらないか</td></tr></table></div>
+<ul><li>失敗や「見つからない」も、out の状態で表します（<code>found ... | missing</code>）。</li></ul>
+<h4 id="by-誰が中身を埋めるか">by（誰が中身を埋めるか）</h4>
+<div class="table"><table><tr><th>書き方</th><th>いつ</th><th>中身</th></tr><tr><td><code>by ai</code>（標準）</td><td>ビルドのときに1回</td><td>AI が do を書いて固定する。人も読めて直せる</td></tr><tr><td><code>ask ai</code></td><td>実行のたびに毎回</td><td>AI に聞く。do はない。how に時間かお金の上限が必須</td></tr><tr><td><code>by code &quot;extract.ponte&quot;</code></td><td>なし</td><td>自分で書いた do</td></tr><tr><td><code>by Gmail</code></td><td>実行のたびに</td><td>connect 先が行う</td></tr></table></div>
+<p>誰が埋めても、同じ example、never、else で検証されます。</p>
+<h4 id="do-action-の中身">do（action の中身）</h4>
+<pre class="term">  do
+    text  = normalize mail
+    hits  = find all Deadline in text
+    kind[one | none | many] = match count of hits
+                                1    -&gt; one
+                                0    -&gt; none
+                                else -&gt; many
+    found = match kind
+              one  -&gt; found monthday of first of hits
+              none -&gt; missing
+              many -&gt; missing</pre>
+<ul><li>書けるのは <code>名前 = 式</code> と、名前を付けた match だけです。</li><li>答えになるのは、ほかのどの行からも使われていない行です。そのような行がちょうど1つでなければエラーになります。答えの行に <code>[...]</code> は必要ありません（形は out に書いてあるためです）。書く場合は <code>answer[found monthday | missing]</code> のように、out の形と同じにします。</li><li>一時的な状態は <code>名前[a | b] = match ...</code> で宣言して使います。</li><li>書き換え、ループ、再帰、true/false はありません。そのため、必ず止まります。</li><li>実行の順番は名前の依存関係で決まり、上から順に実行されるわけではありません。</li><li>使える道具は 10章にまとめています。</li></ul>
+<h4 id="shape-文字の形-正規表現の代わり">shape（文字の形。正規表現の代わり）</h4>
+<pre class="code"><span class="head">shape</span> <span class="name">Deadline</span>
+  month  digits <span class="val">1</span>..<span class="val">2</span>
+  <span class="val">"/"</span>
+  day    digits <span class="val">1</span>..<span class="val">2</span>
+  maybe  <span class="val">"("</span> any <span class="val">1</span> <span class="val">")"</span>
+  maybe  space
+  hour   digits <span class="val">1</span>..<span class="val">2</span>
+  <span class="val">":"</span>
+  minute digits <span class="val">2</span></pre>
+<h3 id="how-どうやるか-任意">how（どうやるか。任意）</h3>
+<ul><li>how は rule と action の中にだけ書けます。</li><li>書かなければ AI が決めます。書いたら、AI はその通りにしか作れません。</li><li>例: <code>check every 10 minutes</code> / <code>limit 5 seconds</code> / <code>limit 1 yen</code> / <code>on failure retry 3 times</code> / <code>repeat ... until 〇〇 or 1 hour passed</code></li><li>until には回数か時間の上限が必須です。ないとエラーになります（無限ループを防ぐためです）。</li><li>action の <code>limit N seconds</code> と <code>on failure retry N times</code> は、動かすときに守られます。時間を過ぎたら失敗とし、失敗したら決めた回数だけやり直します。</li></ul>
+<h3 id="group-まとまり">group（まとまり）</h3>
+<pre class="code"><span class="head">group</span> <span class="name">Mail</span>
+  rule <span class="name">ReadMail</span>
+    <span class="clause">when</span>  <span class="name">Gmail</span> gives new message
+    <span class="clause">do</span>    <span class="name">ExtractDeadline</span>
+
+  rule <span class="name">FileMail</span>
+    <span class="clause">do</span>    create <span class="name">Application</span>
+
+  relate
+    <span class="name">ReadMail</span> then <span class="name">FileMail</span></pre>
+<ul><li>group は名前でくくるだけのもので、継承はありません。外からは <code>Mail.ReadMail</code> で呼びます。</li><li>group の中の字下げは入れ子と数えません。group の中に group は書けません。</li><li>別のファイルは <code>use &quot;mail.ponte&quot;</code> で取り込みます。エラーは、取り込んだ元のファイルと行で示されます。</li></ul>
+<h3 id="tbd-まだ決めていないこと-旧-unknown">tbd（まだ決めていないこと。旧 unknown）</h3>
+<pre class="code"><span class="guard">tbd</span>
+  timezone <span class="val">of</span> deadline
+  who can delete <span class="name">Application</span></pre>
+<ul><li>tbd が残っているとビルドできません。AI は埋めずに、質問を返します。</li><li><code>##</code> との違いは、答えの案があるかどうかです。tbd には答えがなく、<code>##</code> には答えの案がすでに書いてあります。</li></ul>
+<h3 id="never-やってはいけないこと">never（やってはいけないこと）</h3>
+<ul><li>never は action の中にも、ファイル全体にも書けます。</li><li>never は、生成されたコードのガードとテストになります。証明できる違反は、ビルド前にエラーになります。</li><li>action の never は、自動で作った大量の入力で検証します。たとえば年のない入力を何百個も作り、すべてが missing か else になるかを確かめます。</li></ul>
+<hr>
+<h2 id="6-画面">6. 画面</h2>
+<p>「何を見せるか」は scene、look、part、input に書き、「どう見せるか」は style に書きます。書かなかった見た目は AI が決めます。</p>
+<h3 id="scene-場面">scene（場面）</h3>
+<pre class="code"><span class="head">scene</span> <span class="name">Home</span>
+  menu<span class="op">[</span><span class="val">open</span> <span class="op">|</span> <span class="val">closed</span><span class="op">]</span> = <span class="val">closed</span>
+  <span class="clause">top</span>     <span class="name">Header</span>
+  <span class="clause">main</span>    match <span class="type">count</span> <span class="val">of</span> <span class="name">DueSoon</span>
+            <span class="val">0</span>    <span class="op">-&gt;</span> <span class="name">EmptyNote</span>
+            <span class="guard">else</span> <span class="op">-&gt;</span> <span class="name">DueSoon</span> <span class="val">as</span> <span class="val">cards</span>
+  <span class="clause">side</span>    <span class="name">Application</span> <span class="val">as</span> list
+  <span class="clause">bottom</span>  button add
+  <span class="clause">over</span>    match menu
+            <span class="val">open</span>   <span class="op">-&gt;</span> <span class="name">Menu</span>
+            <span class="val">closed</span> <span class="op">-&gt;</span> <span class="val">nothing</span></pre>
+<ul><li>置き場所は <code>top</code> / <code>main</code> / <code>side</code> / <code>bottom</code> / <code>over</code>（上に重ねる）です。細かく並べるときは <code>row</code> / <code>column</code> / <code>grid 3</code> を使います。</li><li>出し分けには match を使います。<code>nothing</code> は何も出さないことを表します。</li><li>画面だけの状態は <code>名前[a | b] = 最初の値</code> と書きます。</li></ul>
+<h3 id="画面の移動">画面の移動</h3>
+<pre class="code"><span class="head">flow</span> scene
+  <span class="name">Home</span> <span class="op">-&gt;</span> <span class="name">Detail</span> <span class="op">-&gt;</span> <span class="name">Edit</span>
+  <span class="name">Home</span> <span class="op">-&gt;</span> <span class="name">AddApplication</span>
+
+<span class="head">rule</span> <span class="name">OpenDetail</span>
+  <span class="clause">when</span>  user taps card on <span class="name">DueSoon</span>
+  <span class="clause">do</span>    go <span class="name">Detail</span> with this</pre>
+<ul><li>画面は flow scene の矢印の通りにしか移動できません。矢印にない移動はエラーになります。</li></ul>
+<h3 id="look-見せ方">look（見せ方）</h3>
+<pre class="code"><span class="head">look</span> <span class="name">DueSoon</span> <span class="val">as</span> <span class="val">cards</span>
+  <span class="clause">title</span>   company
+  <span class="clause">sub</span>     <span class="name">DeadlineBadge</span> <span class="val">of</span> deadline
+  <span class="clause">mark</span>    color <span class="val">of</span> status
+  <span class="clause">button</span>  submitted-button named 提出した
+
+<span class="head">look</span> <span class="name">Header</span>
+  <span class="clause">button</span> menu-button   named メニュー  toggle menu
+  <span class="clause">button</span> close-button  named 閉じる    set menu <span class="val">closed</span></pre>
+<ul><li>見せ方の種類は cards / list / table / detail / input / calendar / board / chart / tabs / dialog / sheet / toast / map / media です。</li><li>board では、flow から状態ごとの列が自動で作られます。カードを動かすと move の出来事が起きます。</li><li>chart は、状態ごとの件数を棒で表します。<code>group by 項目</code> で分け方を、<code>sum 項目</code> で棒の高さを合計に変えられます。<code>sum</code> に使えるのは数の項目だけです（例: 家計メモの「費目ごとの合計」）。 ``<code> look ByKind as chart group  by kind sum    yen </code><code></code></li><li>画像を扱うには、thing の項目を <code>photo image</code> にして input に書きます。これで画像を選べるようになります（png / jpg / gif / webp、5MB まで）。種類は中身の先頭で確かめます。一覧では、look に <code>image photo about name</code> と書くと写真が出ます。<code>about</code> は読み上げ用の説明で、公開するときは必須です。画像は、そのレコードを who で見られる人にだけ表示されます。</li><li>input に状態の項目を書くと、選ぶ形になります。ただし flow のある状態は選べません（ボタンの rule で move します）。</li><li>**画面だけの状態は、look の中で <code>toggle 状態</code> / <code>set 状態 値</code> と書けます。** この場合 rule は必要ありません。データ（thing の項目）は rule の move でしか変えられません。</li></ul>
+<h3 id="part-自分で作る部品">part（自分で作る部品）</h3>
+<pre class="code"><span class="head">part</span> <span class="name">DeadlineBadge</span>
+  <span class="clause">in</span>    deadline <span class="val">monthday</span>
+  <span class="clause">do</span>
+    left = days until deadline
+    urgency<span class="op">[</span><span class="val">today</span> <span class="op">|</span> <span class="val">soon</span> <span class="op">|</span> <span class="val">later</span><span class="op">]</span> = match left
+      <span class="val">0</span>    <span class="op">-&gt;</span> <span class="val">today</span>
+      <span class="val">1</span>..<span class="val">3</span> <span class="op">-&gt;</span> <span class="val">soon</span>
+      <span class="guard">else</span> <span class="op">-&gt;</span> <span class="val">later</span>
+  show  <span class="val">text</span> <span class="val">"あと{left}日"</span>
+  <span class="clause">mark</span>  urgency</pre>
+<ul><li>名前を付けて、どこでも使い回せます。</li><li>part の中で part を使えますが、part の中で part を定義することはできません。</li><li>言語の見せ方で描けない絵は <code>part 名前 by ai</code> で作ります。example で「このデータのときにこうなっているか」を検証します。見た目の良し悪しまでは機械で検証できません。</li></ul>
+<h3 id="input-入力">input（入力）</h3>
+<pre class="code"><span class="head">input</span> <span class="name">AddApplication</span>
+  <span class="field">company</span>   required
+  <span class="field">deadline</span>  required, from now
+  <span class="field">memo</span>
+  <span class="field">resume</span>    <span class="type">file</span>, <span class="type">pdf</span> only, max <span class="val">5</span> <span class="name">MB</span></pre>
+<ul><li>送信すると <code>Application is created</code> の出来事が起きます。</li><li>入力のチェックは項目の隣に書きます。満たさないときの表示は言語が出します。<code>required</code>（必須）と <code>from now</code>（今より後）は、画面とサーバーの両方で守られます。</li></ul>
+<h3 id="style-見た目">style（見た目）</h3>
+<pre class="code"><span class="head">style</span> theme
+  color main <span class="c"> #2F6FEB</span>
+  space s     <span class="val">8</span>
+
+<span class="head">style</span> <span class="name">DueSoon</span>
+  card     round <span class="val">12</span>, shadow soft, pad <span class="val">16</span>
+  <span class="clause">title</span>    size <span class="val">18</span>, bold
+  <span class="clause">mark</span>     dot left
+  gap      <span class="val">16</span>
+  enter    fade <span class="val">200</span>ms
+  reorder  slide <span class="val">150</span>ms
+
+<span class="head">style</span> <span class="name">Home</span> on phone
+  <span class="clause">main</span>  column
+<span class="head">style</span> <span class="name">Home</span> on wide
+  <span class="clause">main</span>  grid <span class="val">3</span></pre>
+<ul><li>色、大きさ、余白、角丸、影、フォント、動き、並べ方まで書けます。</li><li>画面の大きさは <code>on phone | tablet | wide</code> で指定します。</li><li>書かなかったところは AI が決めます。</li></ul>
+<h3 id="words-画面の文字と多言語">words（画面の文字と多言語）</h3>
+<pre class="code"><span class="head">words</span> ja
+  add  追加
+<span class="head">words</span> en
+  add  <span class="name">Add</span></pre>
+<ul><li>片方の言語だけ訳がないとエラーになります。</li><li>1つの言語だけのアプリなら、words は必要ありません。<code>named &quot;借りる&quot;</code> / <code>empty &quot;まだありません&quot;</code> のように、画面の文字を <code>&quot;文字&quot;</code> で直接書けます。</li><li><strong>words がある spec では、画面の文字を words の名前で書きます。</strong> 対象は、ボタンの名前、見出し、空のときの文、確認の文、部品の文、部品が計算する文です。words にない名前はエラー（E25）になります。日本語は words ja に1回だけ書きます。</li></ul>
+<pre class="code"><span class="head">look</span> <span class="name">DueSoon</span> <span class="val">as</span> <span class="val">cards</span>
+  <span class="clause">heading</span>  due-heading
+  <span class="clause">button</span>   submitted-button named submit icon <span class="val">send</span>
+
+<span class="head">words</span> ja
+  due-heading  <span class="val">3</span>日以内に締切
+  submit       提出した
+<span class="head">words</span> en
+  due-heading  <span class="name">Due</span> within <span class="val">3 days</span>
+  submit       <span class="name">Mark</span> <span class="val">submitted</span></pre>
+<ul><li>言語が出す文字（<code>search</code> <code>save</code> <code>cancel</code> <code>none</code>）も、words で訳せます。</li><li>words がない spec では、画面の文字を直接書けます。</li></ul>
+<h3 id="読み上げ対応">読み上げ対応</h3>
+<ul><li>名前のないボタン（<code>named</code> がない）と、説明のない画像（<code>about</code> がない）は、試作の間は注意になり、公開するときはエラーになります。</li></ul>
+<h3 id="画面の小さな部品">画面の小さな部品</h3>
+<p>画面を作り込むために足した小さな部品です。どれも1つの仕事だけを持ちます。</p>
+<div class="table"><table><tr><th>書き方</th><th>意味</th></tr><tr><td><code>main  tabs tab</code></td><td>画面の状態 <code>tab[...]</code> を切り替えるタブを出す</td></tr><tr><td><code>main  this as detail</code></td><td>前の画面で押された1件を詳しく見せる</td></tr><tr><td><code>look Application as detail</code></td><td>thing の名前の look は、詳しく見せるときの見せ方になる</td></tr><tr><td><code>empty &quot;...&quot;</code>（look の中）</td><td>1件もないときに出す文</td></tr><tr><td>part の中の <code>do</code></td><td>部品の中で値を計算する。action の中身と同じく、<code>do</code> の下に <code>名前 = 式</code> と <code>名前[a | b] = match ...</code> を書く</td></tr><tr><td><code>days until X</code></td><td>今日から X までの日数（今日なら 0、過ぎていればマイナス）</td></tr><tr><td>match の左の <code>1..3</code> / <code>..-1</code> / <code>4..</code></td><td>数の範囲（両端を含む）</td></tr><tr><td><code>match 部品名.状態 to color</code></td><td>部品の状態ごとの色</td></tr><tr><td>ボタンの行の <code>tone main | quiet | good | danger</code></td><td>ボタンの強さと色（<code>button failed-button named 不合格 tone danger</code>）。書かなければ、一覧の最初のボタンと画面の下のボタンだけが強くなる</td></tr><tr><td><code>#4F46E5</code></td><td><code>#</code> のすぐ後ろに16進の色が続くときは、コメントではなく色の値</td></tr><tr><td><code>user taps X on thing の名前</code></td><td>list の名前でなく thing の名前で書けば、どの一覧、ボード、詳細画面から押しても動く</td></tr><tr><td><code>button 名前 named 文字 icon 名前</code></td><td>ボタンにアイコンを付ける。アイコンは組み込みの24個だけ（ない名前はエラー）</td></tr><tr><td><code>button 名前 named 文字 confirm &quot;文&quot;</code></td><td>押す前に確かめる。やめれば何も起きない</td></tr><tr><td><code>named &quot;空白を含む 名前&quot;</code></td><td>名前は1語。空白を含むなら引用符で囲む。ボタンの行に知らない語があればエラー</td></tr><tr><td><code>match Application.status to icon</code> / <code>match tab to icon</code></td><td>状態ごと、タブごとのアイコン（色の match とは別に持てる）</td></tr><tr><td><code>lead company</code>（look の中）</td><td>頭文字の丸</td></tr><tr><td><code>heading &quot;...&quot;</code>（look の中）</td><td>見出しと件数</td></tr><tr><td><code>search company, memo</code>（look の中）</td><td>一覧の検索</td></tr><tr><td><code>group by status</code>（look の中）</td><td>状態ごとにまとめる</td></tr><tr><td><code>take 20</code>（look の中）</td><td>最初に見せる件数。残りは「もっと見る」で出す</td></tr><tr><td><code>empty &quot;...&quot; button add named 追加</code>（look の中）</td><td>1件もないときの文と、次にやることのボタン</td></tr><tr><td><code>top  notices</code></td><td>お知らせのベル（未読の数と一覧）</td></tr><tr><td><code>go EditApplication with this</code></td><td>input を with this で開くと、その1件の編集になる。状態の項目は書き換えられない（move だけ）</td></tr><tr><td>words の <code>&quot;引用符の鍵&quot;  訳</code></td><td>spec に直接書いた日本語も訳せる</td></tr></table></div>
+<p>言語が画面で守ることは次のとおりです。</p>
+<ul><li><strong>flow で動けないボタンは、自動で押せなくなります。</strong> rule が <code>move this to X</code> で、今の状態から X へ動けなければ、そのボタンは薄くなって押せません。</li><li>board でカードを動かすと move が起きます。flow にない流れは「『下書き』から『通過』へは動かせません」と表示され、受け付けられません。</li><li>目立つ色になるのは画面の下（bottom）のボタンだけです。上や一覧のボタンは控えめな色になります（最初のボタンだけは強くなります）。</li><li>look の title / lead / search / group by に書いた項目名が存在しない場合はエラー（E28）になります。存在しないアイコン名や、読めないボタンの行も同じです。</li></ul>
+<h3 id="件数と合計">件数と合計</h3>
+<p><code>main  stats Mine, sum yen of Mine</code> と書くと、一覧の件数と項目の合計を並べて表示します。数えるのは見えるものだけです。見出しは words の名前で書きます（合計は「金額の合計」）。数は3桁ごとに区切って表示します。sum に使えるのは数の項目だけです（E32）。</p>
+<h3 id="リアルタイム">リアルタイム</h3>
+<ul><li>何も書かなくても、画面は常に最新になります。レコードが変わると、それを表示している画面も自動で変わります。</li></ul>
+<hr>
+<h2 id="7-データと人">7. データと人</h2>
+<h3 id="7-1-who-誰が何をできるか">7.1 who（誰が何をできるか）</h3>
+<pre class="code"><span class="head">who</span>
+  user   can see    <span class="name">Application</span> where owner is me
+  user   can change <span class="name">Application</span> where owner is me
+  admin  can do     everything
+  nobody can <span class="val">remove</span> <span class="name">Application</span></pre>
+<ul><li>書いていないことは誰もできません。</li><li>who が1行もない thing はエラーになります。</li><li>rule も who に従います。user says や user taps で動く rule は、その人ができることしかできません。</li><li>ログインの方法は connect に任せます。</li><li>役割: <code>user</code> 以外の役割（admin など）は、<code>thing User</code> の <code>role [member | admin]</code> に書きます。その人の role の値が役割になります。書いていない役割を who に使うとエラー（E28）になります。</li><li>役割の変更も、普通の状態と同じく flow User.role、rule、who で守ります。</li><li>最初の1人は仕様から決められないため、<code>ponte role spec.ponte taro admin</code> で決めます。2人目からは画面で決めます。</li><li><code>where it is not me</code> で「自分には使えない」ことを書けます。これにより、自分を管理者から外せなくなり、管理者が0人になることを防げます。</li><li>動詞は <code>see</code> / <code>create</code> / <code>move</code>（状態を動かすだけ）/ <code>change</code>（作る、動かす、書き換える）/ <code>remove</code> です。</li><li>入力を開くボタンは、その thing を作れる人にだけ表示されます。</li></ul>
+<h3 id="7-2-保存">7.2 保存</h3>
+<ul><li>保存は言語が受け持ちます。thing を書けばデータは残ります。どのデータベースを使うかは書きません。</li></ul>
+<h3 id="7-3-消したときの扱い">7.3 消したときの扱い</h3>
+<ul><li>ほかのレコードを指す項目には <code>gone[...]</code> を必ず書きます。ないとエラーになります。</li><li>消すには rule の <code>do remove this</code> を使います。who の <code>can remove</code> が必要です。消すと <code>〇〇 is removed</code> の出来事が起きます。</li></ul>
+<div class="table"><table><tr><th>書き方</th><th>意味</th></tr><tr><td><code>gone[remove too]</code></td><td>一緒に消す</td></tr><tr><td><code>gone[leave empty]</code></td><td>空にする</td></tr><tr><td><code>gone[block]</code></td><td>指されている間は消せない</td></tr></table></div>
+<h3 id="7-4-thing-を変えたとき">7.4 thing を変えたとき</h3>
+<pre class="code"><span class="head">change</span> <span class="name">Application</span> <span class="val">to</span> v2
+  add     memo <span class="val">text</span> = <span class="val">""</span>
+  rename  company <span class="val">to</span> corp
+  <span class="val">remove</span>  owner
+  <span class="val">remove</span>  <span class="val">state</span> <span class="val">passed</span> <span class="op">-&gt;</span> <span class="val">failed</span></pre>
+<ul><li>thing の形が前回のビルドと違うのに change がなければ、エラーになります。</li><li>動かすときに、保存してある古いデータは change の通りに今の形へ移されます。足した項目の初期値、名前の変更、消した項目、消した状態の移し先が使われます。</li><li>足した項目に初期値がないとエラーになります。</li><li>状態を消すときは、その状態だったレコードの移し先が必須です。</li></ul>
+<hr>
+<h2 id="8-外とつながる-connect">8. 外とつながる（connect）</h2>
+<pre class="code"><span class="head">connect</span> <span class="name">Gmail</span>
+  gives   new message  <span class="name">Message</span>
+  <span class="val">does</span>    <span class="val">send</span> <span class="val">mail</span>    <span class="val">to</span> <span class="val">text</span>, <span class="val">body</span> <span class="val">text</span> <span class="op">-&gt;</span> <span class="val">sent</span> <span class="op">|</span> <span class="val">failed</span>
+  needs   key <span class="name">GMAIL_TOKEN</span>
+  <span class="guard">limit</span>   <span class="val">100</span> per hour</pre>
+<ul><li><code>gives</code> は、向こうから届く出来事です（<code>when Gmail gives new message</code>）。</li><li><code>does</code> は、こちらから頼めることです。結果は必ず状態で返ります。</li><li><code>needs</code> は秘密の値です。値そのものは仕様に書かず、実行するときに渡します。</li><li><code>limit</code> は回数の上限です。</li><li>does が失敗したときの逃げ道（relate の else か、結果を match して書くもの）がないとエラーになります。</li><li>言語の中は依存ゼロです。外との境界は、connect に宣言した口だけです。</li></ul>
+<hr>
+<h2 id="9-テスト-example">9. テスト（example）</h2>
+<pre class="code"><span class="head">rule</span> <span class="name">MarkSubmitted</span>
+  <span class="clause">when</span>  user says <span class="val">"submitted {company}"</span>
+  <span class="clause">do</span>    move <span class="name">Application</span> where company is {company} <span class="val">to</span> <span class="val">submitted</span>
+  <span class="clause">example</span>
+    <span class="clause">given</span>   <span class="name">Application</span>
+      <span class="field">company</span>  <span class="val">"Osaka Gas"</span>
+      <span class="field">status</span>   <span class="val">draft</span>
+    <span class="clause">given</span>   <span class="name">Application</span>
+      <span class="field">company</span>  <span class="val">"Other"</span>
+      <span class="field">status</span>   <span class="val">draft</span>
+    <span class="clause">says</span>    <span class="val">"submitted Osaka Gas"</span>
+    <span class="clause">expect</span>  <span class="name">Application</span> is <span class="val">submitted</span>
+      <span class="field">company</span>  <span class="val">"Osaka Gas"</span>
+    <span class="clause">expect</span>  <span class="name">Application</span> is <span class="val">draft</span>
+      <span class="field">company</span>  <span class="val">"Other"</span></pre>
+<ul><li>example は3段で書きます。<code>given</code>（前の状態）、出来事、<code>expect</code>（結果）の順です。</li><li><strong>レコードの中身は字下げして1行に1つずつ書きます。</strong> <code>given Application</code> の下に <code>company &quot;Osaka Gas&quot;</code> のように並べます。かっこと <code>,</code> は使いません。</li><li>given で別の thing を指す項目は、そのレコードの名前で書けます（<code>item &quot;カメラ&quot;</code>）。</li><li>前の状態: <code>given thing の名前</code>（下に中身を書く）</li><li>出来事: <code>at &quot;...&quot;</code> / <code>says &quot;...&quot;</code> / <code>taps X on thing の名前</code>（下に中身を書く）/ <code>taps X on 画面の名前</code> / <code>gets Gmail new message &quot;...&quot;</code> / <code>adds thing の名前</code>（下に中身を書く。人が作ったことにし、<code>〇〇 is created</code> の出来事も起きる）</li><li>結果: <code>expect notify &quot;...&quot;</code> / <code>expect X is 状態</code> / <code>expect 箱</code>（下に中身を書き、その中身のレコードがあるかを確かめる）/ <code>expect no Loan</code> / <code>expect 2 Loan</code>（件数）/ <code>expect scene Detail</code> / <code>expect Home shows 2 cards</code>（存在しない scene に shows を書いたら失敗）/ <code>expect nothing</code></li></ul>
+<p><code>ponte test</code> は穴さがしもします。example がすべて通ったうえで、どの example も確かめていないところを示します（<code>--strict</code> を付けると失敗として扱います）。対象は次のとおりです。</p>
+<ul><li>when がある rule なのに example がなく、どの example の中でも動いていない</li><li>flow の矢印（<code>a -&gt; b</code>）を、どの example も通っていない</li><li>action の out の答えの形（found / missing など）を出す example がない</li></ul>
+<hr>
+<h2 id="9-5-標準ライブラリ">9.5 標準ライブラリ</h2>
+<p><code>use std/名前</code> で、言語に付属する .ponte を読み込みます。中身もこの言語で書かれており、すべてに example と never が付いています（<code>ponte test</code> で一緒に流れます）。</p>
+<div class="table"><table><tr><th>読み方</th><th>action</th><th>答え</th></tr><tr><td><code>use std/date</code></td><td>FindMonthDay</td><td><code>found monthday</code>（年は推測しない）/ missing</td></tr><tr><td><code>use std/date</code></td><td>FindDate</td><td><code>found date</code>（年が書いてある日付だけ。13月などありえない日付は missing）/ missing</td></tr><tr><td><code>use std/money</code></td><td>FindYen</td><td><code>found number</code>（¥ が前でも 円 が後ろでも、全角でも読む）/ missing</td></tr><tr><td><code>use std/contact</code></td><td>FindEmail / FindPhone / FindPostal</td><td><code>found text</code> / missing（郵便番号は 150-0001 の形。電話番号の途中には当たらない）</td></tr></table></div>
+<ul><li>どれも、候補が2つ以上あったら決めずに missing を返します。else は skip です。</li><li>rule からは次のように使います。<code>do FindYen with memo</code>（入力は押された1件の memo）→ <code>relate ReadYen then SaveYen</code> → <code>do set yen to result</code>。</li><li>答えが出なかったとき（missing / skip）は、result を使う rule は静かに起きません。</li></ul>
+<h2 id="10-do-で使える道具">10. do で使える道具</h2>
+<p>現在使える道具の一覧です。この表は実装から生成しており、すべての例をテストで実行しています。</p>
+<div class="table"><table><tr><th>種類</th><th>書き方</th><th>意味</th><th>例</th></tr><tr><td>文字</td><td><code>normalize X</code></td><td>数字、英字、記号の全角を半角に変換</td><td><code>normalize t</code>（t が "１２／３" なら '12/3'）</td></tr><tr><td>文字</td><td><code>trim X</code></td><td>前後の空白を削除</td><td><code>trim t</code>（t が "  a  " なら 'a'）</td></tr><tr><td>文字</td><td><code>lower X / upper X</code></td><td>小文字に変換 / 大文字に変換</td><td><code>lower t</code>（t が "AbC" なら 'abc'）</td></tr><tr><td>文字</td><td><code>split X by &quot;,&quot;</code></td><td>区切り文字で分割して集まりに変換</td><td><code>split t by &quot;,&quot;</code>（t が "a,b" なら ['a', 'b']）</td></tr><tr><td>文字</td><td><code>join X by &quot;,&quot;</code></td><td>集まりを連結して文字に変換</td><td><code>join split t by &quot;,&quot; by &quot;-&quot;</code>（t が "a,b" なら 'a-b'）</td></tr><tr><td>文字</td><td><code>replace &quot;a&quot; with &quot;b&quot; in X</code></td><td>文字の置き換え</td><td><code>replace &quot;,&quot; with &quot;&quot; in t</code>（t が "1,980" なら '1980'）</td></tr><tr><td>形</td><td><code>find all 形 in X</code></td><td>shape に当たった部分すべてを集まりで返す</td><td><code>count of find all D in t</code>（t が "1 と 22" なら 2）</td></tr><tr><td>形</td><td><code>名前 of X</code></td><td>当たりのうち、shape で名前を付けた部分</td><td><code>n of first of find all D in t</code>（t が "a12b" なら '12'）</td></tr><tr><td>形</td><td><code>text of X</code></td><td>当たった部分の文字</td><td><code>text of last of find all D in t</code>（t が "1 と 22" なら '22'）</td></tr><tr><td>集まり</td><td><code>count of X</code></td><td>要素の数（length of X と同じ）</td><td><code>count of split t by &quot;,&quot;</code>（t が "a,b,c" なら 3）</td></tr><tr><td>集まり</td><td><code>first of X / last of X</code></td><td>最初の要素 / 最後の要素（空のときは停止するため、先に count で分岐）</td><td><code>last of split t by &quot;,&quot;</code>（t が "a,b,c" なら 'c'）</td></tr><tr><td>数</td><td><code>number of X</code></td><td>文字を数に変換（1,980 や 1.5 にも対応し、読めないときは停止）</td><td><code>number of t</code>（t が "1,980" なら 1980）</td></tr><tr><td>数</td><td><code>a + b / a - b</code></td><td>足し算 / 引き算（結合の優先順位は最も低い）</td><td><code>count of split t by &quot;,&quot; + 10</code>（t が "a,b" なら 12）</td></tr><tr><td>文字</td><td><code>X contains &quot;a&quot;</code></td><td>文字を含むかどうか（答えは yes / no で、match で分岐）</td><td><code>t contains &quot;締切&quot;</code>（t が "締切は明日" なら 'yes'）</td></tr><tr><td>文字</td><td><code>X starts with &quot;a&quot;</code></td><td>指定の文字で始まるかどうか（答えは yes / no）</td><td><code>t starts with &quot;Re:&quot;</code>（t が "Fw: 件名" なら 'no'）</td></tr><tr><td>集まり</td><td><code>[&quot;a&quot;, &quot;b&quot;, &quot;c&quot;]</code></td><td>その場で作るリスト（do の中だけで使用し、保存するデータは thing に書く）</td><td><code>count of [&quot;朝&quot;, &quot;昼&quot;, &quot;夜&quot;]</code>（t が "" なら 3）</td></tr><tr><td>集まり</td><td><code>X contains &quot;a&quot;（リスト）</code></td><td>リストにその値が含まれるかどうか（答えは yes / no）</td><td><code>[&quot;朝&quot;, &quot;昼&quot;, &quot;夜&quot;] contains &quot;昼&quot;</code>（t が "" なら 'yes'）</td></tr><tr><td>集まり</td><td><code>sort X / sort X desc</code></td><td>並べ替え（数は数値の順）/ 逆順に並べ替え</td><td><code>sort split t by &quot;,&quot;</code>（t が "b,a,c" なら ['a', 'b', 'c']）</td></tr><tr><td>集まり</td><td><code>take 3 of X</code></td><td>先頭から3つを取得</td><td><code>take 2 of split t by &quot;,&quot;</code>（t が "a,b,c" なら ['a', 'b']）</td></tr><tr><td>集まり</td><td><code>unique of X</code></td><td>重複の削除（順番は維持）</td><td><code>unique of split t by &quot;,&quot;</code>（t が "a,b,a" なら ['a', 'b']）</td></tr><tr><td>数</td><td><code>sum of X / min of X / max of X</code></td><td>合計 / 最小値 / 最大値（空の sum は 0）</td><td><code>sum of split t by &quot;,&quot;</code>（t が "1,2,3" なら 6）</td></tr><tr><td>数</td><td><code>round X</code></td><td>四捨五入して整数に変換（2.5 は 3）</td><td><code>round avg of split t by &quot;,&quot;</code>（t が "2,3" なら 3）</td></tr><tr><td>数</td><td><code>avg of X</code></td><td>平均（空のときは停止）</td><td><code>avg of split t by &quot;,&quot;</code>（t が "1,2" なら 1.5）</td></tr><tr><td>数</td><td><code>abs X</code></td><td>絶対値</td><td><code>abs number of t</code>（t が "-7" なら 7）</td></tr><tr><td>日時</td><td><code>monthday of X</code></td><td>月と日（時と分を含むこともある）を取り出した当たりを "10/15 12:00" の形に変換</td><td><code>monthday of first of find all M in t</code>（t が "締切10/15まで" なら '10/15'）</td></tr><tr><td>日時</td><td><code>date of X</code></td><td>年月日を取り出した当たりを "2026/10/15" の形に変換（年が必要）</td><td><code>date of first of find all Y in t</code>（t が "2026年10月15日" なら '2026/10/15'）</td></tr><tr><td>日時</td><td><code>time of X</code></td><td>当たり、または時刻を含む文字から、時と分を "12:00" の形で取り出す</td><td><code>time of t</code>（t が "開始は 9:05 から" なら '9:05'）</td></tr><tr><td>日時</td><td><code>add 3 days to X</code></td><td>年を含む日付に日数を足す（年を推測しないため、年のない日付では停止）</td><td><code>add 3 days to t</code>（t が "2026/12/30" なら '2027/1/2'）</td></tr><tr><td>日時</td><td><code>weekday of X</code></td><td>年を含む日付の曜日（mon〜sun を返し、match で分岐）</td><td><code>weekday of t</code>（t が "2026/9/23" なら 'wed'）</td></tr><tr><td>日時</td><td><code>days until X</code></td><td>今日から X までの日数（現在時刻が必要なため part の中で使用）</td><td>—</td></tr></table></div>
+<p>shape の部品は次のとおりです。</p>
+<ul><li><code>&quot;文字&quot;</code> … 書いたとおりの文字</li><li><code>space</code> … 空白（1つ以上）</li><li><code>digits 1..2 / digits 4</code> … 数字（範囲か、ちょうどの桁数を指定）</li><li><code>letters 1..10</code> … 文字（日本語を含む）</li><li><code>word 1..10</code> … 文字、数字、_（日本語を含む）</li><li><code>word with &quot;._-&quot; 1..64</code> … ASCII の英数字と指定した記号だけ（メールアドレスなどに使用）</li><li><code>any 1</code> … 任意の1文字</li><li><code>名前 digits 1..2</code> … 取り出す部分への名前付け（<code>名前 of 当たり</code> で使用）</li><li><code>maybe ...</code> … 行の残りの部分を省略可能にする</li><li><code>one of &quot;/&quot; &quot;-&quot; &quot;年&quot;</code> … いずれか1つの文字（<code>month one of &quot;1&quot; &quot;2&quot; …</code> のように名前も付けられる）</li><li><code>edge</code> … 数字や英字の途中で始まらない、または終わらないことの指定（最初の行か最後の行に書く。123-4567 は 0123-45678 に当たらない）</li><li><code>Clock / maybe Clock</code> … 別の shape の利用（その shape で付けた名前も取り出せる）</li></ul>
+<p>まだない道具（予定）もあります。次のものは、書くとエラーになります。</p>
+<ul><li>日時の start of day / end of day（weekday of、add N days、date of は年の入った日付だけに使えます）</li><li>集まりの each / group by</li><li>読み書き（json、csv、pdf、画像）</li></ul>
+<p>道具についての補足です。</p>
+<ul><li>each と sort は、数に上限がある集まりにだけ使えます。</li><li><code>名前 of X</code> は shape で名前を付けた部分（<code>amount of first of hits</code>）を、<code>text of X</code> は当たった文字そのものを取り出します。</li><li><code>+</code> と <code>-</code> は一番弱くつなぎます。<code>count of a + count of b</code> は (count of a) + (count of b) と読みます。</li><li>状態の名前と行の名前を同じにするとエラーになります。どちらを指すのか区別できないためです。</li><li>shape の <code>word with &quot;._-&quot; 1..64</code> が当たるのは、英数字（ASCII）と書いた記号だけです。日本語の文字は入りません。メールアドレスの前後にある日本語を拾わないようにするためです。</li><li>道具で足りない計算は、action の by ai / by code に任せます。</li><li>通貨の違う money を足すとエラーになります。</li></ul>
+<hr>
+<h2 id="11-実行モデル">11. 実行モデル</h2>
+<ul><li>thing の1件（レコード）が1つのアクターです。レコードは互いに独立しています。この考え方は、Erlang や Go（goroutine と channel）と同じです。</li><li>ルールはすべて独立しています。並列を書かなくても並列に動きます。</li><li>同じレコードへの書き換えは、届いた順に1つずつ処理します。矛盾は flow の <code>&gt;</code> で決めます。</li><li>ルール同士の順番と強さは relate で決めます。</li><li>画面はレコードの変化を受けて自動で変わります。</li><li>実行には自前の実行エンジンを使い、spec を直接動かします。その後、WebAssembly に直接変換します。Go などほかの言語やライブラリには依存しません。</li></ul>
+<hr>
+<h2 id="11-5-確定した細かいルール">11.5 確定した細かいルール</h2>
+<div class="table"><table><tr><th>何を</th><th>ルール</th></tr><tr><td><code>within N days</code></td><td>暦日。N日後の日付の終わり（23:59）まで。過ぎたものは入らない</td></tr><tr><td><code>days until X</code></td><td>日付だけで数える。今日なら0、過ぎていればマイナス</td></tr><tr><td>monthday</td><td>年は推測しない。比べるときだけ今の年で読む</td></tr><tr><td>do の答え</td><td>どこからも使われていない行がちょうど1つ</td></tr><tr><td>action が値のない状態（missing など）を返した</td><td>決められなかったとして else へ</td></tr><tr><td>逃げ道</td><td>action の else か relate の else のどちらか1つ。両方はエラー</td></tr><tr><td><code>&gt;</code> が必要なとき</td><td>flow に分かれ道があれば必須（flow scene は除く）</td></tr><tr><td>入れ子</td><td>where の and / or / かっこ、match の中の match、子を持てない節の下の行、group の中の group</td></tr><tr><td>until の上限</td><td><code>N times</code> か <code>N 時間 passed</code></td></tr><tr><td>why</td><td>任意</td></tr><tr><td>人がきっかけでない rule</td><td>who に縛られず仕組みとして動く。人がきっかけの rule はその人の who に従う</td></tr><tr><td>input で作ったレコードの User の項目</td><td>作った人</td></tr><tr><td>thing の形</td><td><code>check --save-shape</code> で残し、次から比べる</td></tr><tr><td>編集</td><td>input を <code>with this</code> で開くと編集。状態は書き換えられない（move だけ）</td></tr><tr><td>タップ</td><td><code>user taps X on thing の名前</code> ならどの一覧、ボード、詳細画面から押しても動く</td></tr><tr><td>ボタンの名前</td><td>1語。空白を含むなら引用符</td></tr><tr><td>画面の状態</td><td>ブラウザ側で、見ている人ごとに持つ</td></tr><tr><td>読み上げ対応の漏れ</td><td>試作は注意、公開はエラー</td></tr><tr><td>AI の中身の置き場所</td><td><code>x.ponte.ai/&lt;action名&gt;.ponte</code>。人の spec に混ぜない</td></tr><tr><td><code>##</code> の承認</td><td>外せば承認、行ごと消せば却下</td></tr><tr><td>AI の呼び方</td><td>依存ゼロのため、標準の urllib で API を直接呼ぶ</td></tr></table></div>
+<h2 id="12-ビルド手順">12. ビルド手順</h2>
+<ol><li>読む: spec を解析します。</li><li>チェック: 13章のエラーをすべて確かめます。通らないと先に進めません。</li><li>組み立て: thing、flow、list、match、rule、relate、scene、look、style は、AI を使わない決まった変換で作ります。毎回同じ結果になります。</li><li>穴埋め: action の中身（by ai）と、style に書かなかった見た目だけを AI が決めます。</li><li>検証: すべての example と never を流します。通ったら完成です。通らなければ AI に書き直させます。</li></ol>
+<hr>
+<h2 id="12-5-道具">12.5 道具</h2>
+<div class="table"><table><tr><th>使い方</th><th>すること</th></tr><tr><td><code>python -m ponte check x.ponte</code></td><td>13章のエラーをすべて確かめる。<code>--publish</code> で公開するときの検査、<code>--save-shape</code> で thing の形を残す</td></tr><tr><td><code>python -m ponte test x.ponte</code></td><td>rule と action の example、機械が確かめる never をすべて流す</td></tr><tr><td><code>python -m ponte fill x.ponte</code></td><td>by ai の action の中身を AI に書かせる。通るまで問題を返して書き直させ、<code>x.ponte.ai/</code> に残す</td></tr><tr><td><code>python -m ponte fmt x.ponte</code></td><td>誰が書いても同じ見た目に整える。意味が変わる場合は書き換えない</td></tr><tr><td><code>python -m ponte run x.ponte</code></td><td>動かす。ブラウザで画面が出る</td></tr><tr><td><code>python -m ponte build x.ponte -o app.pyz</code></td><td>spec と中身と実行エンジンを1つのファイルにまとめる。<code>python app.pyz</code> で動く</td></tr><tr><td><code>editor/vscode/</code></td><td>エディタ（VS Code）で 14章の色分けを出す</td></tr></table></div>
+<p>エラーは <code>x.ponte:行  コード  中身</code> の形で出ます。エディタで押すと、その行へ移動できます。</p>
+<h2 id="13-エラー一覧-決めていないことはエラー">13. エラー一覧（決めていないことはエラー）</h2>
+<div class="table"><table><tr><th>コード</th><th>何が起きたか</th><th>なぜ止めるか</th><th>どう直すか</th></tr><tr><td>E01</td><td>match に else がない</td><td>書いていない値が来たときに、何をするかが決まっていないためです。</td><td>最後に <code>else -&gt; 結果</code> を書きます。宣言した状態をすべて書いた場合、else は不要です。</td></tr><tr><td>E02</td><td>until に上限がない</td><td>終わらない可能性のある待ちは、アプリを止めてしまうためです。</td><td><code>repeat ... until 〇〇 or 1 hour passed</code> のように、回数か時間の上限を書きます。</td></tr><tr><td>E03</td><td>action の example が2つ未満</td><td>例が1つだけでは、AI が書いた中身が正しいかを確かめられないためです。</td><td>当たる例と当たらない例（<code>-&gt; missing</code> など）を、少なくとも1つずつ書きます。</td></tr><tr><td>E04</td><td>action に else がない</td><td>AI の担当部分が答えを出せなかったときの動きが必要なためです。</td><td><code>else skip</code> や <code>else ask user</code> のように、答えが出なかったときの動きを書きます。</td></tr><tr><td>E05</td><td>tbd が残っている</td><td>決まっていないことを残したまま動かすと、AI がその部分を独自に決めてしまうためです。</td><td>内容を決めて tbd を消します。決められない場合は、その部分を使わない形に書き換えます。</td></tr><tr><td>E06</td><td><code>##</code> が残っている</td><td><code>##</code> は、書いた人が確認を保留している箇所を示す印です。</td><td>内容を確かめてから、<code>##</code> を消すか <code>#</code>（通常のコメント）に変えます。</td></tr><tr><td>E07</td><td>when に状態を書いている</td><td>「期限が近い」のような状態は、いつ起きるかが決まっていないためです。</td><td>when には出来事（<code>every day at 8:00</code> や <code>user taps ...</code>）を書き、状態は where か list で絞り込みます。</td></tr><tr><td>E08</td><td>move の対象が絞り込まれていない</td><td>どの1件を動かすかが決まらないまま、複数のレコードがまとめて動いてしまうためです。</td><td><code>move this to 状態</code> にするか、list で1件に絞り込みます。</td></tr><tr><td>E10</td><td>競合する move の優先順位が決まっていない</td><td>同じ1件に異なる move が同時に届いたとき、どちらを優先するかが決まらないためです。</td><td>flow に <code>failed &gt; passed</code> のように優先順位を書きます。</td></tr><tr><td>E11</td><td>list の参照が循環している</td><td>A の元が B で、B の元が A だと、中身が決まらないためです。</td><td>どちらかを thing から直接絞り込む形に変えます。</td></tr><tr><td>E12</td><td>入れ子</td><td>入れ子は読む人にも AI にも誤解されやすいため、1段で書く決まりにしています。</td><td>内側の部分に名前を付けて外に出し、その名前を使います。</td></tr><tr><td>E13</td><td>action の約束が食い違っている</td><td>example の答えや never が out の形に合っていないと、確かめることができないためです。</td><td>out に書いた形（<code>found monthday | missing</code> など）に合わせて、example と never を書き直します。</td></tr><tr><td>E14</td><td>relate の then / before が循環している</td><td>A の後に B、B の後に A が動くと、処理が終わらないためです。</td><td>どこかの then を外すか、条件付きの rule に分けます。</td></tr><tr><td>E15</td><td>relate の優先順位が双方向になっている</td><td><code>A &gt; B</code> と <code>B &gt; A</code> が両方あると、どちらも優先されないためです。</td><td>どちらか一方だけを残します。</td></tr><tr><td>E16</td><td>before の前の rule が起きない</td><td><code>A before B</code> と書いても A が起きる経路がなければ、B はいつまでも起きないためです。</td><td>A のきっかけ（when）を書くか、before を外します。</td></tr><tr><td>E17</td><td>失敗したときの動きが2つある</td><td>action の else と relate の else が両方あると、どちらが動くかが決まらないためです。</td><td>どちらか1つにします。</td></tr><tr><td>E18</td><td>match に宣言されていない状態がある</td><td>宣言にない状態の枝は、打ち間違いであることが多いためです。</td><td>宣言にある状態名に直すか、宣言に状態を追加します。</td></tr><tr><td>E19</td><td>who がない thing がある</td><td>書いていない操作は誰にもできない決まりのため、このままでは誰も見ることができません。</td><td><code>who</code> に <code>user can see Thing where ...</code> などを書きます。</td></tr><tr><td>E20</td><td>他のレコードを指す項目に gone がない</td><td>指している先が消えたときに、こちらのレコードをどうするかが決まっていないためです。</td><td><code>gone[remove too]</code>、<code>gone[leave empty]</code>、<code>gone[block]</code> のいずれかを付けます。</td></tr><tr><td>E21</td><td>thing の形を変えたのに change がない</td><td>保存済みのデータを新しい形にどう合わせるかが、決まっていないためです。</td><td><code>change Thing to v2</code> に、追加した項目の初期値（<code>add memo text = </code>）や名前の変更を書きます。</td></tr><tr><td>E22</td><td>ask ai に上限がない</td><td>AI への問い合わせが止まらないと、費用と時間がかかり続けるためです。</td><td>how に時間か費用の上限（<code>limit 5 seconds</code> や <code>limit 1 yen</code>）を書きます。</td></tr><tr><td>E23</td><td>connect が失敗したときの動きがない</td><td>外部サービスは失敗することがあり、そのときの動きが決まっていないためです。</td><td>relate に <code>rule名 else 〇〇</code> を書きます。</td></tr><tr><td>E24</td><td>flow scene にない画面の移動</td><td>画面の移動も flow と同じく、書いた経路しか通れないためです。</td><td><code>flow scene</code> に矢印を追加するか、移動先を直します。</td></tr><tr><td>E25</td><td>words の訳が足りない</td><td>一方の言語だけ文字が欠けていると、その言語の利用者に意味が伝わらないためです。</td><td>words ja と words en の両方に、同じ名前で書きます。1つの言語だけのアプリでは、words を書かずに <code>&quot;文字&quot;</code> と直接書くこともできます。</td></tr><tr><td>E26</td><td>名前のないボタンまたは説明のない画像</td><td>読み上げ機能の利用者に、ボタンの役割が伝わらないためです。公開するときだけエラーになります。</td><td>ボタンには <code>named 名前</code> を、画像には説明を付けます。</td></tr><tr><td>E27</td><td>通貨の異なる money の足し算</td><td>円とドルをそのまま足すと、意味のない数になるためです。</td><td>同じ通貨どうしで足すか、通貨ごとに分けて表示します。</td></tr><tr><td>E28</td><td>定義されていない名前、または知らない言葉</td><td>存在しない部品、list、項目、アイコンを指したり、節や操作の言葉を打ち間違えたりすると、その行は無視されます。書いたつもりの動きが起きないため、エラーにします。</td><td>エラーに表示された「もしかして」の名前に直すか、定義を追加します。</td></tr><tr><td>E29</td><td>rule に do が2つ以上ある</td><td>1つの rule には1つの処理だけを書きます。2つあると、片方だけ失敗したときの結果が決まらないためです。</td><td>rule を2つに分けて、relate の <code>A then B</code> でつなぎます。</td></tr><tr><td>E30</td><td>通知の宛先がない</td><td>誰に知らせるかが決まっていないと、通知が誰にも届かないためです。</td><td><code>notify owner ...</code> のように、人を指す項目か me を書きます。</td></tr><tr><td>E31</td><td>書き方が正しくない（do、example の手順、読めない行）</td><td>決まった形以外は、実行エンジンが動かせないためです。また、example の手順の打ち間違いを見逃すと、確かめていない例が通ってしまいます。</td><td>do は <code>ponte guide --rules</code> の表にある形で書きます。example の手順は given / adds / at / says / taps / gets / expect のいずれかです。</td></tr><tr><td>E32</td><td>型が合わない、または存在しない状態や項目</td><td>存在しない状態や項目、型の違う値は、空の一覧や起きない rule になります。動かす前に見つけるため、エラーにします。</td><td>エラーに表示された候補（「todo / done」など）から選んで直します。</td></tr><tr><td>W09</td><td>（注意）flow の状態に対応する rule がない</td><td>他の状態には rule があるのに、その状態のときの rule だけがありません。考慮漏れの可能性があります。</td><td>その状態のときに起きることを rule に書きます。何もしない場合は、この注意は無視してかまいません。</td></tr><tr><td>W26</td><td>（注意）名前のないボタンまたは説明のない画像</td><td>試作中は注意だけを表示します。公開するとき（<code>--publish</code>）はエラーになります。</td><td>ボタンには <code>named 名前</code> を、画像には説明を付けます。</td></tr></table></div>
+<p>E32 の中身は下に書きます。1つずつの説明は <code>ponte explain E32</code> でも見られます。</p>
+<h3 id="警告">警告</h3>
+<ul><li>W09（flow の状態の rule の抜け）と W26（試作中の読み上げ対応の漏れ）は警告です。</li><li><code>ponte test</code> の穴さがし（9章）も警告です。<code>--strict</code> を付けると失敗になります。</li></ul>
+<h3 id="e32-で確かめること">E32 で確かめること</h3>
+<p>E32 では、まず rule ごとに this が何の thing かを決めます。when の <code>on 〇〇</code> や <code>〇〇 is created</code> から決め、relate の then の先の rule では前の rule から引き継ぎます。create の後は、作ったレコードが this になります。そのうえで、次のことを確かめます。</p>
+<ul><li>存在しない状態への move、存在しない項目への set、where、with、通知の {…}、状態を set で書き換えること（move を使います）</li><li>値の型: <code>set yen to me</code>（number に User）/ <code>item me</code>（Item に User）/ result の型（action の out から決まります）</li><li>this が決まらないのに this を使うこと、list の where の項目、stats の sum に数でない項目を使うこと</li></ul>
+<hr>
+<h2 id="14-色分け">14. 色分け</h2>
+<div class="table"><table><tr><th>種類</th><th>色</th><th>対象</th></tr><tr><td>見出し</td><td>紫・太字</td><td>thing flow list match rule relate action group tbd scene look part style input words who change connect</td></tr><tr><td>節</td><td>グレー</td><td>of where sort when do why in out example by how given expect</td></tr><tr><td>守り</td><td>赤</td><td>never else <code>&gt;</code> <code>##</code> tbd who gone limit</td></tr><tr><td>型</td><td>緑</td><td>text number date monthday money <code>[a | b]</code></td></tr><tr><td>名前</td><td>青</td><td>Application DueSoon Remind</td></tr><tr><td>値</td><td>黄</td><td>draft "…" 21:00 3 days</td></tr><tr><td>コメント</td><td>薄グレー斜体</td><td><code># …</code></td></tr><tr><td>止めるコメント</td><td>赤の背景</td><td><code>## …</code></td></tr><tr><td>how / style</td><td>背景グレー</td><td>どうやるかのまとまり</td></tr></table></div>
+<p>赤は、安全装置が付いていることを示す色です。赤のないまとまりを見れば、守りが足りない可能性に気づけます。</p>
+<hr>
+<h2 id="15-未決-次に決めること">15. 未決（次に決めること）</h2>
+<ul><li>名前（候補は NAMES.md。Sadame / Tsumori / Hitoai）</li><li>how と style に書ける語の完全な一覧</li><li>パッケージ（この言語で書かれた group の共有）の形</li><li>タイムゾーンの扱い（最初は tbd で宣言させる）</li></ul>
+<hr>
+<h2 id="16-変更の記録">16. 変更の記録</h2>
+<h3 id="16-1-v0-2-v0-3-で入ったもの-v0-2-の追補をまとめたもの">16.1 v0.2 → v0.3 で入ったもの（v0.2 の追補をまとめたもの）</h3>
+<div class="table"><table><tr><th>何</th><th>中身</th><th>場所</th></tr><tr><td>rule の where</td><td>this が合わないとき、rule は静かに起きない。ボタンも押せない</td><td>5章 rule</td></tr><tr><td>create の中身</td><td><code>do create X</code> の下に「項目 値」</td><td>5章 rule</td></tr><tr><td>値の書き方</td><td>this / me / "文字" / N days from now / {名前} / 項目 of this / result</td><td>5章 rule</td></tr><tr><td><code>項目 of this</code></td><td><code>move item of this to lent</code>。指しているレコードを動かす</td><td>5章 rule</td></tr><tr><td>set</td><td><code>do set yen to result</code>。状態は move だけ</td><td>5章 rule</td></tr><tr><td>with</td><td><code>do FindYen with memo</code>。action の入力を項目から</td><td>5章 rule</td></tr><tr><td>result</td><td>直前の action の答え。答えがないときは静かに起きない</td><td>5章 rule、9.5</td></tr><tr><td>do の形の表と E31</td><td>do の書き方を check で確かめる</td><td>5章 rule、13章</td></tr><tr><td>E32 型の確かめ</td><td>this の決め方、状態・項目・値の型</td><td>13章</td></tr><tr><td>stats</td><td>件数と合計</td><td>6章</td></tr><tr><td>画面の小さな部品</td><td>tabs、detail、empty、tone、icon、confirm、lead、heading、search、group by、take、notices など</td><td>6章</td></tr><tr><td>役割（role）</td><td>thing User の role、<code>ponte role</code>、<code>where it is not me</code></td><td>7.1</td></tr><tr><td>標準ライブラリ</td><td>std/date・std/money・std/contact</td><td>9.5</td></tr><tr><td>穴さがし</td><td>example が確かめていないところを出す。<code>--strict</code></td><td>9章</td></tr><tr><td>example の書き方</td><td>adds / expect で thing の名前と中身を書く、expect no、expect 2、given で名前で指す、ない scene の shows は失敗</td><td>9章</td></tr><tr><td><code>名前 of X</code> / <code>text of X</code></td><td>shape の部分と当たった文字</td><td>10章</td></tr><tr><td><code>+</code> の強さ</td><td><code>+</code> <code>-</code> は一番弱い</td><td>10章</td></tr><tr><td>状態名と行名</td><td>同じならエラー</td><td>10章</td></tr><tr><td><code>word with</code></td><td>shape の英数字と記号</td><td>10章</td></tr></table></div>
+<h3 id="16-2-v0-1-v0-2-の主な変更">16.2 v0.1 → v0.2 の主な変更</h3>
+<div class="table"><table><tr><th>v0.1</th><th>v0.2</th></tr><tr><td>entity</td><td>thing</td></tr><tr><td>unknown</td><td>tbd</td></tr><tr><td><code>one of [a, b]</code></td><td><code>[a | b]</code></td></tr><tr><td><code>ref User</code> / <code>many User</code></td><td><code>User</code> / <code>list of User</code></td></tr><tr><td><code>owner: ref User</code></td><td><code>owner User</code>（<code>:</code> なし）</td></tr><tr><td><code>on conflict A wins over B</code></td><td><code>A &gt; B</code></td></tr><tr><td>otherwise</td><td>else</td></tr><tr><td>because</td><td>why</td></tr><tr><td>input / output</td><td>in / out</td></tr><tr><td>from / sort by</td><td>of / sort</td></tr><tr><td><code># proposed by ai</code></td><td><code>##</code></td></tr><tr><td>derive / use（△）</td><td>削除。action を do の中で呼ぶ</td></tr><tr><td>（なし）</td><td>relate、group、do、shape、ask ai、画面、who、change、gone、connect の設計、テストの3段</td></tr><tr><td>変換先は Go</td><td>自前の実行エンジン → WebAssembly。依存ゼロ</td></tr></table></div>
+<hr>
+<h2 id="付録-就活hub-メール-締切-通知-を-v0-3-で書いたもの">付録: 就活Hub（メール→締切→通知）を v0.3 で書いたもの</h2>
+<pre class="code"><span class="head">thing</span> <span class="name">Application</span>
+  <span class="field">company</span>   <span class="val">text</span>
+  <span class="field">deadline</span>  <span class="val">monthday</span>
+  <span class="field">owner</span>     <span class="name">User</span>   <span class="guard">gone</span><span class="guard">[</span><span class="guard">remove</span> <span class="guard">too</span><span class="guard">]</span>
+  <span class="field">status</span>    <span class="op">[</span><span class="val">draft</span> <span class="op">|</span> <span class="val">submitted</span> <span class="op">|</span> <span class="val">passed</span> <span class="op">|</span> <span class="val">failed</span><span class="op">]</span>
+
+<span class="head">thing</span> <span class="name">User</span>
+  <span class="field">name</span>  <span class="val">text</span>
+
+<span class="head">flow</span> <span class="name">Application</span>.status
+  <span class="val">draft</span> <span class="op">-&gt;</span> <span class="val">submitted</span> <span class="op">-&gt;</span> <span class="val">passed</span> <span class="op">|</span> <span class="val">failed</span>
+  <span class="val">failed</span> <span class="guard">&gt;</span> <span class="val">passed</span>
+
+<span class="head">who</span>
+  user   can see    <span class="name">Application</span> where owner is me
+  user   can change <span class="name">Application</span> where owner is me
+  user   can see    <span class="name">User</span> where it is me
+
+<span class="head">list</span> <span class="name">DueSoon</span>
+  <span class="clause">of</span>    <span class="name">Application</span>
+  <span class="clause">where</span> status is <span class="val">draft</span>
+  <span class="clause">where</span> deadline within <span class="val">3 days</span>
+  <span class="clause">sort</span>  deadline
+
+<span class="head">match</span> <span class="name">Application</span>.status <span class="val">to</span> color
+  <span class="val">draft</span>     <span class="op">-&gt;</span> <span class="val">red</span>
+  <span class="val">submitted</span> <span class="op">-&gt;</span> <span class="val">gray</span>
+  <span class="val">passed</span>    <span class="op">-&gt;</span> <span class="val">blue</span>
+  <span class="val">failed</span>    <span class="op">-&gt;</span> <span class="val">gray</span>
+
+<span class="head">connect</span> <span class="name">Gmail</span>
+  gives  new message  <span class="name">Message</span>
+  needs  key <span class="name">GMAIL_TOKEN</span>
+
+<span class="head">action</span> <span class="name">ExtractDeadline</span>
+  <span class="clause">in</span>      <span class="val">mail</span> <span class="val">text</span>
+  <span class="clause">out</span>     <span class="val">found</span> <span class="val">monthday</span> <span class="op">|</span> <span class="val">missing</span>
+  <span class="clause">example</span> <span class="val">"10/15(木)12:00まで"</span>            <span class="op">-&gt;</span> <span class="val">found</span> <span class="val">10/15</span> <span class="val">12:00</span>
+  <span class="clause">example</span> <span class="val">"【締切9/24 23:59】"</span>            <span class="op">-&gt;</span> <span class="val">found</span> <span class="val">9/24</span> <span class="val">23:59</span>
+  <span class="clause">example</span> <span class="val">"来週中にご提出ください"</span>        <span class="op">-&gt;</span> <span class="val">missing</span>
+  <span class="clause">example</span> <span class="val">"9/24 23:59 または 9/30 23:59"</span>  <span class="op">-&gt;</span> <span class="val">missing</span>
+  <span class="guard">never</span>   guess the year
+  <span class="guard">else</span>    ask user
+  <span class="clause">by</span>      ai
+
+<span class="head">rule</span> <span class="name">ReadMail</span>
+  <span class="clause">why</span>   メールの締切を自動で拾うため
+  <span class="clause">when</span>  <span class="name">Gmail</span> gives new message
+  <span class="clause">do</span>    <span class="name">ExtractDeadline</span>
+
+<span class="head">rule</span> <span class="name">Remind</span>
+  <span class="clause">why</span>   締切を落とさないため
+  <span class="clause">when</span>  every day at <span class="val">21:00</span>
+  <span class="clause">do</span>    notify owner each <span class="val">of</span> <span class="name">DueSoon</span>
+  <span class="clause">example</span>
+    <span class="clause">given</span>   <span class="name">Application</span>
+      <span class="field">company</span>   <span class="val">"Osaka Gas"</span>
+      <span class="field">deadline</span>  <span class="val">"9/24 23:59"</span>
+      <span class="field">status</span>    <span class="val">draft</span>
+    <span class="clause">at</span>      <span class="val">"9/21 21:00"</span>
+    <span class="clause">expect</span>  notify <span class="val">"Osaka Gas"</span>
+
+<span class="head">rule</span> <span class="name">MarkSubmitted</span>
+  <span class="clause">when</span>  user taps submitted-button on <span class="name">DueSoon</span>
+  <span class="clause">do</span>    move this <span class="val">to</span> <span class="val">submitted</span>
+  <span class="clause">example</span>
+    <span class="clause">given</span>   <span class="name">Application</span>
+      <span class="field">company</span>  <span class="val">"Osaka Gas"</span>
+      <span class="field">status</span>   <span class="val">draft</span>
+    <span class="clause">taps</span>    submitted-button on <span class="name">Application</span>
+      <span class="field">company</span>  <span class="val">"Osaka Gas"</span>
+    <span class="clause">expect</span>  <span class="name">Application</span> is <span class="val">submitted</span>
+      <span class="field">company</span>  <span class="val">"Osaka Gas"</span>
+
+<span class="head">relate</span>
+  <span class="name">MarkSubmitted</span> <span class="guard">&gt;</span> <span class="name">Remind</span>
+
+<span class="head">scene</span> <span class="name">Home</span>
+  <span class="clause">top</span>     <span class="name">Header</span>
+  <span class="clause">main</span>    match <span class="type">count</span> <span class="val">of</span> <span class="name">DueSoon</span>
+            <span class="val">0</span>    <span class="op">-&gt;</span> <span class="name">EmptyNote</span>
+            <span class="guard">else</span> <span class="op">-&gt;</span> <span class="name">DueSoon</span> <span class="val">as</span> <span class="val">cards</span>
+  <span class="clause">bottom</span>  button add named 追加
+
+<span class="head">flow</span> scene
+  <span class="name">Home</span> <span class="op">-&gt;</span> <span class="name">AddApplication</span>
+
+<span class="head">part</span> <span class="name">Header</span>
+  show  <span class="val">text</span> <span class="val">"就活Hub"</span>
+
+<span class="head">part</span> <span class="name">EmptyNote</span>
+  show  <span class="val">text</span> <span class="val">"3日以内に締切の下書きはありません"</span>
+
+<span class="head">look</span> <span class="name">DueSoon</span> <span class="val">as</span> <span class="val">cards</span>
+  <span class="clause">title</span>   company
+  <span class="clause">sub</span>     deadline
+  <span class="clause">mark</span>    color <span class="val">of</span> status
+  <span class="clause">button</span>  submitted-button named 提出した
+
+<span class="head">input</span> <span class="name">AddApplication</span>
+  <span class="field">company</span>   required
+  <span class="field">deadline</span>  required
+
+<span class="head">style</span> <span class="name">DueSoon</span>
+  card   round <span class="val">12</span>, shadow soft, pad <span class="val">16</span>
+  <span class="clause">title</span>  size <span class="val">18</span>, bold
+
+<span class="guard">tbd</span>
+  timezone <span class="val">of</span> deadline</pre>
+<p>※ 付録には tbd が残っているので、このままでは「渡せません」になります。これは意図したとおりです。</p>
+<hr>
+<h2 id="v0-3-整理メモ">v0.3 整理メモ</h2>
+<h3 id="動かしたところ">動かしたところ</h3>
+<ul><li>rule の追補（where、create の中身、項目 of this、set、with、E31）に合わせて、rule の節を when / where / do / 値 に分けました。do の形と値は、それぞれ1つの表にまとめました。</li><li>「画面のための追補」は、6章「画面の小さな部品」に移しました。</li><li>「件数と合計」は 6章に置いたまま、見出しから「追補」を外しました。</li><li>役割は、7.1 の who の中に並べました。</li><li>穴さがしと example の書き方は、9章の本文に入れました。出来事と結果の一覧には adds / expect（thing の名前）/ expect no / expect 2 を加えました。</li><li>標準ライブラリは 9.5 に置き、追補の見出しを外しました。</li><li>10章の追補（名前 of X、+ の強さ、状態名と行名、word with）は、10章の箇条書きにしました。</li><li>13章は、v0.1 / v0.2 の区切りを外して 1〜32 の番号順に並べました。32 の中身は下の箇条書きに移し、警告は別に書きました。</li><li>16章は、16.1「v0.2 → v0.3 で入ったもの」と 16.2「v0.1 → v0.2 の主な変更」に分けました。</li><li>「（v0.2）」の印はすべて外しました。</li></ul>
+<h3 id="ぶつかっていたところとコードに合わせたところ">ぶつかっていたところとコードに合わせたところ</h3>
+<ul><li>通知の宛先: v0.2 の本文には <code>notify me</code> と <code>notify owner each of 一覧</code> の2つしかありませんでした。コード（DO_FORMS）は <code>notify 項目 &quot;...&quot;</code>（例 <code>notify borrower &quot;...&quot;</code>）も通すため、コードに合わせました。</li><li>go: 本文には <code>go Detail with this</code> しかありませんでしたが、コードは <code>go 画面</code> も通します（kakeibo の <code>go AddExpense</code>）。両方を書きました。</li><li>期間の値: 追補には <code>7 days from now</code> しかありませんでしたが、コードは minutes / hours / days / weeks を通します。コードに合わせました。</li><li>値の書き方: コードは、表の値のほかに、ただの語や数（状態の名前、数など）も値として通します。表には書いていません（ルールとしては変えていません）。</li><li>役割のエラー: who の役割は、<code>user</code>、<code>nobody</code>、User の role の状態のどれかです。コード（check_roles）どおり E28 としました。</li><li>E28 の対象: コードは、create にない項目、stats の書き方、who の役割も E28 で出します。そのため 13章の 28 に加えました。stats の sum が数でないときは E32 です。</li><li>E25: 本文（6章 words）には「画面の文字が words になければエラー（25）」とあります。13章の 25 は訳がないことだけを扱っていたので、両方を 25 に書きました。</li><li>13章の 26 は、v0.2 で「公開するときだけエラー、試作中は警告」でした。6章「読み上げ対応」と同じ意味のため、変えていません。</li><li>9 は v0.2 でも警告でした。番号は残し、警告の欄にも書きました。</li></ul>
+  </article>
+</div>
+<footer><p>10章の道具と13章のエラーの表は、実装から作っています。</p></footer>
+</div>
+<script>
+(() => {   // 目次の、いま読んでいる所に印を付ける
+  const links = [...document.querySelectorAll(".toc a")], map = new Map(links.map(a => [a.hash.slice(1), a]));
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if(!e.isIntersecting) return;
+    links.forEach(a => a.classList.remove("on")); const a = map.get(e.target.id); if(a) a.classList.add("on");
+  }), {rootMargin: "0px 0px -70% 0px"});
+  document.querySelectorAll(".prose h2[id], .prose h3[id], .prose section[id]").forEach(h => map.has(h.id) && io.observe(h));
+})();
+</script>
+</body>
+</html>

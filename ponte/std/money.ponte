@@ -1,0 +1,15 @@
+# std/money — 文の中から金額（円）を取り出す（use std/money）
+
+action FindYen
+  in       text text
+  out      found number | missing
+  example  "価格 ¥1,980"                    -> found 1980
+  example  "送料は 500円 です"              -> found 500
+  example  "￥３，３００（税込）"            -> found 3300
+  example  "無料です"                       -> missing
+  example  "1万円くらい"                    -> missing
+  example  "本体 3,000円 / 税込 3,300円"    -> missing
+  never    depend on width
+  never    fail
+  else     skip
+  by       code "body/FindYen.ponte"

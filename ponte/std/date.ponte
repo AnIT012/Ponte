@@ -1,0 +1,31 @@
+# std/date — 文の中から日付を取り出す（use std/date）
+# 年は推測しない。年が書いてなければ年なしで返す。
+
+action FindMonthDay
+  in       text text
+  out      found monthday | missing
+  example  "10/15(木)12:00まで"            -> found 10/15 12:00
+  example  "【締切9/24 23:59】"            -> found 9/24 23:59
+  example  "説明会は 11/3 です"            -> found 11/3
+  example  "１２／１ １０：００"            -> found 12/1 10:00
+  example  "来週中にご提出ください"        -> missing
+  example  "9/24 23:59 または 9/30 23:59"  -> missing
+  never    guess the year
+  never    depend on width
+  never    fail
+  else     skip
+  by       code "body/FindMonthDay.ponte"
+
+action FindDate
+  in       text text
+  out      found date | missing
+  example  "申込は2026/10/15まで"                 -> found 2026/10/15
+  example  "２０２６年１０月５日（月）"             -> found 2026/10/5
+  example  "2026-01-09 開始"                      -> found 2026/1/9
+  example  "締切は10/15です"                      -> missing
+  example  "2026/13/45"                           -> missing
+  example  "2026/10/15 か 2026/10/20"             -> missing
+  never    depend on width
+  never    fail
+  else     skip
+  by       code "body/FindDate.ponte"

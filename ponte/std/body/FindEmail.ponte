@@ -1,0 +1,18 @@
+# std/contact FindEmail の中身。2つ以上あったら決めない（missing）
+
+do
+  clean = normalize text
+  hits  = find all Email in clean
+  kind[one | none | many] = match count of hits
+    1    -> one
+    0    -> none
+    else -> many
+  answer = match kind
+    one  -> found text of first of hits
+    none -> missing
+    many -> missing
+
+shape Email
+  word  with "._%+-" 1..64
+  "@"
+  word  with ".-" 1..255

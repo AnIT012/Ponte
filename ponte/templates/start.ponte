@@ -1,0 +1,161 @@
+# 新しいアプリ（ponte new で作った）。やることアプリがひな形。好きに書き換えてね
+
+thing Task
+  title   text
+  due     monthday
+  owner   User  gone[remove too]
+  status  [todo | done]
+
+thing User
+  name  text
+
+flow Task.status
+  todo -> done -> todo
+
+who
+  user  can see     Task  where owner is me
+  user  can change  Task  where owner is me
+  user  can remove  Task  where owner is me
+  user  can see     User  where it is me
+
+list Todo
+  of     Task
+  where  owner is me
+  where  status is todo
+  sort   due
+
+list Done
+  of     Task
+  where  owner is me
+  where  status is done
+  sort   title
+
+list Soon
+  of     Task
+  where  status is todo
+  where  due within 1 days
+
+rule Finish
+  why    終わったら消えてほしい
+  when   user taps done-button on Task
+  where  status is todo
+  do     move this to done
+  example
+    given   Task
+      title   "牛乳を買う"
+      status  todo
+    taps    done-button on Task
+      title   "牛乳を買う"
+    expect  Task is done
+      title   "牛乳を買う"
+
+rule Reopen
+  why    間違えて終わらせても戻せる
+  when   user taps reopen-button on Task
+  where  status is done
+  do     move this to todo
+  example
+    given   Task
+      title   "牛乳を買う"
+      status  done
+    taps    reopen-button on Task
+      title   "牛乳を買う"
+    expect  Task is todo
+      title   "牛乳を買う"
+
+rule Remind
+  why   明日までのものを忘れない
+  when  every day at 8:00
+  do    notify owner each of Soon
+  example
+    given   Task
+      title   "レポート"
+      due     "9/24 17:00"
+      status  todo
+    at      "9/23 8:00"
+    expect  notify "レポート"
+
+rule OpenAdd
+  when  user taps add on Home
+  do    go AddTask
+  example
+    taps    add on Home
+    expect  scene AddTask
+
+# ---- 画面 ----
+
+scene Home
+  tab[todo | done] = todo
+  top     Header
+  top     tabs tab
+  main    stats Todo, Done
+  main    match tab
+    todo -> Todo as list
+    done -> Done as list
+  bottom  button add named add-task icon plus
+
+part Header
+  show  text app-name
+
+input AddTask
+  title  required
+  due    from now
+
+flow scene
+  Home -> AddTask -> Home
+
+match Task.status to color
+  todo -> blue
+  done -> gray
+
+match tab to icon
+  todo -> list
+  done -> check
+
+look Todo as list
+  title   title
+  sub     due
+  button  done-button  named finish  icon check  tone good
+  empty   todo-empty
+
+look Done as list
+  title   title
+  mark    color of status
+  button  reopen-button  named reopen  icon back  tone quiet
+  empty   done-empty
+
+words ja
+  todo        やること
+  done        終わった
+  title       やること
+  due         いつまで
+  owner       持ち主
+  status      状態
+  name        名前
+  Todo        やること
+  Done        終わった
+  AddTask     やることを書く
+  app-name    やること
+  add-task    書く
+  finish      終わった
+  reopen      戻す
+  todo-empty  やることはありません
+  done-empty  まだ終わったものはありません
+
+words en
+  todo        To do
+  done        Done
+  title       Task
+  due         Due
+  owner       Owner
+  status      Status
+  name        Name
+  Todo        To do
+  Done        Done
+  AddTask     New task
+  app-name    Tasks
+  add-task    Add
+  finish      Done
+  reopen      Undo
+  todo-empty  Nothing to do
+  done-empty  Nothing done yet

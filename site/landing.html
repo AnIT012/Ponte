@@ -1,0 +1,223 @@
+<title>Ponte</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Cdefs%3E%3ClinearGradient id="pi" x1="0" x2="1"%3E%3Cstop offset=".15" stop-color="#FF7355"/%3E%3Cstop offset=".85" stop-color="#83C3FF"/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="100" height="100" rx="24" fill="#1F2340"/%3E%3Cpath d="M24 62 C 38 28, 62 28, 76 62" stroke="url%28#pi%29" stroke-width="9" fill="none" stroke-linecap="round"/%3E%3Ccircle cx="24" cy="62" r="13" fill="#FF7355"/%3E%3Ccircle cx="76" cy="62" r="13" fill="#83C3FF"/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+:root{
+  --ground:#F6F7FB; --panel:#FFFFFF; --ink:#1F2340; --muted:#5E6385;
+  --tomato:#FF5A36; --mint:#17B3A3; --lemon:#FFC93C; --sky:#2F6FD6;
+  --err:#E0412A; --ok:#12997F; --line:#DADCE8; --code:#1E2238; --codeink:#F3F5FF;
+  --pop:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;
+  --body:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#14172A; --panel:#1C2036; --ink:#E8EAF6; --muted:#A3A8C8; --line:#2E3350;
+  --tomato:#FF7355; --mint:#2FD1BF; --lemon:#FFD35C; --sky:#83C3FF; --err:#FF6B55; --ok:#3FE0B8;
+  --code:#0C0F22; --codeink:#E9ECFF; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --ground:#14172A; --panel:#1C2036; --ink:#E8EAF6; --muted:#A3A8C8; --line:#2E3350;
+  --tomato:#FF7355; --mint:#2FD1BF; --lemon:#FFD35C; --sky:#83C3FF; --err:#FF6B55; --ok:#3FE0B8;
+  --code:#0C0F22; --codeink:#E9ECFF; color-scheme:dark;}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.8;padding-inline:16px}
+.wrap{max-width:1040px;margin:0 auto}
+a{color:inherit}
+h1,h2,h3{font-family:var(--pop);font-weight:700;line-height:1.3;text-wrap:balance;margin:0}
+h2{font-size:clamp(24px,4vw,34px)}
+p{margin:0}
+code,pre{font-family:var(--mono)}
+.sticker{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 3px rgba(20,24,50,.06)}
+section{padding-block:56px}
+.eyebrow{font-family:var(--pop);font-size:13px;letter-spacing:.08em;color:var(--tomato)}
+
+/* ---- top bar ---- */
+.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-block:18px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo svg{width:44px;height:auto}
+.logo .word{font-size:28px}
+.nav{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--pop);font-size:14px}
+.nav a{text-decoration:none;padding:4px 2px;border-bottom:3px solid transparent}
+.nav a:hover{border-bottom-color:var(--ink)}
+.word{font-family:var(--pop);letter-spacing:.02em;line-height:1}
+.word{color:var(--ink);font-weight:500}
+
+/* ---- slides ---- */
+.show{padding:22px;margin-top:8px}
+.slide[hidden]{display:none}
+.slide{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:26px;align-items:center;min-height:310px}
+.code{background:var(--code);color:var(--codeink);border-radius:10px;border:0;padding:18px 20px;font-size:clamp(11.5px,1.35vw,14px);line-height:1.75;overflow-x:auto;margin:0}
+.code .c{white-space:pre-wrap}
+.code .head{color:#6BB6FF;font-weight:700}.code .clause{color:#C9A7FF}.code .guard{color:#FF9D5C;font-weight:700}
+.code .type{color:#2FD1BF}.code .name{color:#FF8FC7}.code .val{color:#FFD35C}.code .field{color:#FFFFFF}.code .op{color:#8A90C4}
+.code .c{color:#7C83BA;font-style:italic}.code .block{background:#E0412A;color:#fff;border-radius:4px;padding:0 4px}
+.explain h2{font-size:clamp(22px,3vw,28px);margin-bottom:12px}
+.explain p{line-height:1.95}
+.explain code,.col code{font-family:var(--mono);font-size:13px;background:var(--ground);padding:1px 6px;border-radius:6px}
+.ctrl{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:18px;flex-wrap:wrap}
+.ctrl button{font-family:var(--pop);border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--ink);padding:6px 14px;cursor:pointer}
+.ctrl button[aria-current="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.ctrl button:focus-visible{outline:3px dashed var(--tomato);outline-offset:3px}
+.dots{display:flex;gap:8px}
+.dots button{width:34px;height:34px;padding:0;font-size:13px}
+
+/* ---- tagline ---- */
+.tagline{text-align:center;padding-block:26px 30px;font-family:var(--pop);font-size:clamp(17px,2.3vw,21px);line-height:1.7;max-width:34em;margin:0 auto}
+.tagline a{color:var(--sky);text-decoration:none;white-space:nowrap}
+.tagline a + a{margin-left:1.2em}
+
+/* ---- columns ---- */
+.cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;padding-bottom:30px}
+.col{padding:20px;display:flex;flex-direction:column;gap:10px}
+.col h3{font-size:18px}
+.col p{font-size:14.5px;line-height:1.85}
+.col a.more{font-family:var(--pop);font-size:13px;color:var(--sky);text-decoration:none;margin-top:auto}
+.col pre{margin:0;font-family:var(--mono);font-size:13px;background:var(--code);color:var(--codeink);border-radius:10px;padding:8px 10px;overflow-x:auto}
+
+footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13.5px}
+
+@media (max-width:1100px){
+  .slide{grid-template-columns:minmax(0,1fr);min-height:0}
+  .code{font-size:clamp(11.5px,1.9vw,14px)}
+}
+@media (max-width:860px){
+  .cols{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:520px){
+  .cols{grid-template-columns:minmax(0,1fr)}
+  .show{padding:12px}
+  .code{padding:14px 12px;font-size:11.5px;white-space:pre-wrap;overflow-wrap:anywhere}
+  .ctrl{gap:6px}.dots{gap:5px}.dots button,.ctrl button{width:30px;height:30px;padding:0;font-size:12px}
+}
+</style>
+
+<div class="wrap">
+
+<header class="bar">
+  <a class="logo" href="index.html" aria-label="Ponte">
+    <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="pg" x1="0" x2="1"><stop offset=".15" stop-color="#FF5A36"/><stop offset=".85" stop-color="#2F6FD6"/></linearGradient></defs><rect x="2" y="2" width="96" height="96" rx="24" fill="#fff" stroke="#DADCE8" stroke-width="2"/><path d="M24 62 C 38 28, 62 28, 76 62" stroke="url(#pg)" stroke-width="11" fill="none" stroke-linecap="round"/><circle cx="24" cy="62" r="13" fill="#FF5A36"/><circle cx="76" cy="62" r="13" fill="#2F6FD6"/></svg>
+    <span class="word">Ponte</span>
+  </a>
+  <nav class="nav">
+    <a href="play.html">試す</a>
+    <a href="learn.html">入門</a>
+    <a href="reference.html">道具とエラー</a>
+    <a href="spec.html">仕様書</a>
+    <a href="https://github.com/AnIT012/nameless-lang">GitHub</a>
+  </nav>
+</header>
+
+
+<p class="tagline">Ponte は、アプリの仕様を書き、それをそのまま動かすためのプログラミング言語です。決まっていないことがあれば、動かす前にエラーとして示します。 <a href="spec.html">詳しく ›</a> <a href="play.html">ブラウザで試す ›</a></p>
+
+<section class="show sticker" aria-label="書き方の見本">
+    <div class="slide">
+      <pre class="code"><span class="c"># データの形：やることと、その持ち主</span>
+<span class="head">thing</span> <span class="name">Task</span>
+  <span class="field">title</span>   <span class="type">text</span>
+  <span class="field">due</span>     <span class="type">monthday</span>
+  <span class="field">owner</span>   <span class="name">User</span>  <span class="guard">gone</span><span class="guard">[</span><span class="guard">remove</span> <span class="guard">too</span><span class="guard">]</span>
+  <span class="field">status</span>  <span class="op">[</span><span class="val">todo</span> <span class="op">|</span> <span class="val">done</span><span class="op">]</span>
+
+<span class="head">thing</span> <span class="name">User</span>
+  <span class="field">name</span>  <span class="type">text</span></pre>
+      <div class="explain"><h2>データの形を書く</h2><p>thing には、アプリが持つデータの形を書きます。項目の名前と型を並べておけば、保存や読み書きは Ponte が引き受けます。状態は <code>[todo | done]</code> のように、取りうる値をすべて書いておきます。</p></div>
+    </div>
+    <div class="slide" hidden>
+      <pre class="code"><span class="c"># 状態の流れと、誰が何をできるか</span>
+<span class="head">flow</span> <span class="name">Task</span>.status
+  <span class="val">todo</span> <span class="op">-&gt;</span> <span class="val">done</span> <span class="op">-&gt;</span> <span class="val">todo</span>
+
+<span class="head">who</span>
+  user  can see     <span class="name">Task</span>  where owner is me
+  user  can change  <span class="name">Task</span>  where owner is me
+  user  can see     <span class="name">User</span>  where it is me</pre>
+      <div class="explain"><h2>状態の流れと権限</h2><p>flow には状態がどう移れるかを、who には誰が何をしてよいかを書きます。who に書いていない操作は誰にもできません。そのため、権限の書き忘れはエラーとして見つかります。</p></div>
+    </div>
+    <div class="slide" hidden>
+      <pre class="code"><span class="c"># 毎朝8時に、明日までのやることを知らせる</span>
+<span class="head">list</span> <span class="name">Soon</span>
+  <span class="clause">of</span>     <span class="name">Task</span>
+  <span class="clause">where</span>  status is <span class="val">todo</span>
+  <span class="clause">where</span>  due within <span class="val">1 days</span>
+
+<span class="head">rule</span> <span class="name">Remind</span>
+  <span class="clause">why</span>   明日までのものを忘れない
+  <span class="clause">when</span>  every day at <span class="val">8:00</span>
+  <span class="clause">do</span>    notify owner each of <span class="name">Soon</span></pre>
+      <div class="explain"><h2>きっかけとすること</h2><p>rule には、きっかけとそのときにすることを一組で書きます。when に書けるのは時刻やボタンのような出来事だけで、「明日まで」のような条件は list の where で絞ります。</p></div>
+    </div>
+    <div class="slide" hidden>
+      <pre class="code"><span class="c"># ボタンを押したら終わりにする。例を書くとテストになる</span>
+<span class="head">rule</span> <span class="name">Finish</span>
+  <span class="clause">when</span>   user taps done-button on <span class="name">Task</span>
+  <span class="clause">where</span>  status is <span class="val">todo</span>
+  <span class="clause">do</span>     move this to <span class="val">done</span>
+  <span class="clause">example</span>
+    <span class="clause">given</span>   <span class="name">Task</span>
+      <span class="field">title</span>   <span class="val">"牛乳を買う"</span>
+      <span class="field">status</span>  <span class="val">todo</span>
+    <span class="clause">taps</span>    done-button on <span class="name">Task</span>
+      <span class="field">title</span>   <span class="val">"牛乳を買う"</span>
+    <span class="clause">expect</span>  <span class="name">Task</span> is <span class="val">done</span>
+      <span class="field">title</span>   <span class="val">"牛乳を買う"</span></pre>
+      <div class="explain"><h2>例がテストになる</h2><p>rule の下に example を書くと、それがテストになります。<code>ponte test</code> は例が通るかを確かめるだけでなく、まだ例で確かめていないルールや状態の変化も一覧で示します。</p></div>
+    </div>
+    <div class="slide" hidden>
+      <pre class="code"><span class="c"># AIに任せる処理には、例と禁止事項を先に書く</span>
+<span class="head">action</span> <span class="name">FindDeadline</span>
+  <span class="clause">in</span>       mail <span class="type">text</span>
+  <span class="clause">out</span>      <span class="val">found</span> <span class="type">monthday</span> <span class="op">|</span> <span class="val">missing</span>
+  <span class="clause">example</span>  <span class="val">"10/15まで"</span>     <span class="op">-&gt;</span> <span class="val">found</span> <span class="val">10/15</span>
+  <span class="clause">example</span>  <span class="val">"来週中に提出"</span>  <span class="op">-&gt;</span> <span class="val">missing</span>
+  <span class="guard">never</span>    guess the year
+  <span class="guard">never</span>    fail
+  <span class="guard">else</span>     ask user
+  <span class="clause">by</span>       ai</pre>
+      <div class="explain"><h2>AI に任せる部分には約束を書く</h2><p>処理の中身を AI に書いてもらうときは、action に入力と答えの例、してはいけないことを先に書きます。AI が書いた中身はこの約束に照らして機械で確かめ、守れていなければ書き直させます。</p></div>
+    </div>
+    <div class="slide" hidden>
+      <pre class="code"><span class="c"># まだ決めていないことは tbd に書く。残っているうちは動かない</span>
+<span class="guard">tbd</span>
+  締切を過ぎたやることは、一覧に残すか消すか</pre>
+      <div class="explain"><h2>決めていないことは tbd に</h2><p>まだ決めていないことは tbd に書いておけます。tbd が残っているあいだは <code>ponte check</code> が通りません。このため、決め忘れたまま動き出すことはありません。</p></div>
+    </div>
+  <div class="ctrl">
+    <button type="button" id="prev" aria-label="前の見本">‹</button>
+    <div class="dots"><button type="button" data-go="0" aria-label="見本 1" aria-current="true">1</button><button type="button" data-go="1" aria-label="見本 2">2</button><button type="button" data-go="2" aria-label="見本 3">3</button><button type="button" data-go="3" aria-label="見本 4">4</button><button type="button" data-go="4" aria-label="見本 5">5</button><button type="button" data-go="5" aria-label="見本 6">6</button></div>
+    <button type="button" id="next" aria-label="次の見本">›</button>
+  </div>
+</section>
+
+
+<section class="cols">
+  <div class="col sticker"><h3>はじめる</h3><p>入門では、やることアプリをエラーを見ながら少しずつ作ります。はじめての方は、ここから読んでください。</p><a class="more" href="learn.html">入門を読む ›</a></div>
+  <div class="col sticker"><h3>入れる</h3><p>Python 3.11 があれば動きます。ほかに入れるものはありません。</p><pre>pip install -e .
+ponte new myapp</pre><a class="more" href="https://github.com/AnIT012/nameless-lang">GitHub から入手 ›</a></div>
+  <div class="col sticker"><h3>ドキュメント</h3><p>書き方の決まりは仕様書にまとめています。使える道具とエラーの一覧も用意しています。</p><a class="more" href="reference.html">道具とエラーを見る ›</a></div>
+  <div class="col sticker"><h3>試す</h3><p>インストールしなくても、ブラウザの中で書いて確かめられます。書いたものはどこにも送りません。</p><a class="more" href="play.html">試してみる ›</a></div>
+</section>
+
+<footer>
+  <p>Ponte（ポンテ）はイタリア語で「橋」という意味です。人と AI のあいだにかける橋という意味を込めて名付けました。</p>
+  <p>v0.3 ・ Python 3.11 ・ <a href="how.html">しくみ</a></p>
+</footer>
+</div>
+
+<script>
+(() => {
+  const slides = [...document.querySelectorAll(".slide")], dots = [...document.querySelectorAll("[data-go]")];
+  let i = 0;
+  const show = n => {
+    i = (n + slides.length) % slides.length;
+    slides.forEach((s, k) => s.hidden = k !== i);
+    dots.forEach((d, k) => d.setAttribute("aria-current", k === i ? "true" : "false"));
+  };
+  document.getElementById("prev").onclick = () => show(i - 1);
+  document.getElementById("next").onclick = () => show(i + 1);
+  dots.forEach(d => d.onclick = () => show(+d.dataset.go));
+})();
+</script>

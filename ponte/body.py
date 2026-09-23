@@ -1,0 +1,554 @@
+"""action の中身（do）と shape を動かす（仕様 v0.2 5章 action / 10章 道具）。
+
+do に書けるのは `名前 = 式` と、名前を付けた match だけ。
+- 順番は名前の依存関係で決まる（上から順ではない）。
+- 答えは「他のどの行からも使われていない行」。ちょうど1つでなければエラー（QUESTIONS_v0.2 A1）。
+- ループ・再帰・書き換えは無いので、必ず止まる。
+"""
+from __future__ import annotations
+
+import re
+import unicodedata
+from dataclasses import dataclass
+
+from .parser import Node, match_arms, states_of
+
+
+# do で使える道具の一覧。ここが元で、AIへの説明（ponte guide）・エラーの一言・仕様書 10章の表を、ここから作る。
+# 1つずつ「動く例」を持つ（tests/test_guide.py が全部流して確かめる）。例の入力は t、shape は D（数字 n）と M（月日）と Y（年月日）。
+TOOLS = [
+    # (種類, 書き方, 意味, 例の式, 例の入力 t, 答え)
+    ("文字", "normalize X", "数字、英字、記号の全角を半角に変換", "normalize t", "１２／３", "12/3"),
+    ("文字", "trim X", "前後の空白を削除", "trim t", "  a  ", "a"),
+    ("文字", "lower X / upper X", "小文字に変換 / 大文字に変換", "lower t", "AbC", "abc"),
+    ("文字", 'split X by ","', "区切り文字で分割して集まりに変換", 'split t by ","', "a,b", ["a", "b"]),
+    ("文字", 'join X by ","', "集まりを連結して文字に変換", 'join split t by "," by "-"', "a,b", "a-b"),
+    ("文字", 'replace "a" with "b" in X', "文字の置き換え", 'replace "," with "" in t', "1,980", "1980"),
+    ("形", "find all 形 in X", "shape に当たった部分すべてを集まりで返す", "count of find all D in t", "1 と 22", 2),
+    ("形", "名前 of X", "当たりのうち、shape で名前を付けた部分", "n of first of find all D in t", "a12b", "12"),
+    ("形", "text of X", "当たった部分の文字", "text of last of find all D in t", "1 と 22", "22"),
+    ("集まり", "count of X", "要素の数（length of X と同じ）", "count of split t by \",\"", "a,b,c", 3),
+    ("集まり", "first of X / last of X", "最初の要素 / 最後の要素（空のときは停止するため、先に count で分岐）", "last of split t by \",\"", "a,b,c", "c"),
+    ("数", "number of X", "文字を数に変換（1,980 や 1.5 にも対応し、読めないときは停止）", "number of t", "1,980", 1980),
+    ("数", "a + b / a - b", "足し算 / 引き算（結合の優先順位は最も低い）", "count of split t by \",\" + 10", "a,b", 12),
+    ("文字", 'X contains "a"', "文字を含むかどうか（答えは yes / no で、match で分岐）", 't contains "締切"', "締切は明日", "yes"),
+    ("文字", 'X starts with "a"', "指定の文字で始まるかどうか（答えは yes / no）", 't starts with "Re:"', "Fw: 件名", "no"),
+    ("集まり", '["a", "b", "c"]', "その場で作るリスト（do の中だけで使用し、保存するデータは thing に書く）", 'count of ["朝", "昼", "夜"]', "", 3),
+    ("集まり", 'X contains "a"（リスト）', "リストにその値が含まれるかどうか（答えは yes / no）", '["朝", "昼", "夜"] contains "昼"', "", "yes"),
+    ("集まり", "sort X / sort X desc", "並べ替え（数は数値の順）/ 逆順に並べ替え", 'sort split t by ","', "b,a,c", ["a", "b", "c"]),
+    ("集まり", "take 3 of X", "先頭から3つを取得", 'take 2 of split t by ","', "a,b,c", ["a", "b"]),
+    ("集まり", "unique of X", "重複の削除（順番は維持）", 'unique of split t by ","', "a,b,a", ["a", "b"]),
+    ("数", "sum of X / min of X / max of X", "合計 / 最小値 / 最大値（空の sum は 0）", 'sum of split t by ","', "1,2,3", 6),
+    ("数", "round X", "四捨五入して整数に変換（2.5 は 3）", "round avg of split t by \",\"", "2,3", 3),
+    ("数", "avg of X", "平均（空のときは停止）", 'avg of split t by ","', "1,2", 1.5),
+    ("数", "abs X", "絶対値", 'abs number of t', "-7", 7),
+    ("日時", "monthday of X", "月と日（時と分を含むこともある）を取り出した当たりを \"10/15 12:00\" の形に変換", "monthday of first of find all M in t", "締切10/15まで", "10/15"),
+    ("日時", "date of X", "年月日を取り出した当たりを \"2026/10/15\" の形に変換（年が必要）", "date of first of find all Y in t", "2026年10月15日", "2026/10/15"),
+    ("日時", "time of X", "当たり、または時刻を含む文字から、時と分を \"12:00\" の形で取り出す", "time of t", "開始は 9:05 から", "9:05"),
+    ("日時", "add 3 days to X", "年を含む日付に日数を足す（年を推測しないため、年のない日付では停止）", "add 3 days to t", "2026/12/30", "2027/1/2"),
+    ("日時", "weekday of X", "年を含む日付の曜日（mon〜sun を返し、match で分岐）", "weekday of t", "2026/9/23", "wed"),
+    ("日時", "days until X", "今日から X までの日数（現在時刻が必要なため part の中で使用）", None, None, None),
+]
+
+# shape の部品（正規表現の代わり）
+SHAPE_PARTS = [
+    ('"文字"', "書いたとおりの文字"),
+    ("space", "空白（1つ以上）"),
+    ("digits 1..2 / digits 4", "数字（範囲か、ちょうどの桁数を指定）"),
+    ("letters 1..10", "文字（日本語を含む）"),
+    ("word 1..10", "文字、数字、_（日本語を含む）"),
+    ('word with "._-" 1..64', "ASCII の英数字と指定した記号だけ（メールアドレスなどに使用）"),
+    ("any 1", "任意の1文字"),
+    ("名前 digits 1..2", "取り出す部分への名前付け（`名前 of 当たり` で使用）"),
+    ("maybe ...", "行の残りの部分を省略可能にする"),
+    ('one of "/" "-" "年"', "いずれか1つの文字（`month one of \"1\" \"2\" …` のように名前も付けられる）"),
+    ("edge", "数字や英字の途中で始まらない、または終わらないことの指定（最初の行か最後の行に書く。123-4567 は 0123-45678 に当たらない）"),
+    ("Clock / maybe Clock", "別の shape の利用（その shape で付けた名前も取り出せる）"),
+]
+
+TOOLS_HINT = "（使える道具: " + " / ".join(t[1] for t in TOOLS) + "）"
+
+# 他の言語のクセで書いた時に、この言語での書き方を教える（AIは見たことのない文法なので）
+_HABITS = [
+    (r"^\s*(if|elif|else\b|switch|case)\b", "分かれ道は `名前[a | b] = match 式` と、その下の枝 `値 -> 結果` で書きます"),
+    (r"^\s*(for|while|foreach)\b|\.map\(|\.filter\(", "くり返しはありません。find all 形 in X / count of X / first of X を使います"),
+    (r"^\s*return\b", "return はありません。答えは「他のどの行からも使われていない行」です"),
+    (r"==|!=|<=|>=|\s[<>]\s|\band\b|\bor\b|\bnot\b", "比べる・かつ・またはは、match の枝で書きます。例: `kind[one | many] = match count of hits` の下に `1 -> one`"),
+    (r"\bre\.|\\d|\[0-9\]|regex", "正規表現の代わりに shape を書きます（`shape 名前` の下に `month digits 1..2` / `\"/\"` / `maybe space`）"),
+    (r"\blen\(", "長さ・数は count of X です"),
+    (r"\b(true|false|True|False|None|null)\b", "true / false / null はありません。状態の名前（`[found | missing]`）で書きます"),
+    (r"\w\(", "道具は カッコで呼びません。`count of X` / `normalize X` のように書きます"),
+]
+
+
+def habit_hint(text: str) -> str:
+    for pat, hint in _HABITS:
+        if re.search(pat, text):
+            return f"（{hint}）"
+    return ""
+
+
+class BodyError(Exception):
+    def __init__(self, line: int, message: str):
+        super().__init__(f"L{line}: {message}")
+        self.line = line
+        self.message = message
+
+
+@dataclass(frozen=True)
+class Tagged:
+    """状態の付いた値。`found 10/15 12:00` や `missing`"""
+    state: str
+    value: object = None
+
+    def __str__(self):
+        return self.state if self.value is None else f"{self.state} {self.value}"
+
+
+# ---------------------------------------------------------------------------
+# shape（正規表現の代わり）
+# ---------------------------------------------------------------------------
+
+_TOK = re.compile(r'"[^"]*"|\S+')
+
+
+def _range(tok: str) -> str:
+    m = re.fullmatch(r"(\d+)\.\.(\d+)", tok)
+    if m:
+        return "{%s,%s}" % (m.group(1), m.group(2))
+    if tok.isdigit():
+        return "{%s}" % tok
+    raise ValueError(tok)
+
+
+def _elements(tokens: list[str], line: int, ref=None) -> str:
+    out, i = "", 0
+    classes = {"digits": r"\d", "any": r".", "letters": r"[^\W\d_]", "word": r"\w"}
+    while i < len(tokens):
+        t = tokens[i]
+        if t.startswith('"'):
+            out += re.escape(t[1:-1])
+            i += 1
+        elif t == "space":
+            out += r"\s+"
+            i += 1
+        elif (t == "one" and i + 1 < len(tokens) and tokens[i + 1] == "of") or (
+                re.fullmatch(r"[a-z_]\w*", t) and i + 2 < len(tokens) and tokens[i + 1] == "one" and tokens[i + 2] == "of"):
+            name = None if t == "one" else t
+            opts = []
+            j = i + 2 if name is None else i + 3
+            while j < len(tokens) and tokens[j].startswith('"'):
+                opts.append(re.escape(tokens[j][1:-1]))
+                j += 1
+            if len(opts) < 2:
+                raise BodyError(line, 'shape: one of の後ろに "文字" を2つ以上（例: one of "/" "-" "年"）')
+            opts.sort(key=len, reverse=True)            # 長いものから（"12" を "1" より先に）
+            out += (f"(?P<{name}>" if name else "(?:") + "|".join(opts) + ")"
+            i = j
+        elif t == "word" and i + 2 < len(tokens) and tokens[i + 1] == "with" and tokens[i + 2].startswith('"'):
+            extra = re.escape(tokens[i + 2][1:-1]).replace("]", "\\]")     # word with "._-" 1..64 … 英数字（ASCII）と、書いた記号
+            try:
+                out += f"[A-Za-z0-9_{extra}]" + _range(tokens[i + 3])
+            except (IndexError, ValueError):
+                raise BodyError(line, "shape: word with \"記号\" の後ろに数か範囲（1..64）が要ります")
+            i += 4
+        elif re.fullmatch(r"[a-z_]\w*", t) and i + 3 < len(tokens) and tokens[i + 1] == "word" and tokens[i + 2] == "with":
+            extra = re.escape(tokens[i + 3][1:-1]).replace("]", "\\]")
+            try:
+                out += f"(?P<{t}>[A-Za-z0-9_{extra}]{_range(tokens[i + 4])})"
+            except (IndexError, ValueError):
+                raise BodyError(line, f"shape: {t} word with \"記号\" の後ろに数か範囲（1..64）が要ります")
+            i += 5
+        elif t in classes:
+            try:
+                out += classes[t] + _range(tokens[i + 1])
+            except (IndexError, ValueError):
+                raise BodyError(line, f"shape: {t} の後ろに数か範囲（1..2）が要ります")
+            i += 2
+        elif re.fullmatch(r"[a-z_]\w*", t) and i + 1 < len(tokens) and tokens[i + 1] in classes:
+            name, cls = t, tokens[i + 1]
+            try:
+                out += f"(?P<{name}>{classes[cls]}{_range(tokens[i + 2])})"
+            except (IndexError, ValueError):
+                raise BodyError(line, f"shape: {name} {cls} の後ろに数か範囲（1..2）が要ります")
+            i += 3
+        elif ref is not None and re.fullmatch(r"[A-Z]\w*", t):
+            out += f"(?:{ref(t, line)})"                     # 別の shape を名前で使う
+            i += 1
+        else:
+            raise BodyError(line, f"shape の書き方が分かりません: '{t}'（使えるのは \"文字\" / space / digits / letters / any / word / word with \"記号\" / one of / maybe / edge / 別の shape の名前）")
+    return out
+
+
+def _shape_pattern(shape: Node, shapes: dict[str, Node], stack: tuple[str, ...]) -> str:
+    def ref(name: str, line: int) -> str:
+        if name in stack or name == shape.name:
+            raise BodyError(line, f"shape {shape.name}: {' → '.join(stack + (shape.name, name))} で自分に戻ってしまいます")
+        if name not in shapes:
+            raise BodyError(line, f"shape {shape.name}: 「{name}」という shape はありません")
+        return _shape_pattern(shapes[name], shapes, stack + (shape.name,))
+
+    pat = ""
+    kids = shape.children
+    for n, c in enumerate(kids):
+        toks = _TOK.findall(c.raw)
+        if toks == ["edge"]:              # 数字や英字の続きの途中で始まらない・終わらない
+            if n == 0:
+                pat += r"(?<![0-9A-Za-z])"
+            elif n == len(kids) - 1:
+                pat += r"(?![0-9A-Za-z])"
+            else:
+                raise BodyError(c.line, f"shape {shape.name}: edge は最初か最後の行にだけ書けます")
+            continue
+        if toks and toks[0] == "maybe":
+            rest = toks[1:]
+            pat += r"\s*" if rest == ["space"] else f"(?:{_elements(rest, c.line, ref)})?"
+        else:
+            pat += _elements(toks, c.line, ref)
+    return pat
+
+
+def compile_shape(shape: Node, shapes: dict[str, Node] | None = None) -> re.Pattern:
+    pat = _shape_pattern(shape, shapes or {}, ())
+    try:
+        return re.compile(pat)
+    except re.error as e:
+        raise BodyError(shape.line, f"shape {shape.name}: {e}")
+
+
+# ---------------------------------------------------------------------------
+# 式
+# ---------------------------------------------------------------------------
+
+def in_range(key, text: str) -> bool:
+    """match の左の `1..3` / `..-1` / `4..`（数の範囲。両端を含む）"""
+    m = re.fullmatch(r"(-?\d+)?\.\.(-?\d+)?", text)
+    if not m or not isinstance(key, int) or (m.group(1) is None and m.group(2) is None):
+        return False
+    lo = int(m.group(1)) if m.group(1) is not None else None
+    hi = int(m.group(2)) if m.group(2) is not None else None
+    return (lo is None or key >= lo) and (hi is None or key <= hi)
+
+@dataclass
+class Step:
+    name: str
+    expr: str
+    node: Node
+    states: list[str] | None        # `kind[a | b] = ...` の宣言
+
+
+class Body:
+    def __init__(self, do: Node, shapes: dict[str, Node], inputs: list[str], out_states: dict[str, bool],
+                 single_result: bool = True, lines: list[Node] | None = None):
+        """out_states: out の状態名 → 値を持つか（found monthday なら True、missing なら False）"""
+        self.shapes = {n: compile_shape(s, shapes) for n, s in shapes.items()}
+        self.inputs = inputs
+        self.out_states = out_states
+        self.steps: dict[str, Step] = {}
+        for c in (lines if lines is not None else do.children):
+            m = re.match(r"^(\w+)\s*(\[[^\]]*\])?\s*=\s*(.+)$", c.raw)
+            if not m:
+                raise BodyError(c.line, f"do に書けるのは `名前 = 式` だけです: '{c.raw}'" + habit_hint(c.raw))
+            name = m.group(1)
+            if name in self.steps or name in inputs:
+                raise BodyError(c.line, f"{name} はもう使われています（書き換えはできません）")
+            declared = states_of(m.group(2)) if m.group(2) else None
+            if declared:     # `answer[found monthday | missing]` のように out の形で書いたら、状態の名前（found / missing）として読む
+                declared = [d.split()[0] if d.split()[0] in out_states else d for d in declared]
+            self.steps[name] = Step(name, m.group(3).strip(), c, declared)
+        for st in self.steps.values():             # 状態の名前と行の名前が同じだと、どちらか分からない
+            for x in st.states or []:
+                if x in self.steps or x in inputs:
+                    raise BodyError(st.node.line, f"状態の名前「{x}」が、行の名前と同じです。どちらかの名前を変えてください")
+        if not self.steps and single_result:
+            raise BodyError(do.line, "do が空です")
+        self.result = None
+        if not single_result:
+            return
+        def refs(expr: str) -> set:
+            words = re.findall(r"\b\w+\b", re.sub(r'"[^"]*"', "", expr))
+            if words and words[0] in out_states:     # 先頭の状態名は値の印で、名前の参照ではない
+                words = words[1:]
+            return set(words)
+        used = set()
+        for s in self.steps.values():
+            used |= refs(s.expr)
+            for _, r, _ in match_arms(s.node):
+                used |= refs(r)
+        sinks = [n for n in self.steps if n not in used]
+        if len(sinks) != 1:
+            raise BodyError(do.line, f"答えの行（どこからも使われていない行）がちょうど1つではありません: {sinks or 'なし（一周している）'}")
+        self.result = sinks[0]
+
+    def run(self, inputs: dict) -> object:
+        memo: dict = dict(inputs)
+        return self._get(self.result, memo, [])
+
+    def values(self, inputs: dict) -> dict:
+        """全部の行の値（part で使う）"""
+        memo: dict = dict(inputs)
+        for n in self.steps:
+            self._get(n, memo, [])
+        return memo
+
+    # --------------------------------------------------------------
+    def _get(self, name: str, memo: dict, path: list):
+        if name in memo:
+            return memo[name]
+        if name not in self.steps:
+            raise KeyError(name)
+        if name in path:
+            raise BodyError(self.steps[name].node.line, f"一周しています: {' -> '.join(path + [name])}")
+        st = self.steps[name]
+        if st.expr.startswith("match "):
+            v = self._match(st, memo, path + [name])
+        else:
+            v = self._eval(st.expr, st, memo, path + [name])
+        if st.states is not None:
+            tag = v.state if isinstance(v, Tagged) else v
+            if tag not in st.states:
+                raise BodyError(st.node.line, f"{name} は {' | '.join(st.states)} のどれかのはずが {tag}")
+        memo[name] = v
+        return v
+
+    def _match(self, st: Step, memo, path):
+        subject = self._eval(st.expr[len("match "):], st, memo, path)
+        key = subject.state if isinstance(subject, Tagged) else subject
+        chosen = None
+        for lefts, right, arm in match_arms(st.node):
+            if "else" in lefts:
+                chosen = chosen or (right, arm)
+                continue
+            for l in lefts:
+                if str(key) == l or (re.fullmatch(r"-?\d+", l) and isinstance(key, int) and key == int(l)) or in_range(key, l):
+                    return self._eval(right, st, memo, path, arm.line)
+        if chosen is None:
+            raise BodyError(st.node.line, f"match {st.expr[6:]}: {key} に当たる枝がありません")
+        return self._eval(chosen[0], st, memo, path, chosen[1].line)
+
+    def _eval(self, expr: str, st: Step, memo, path, line: int | None = None):
+        e = expr.strip()
+        line = line or st.node.line
+        ev = lambda x: self._eval(x, st, memo, path, line)
+        if re.fullmatch(r'"[^"]*"', e):
+            return e[1:-1]
+        if e.startswith("[") and e.endswith("]"):      # その場のリスト: ["朝", "昼", "夜"]（do の中だけ）
+            inner = e[1:-1].strip()
+            if not inner:
+                return []
+            parts = re.findall(r'\s*("[^"]*"|[^,]+)\s*(?:,|$)', inner)
+            return [ev(x.strip()) for x in parts]
+        if re.fullmatch(r"-?\d+", e):
+            return int(e)
+        # 状態（out の状態 / 自分で宣言した状態）
+        head, _, rest = e.partition(" ")
+        if head in self.out_states:
+            if self.out_states[head]:
+                if not rest:
+                    raise BodyError(line, f"{head} には値が要ります（例: {head} monthday of first of hits）")
+                return Tagged(head, ev(rest))
+            if rest:
+                raise BodyError(line, f"{head} は値を持ちません")
+            return Tagged(head)
+        if not rest and st.states and e in st.states:
+            return e
+        if not rest and any(e in (s.states or []) for s in self.steps.values()):
+            return e
+        # 名前
+        if re.fullmatch(r"\w+", e):
+            try:
+                return self._get(e, memo, path)
+            except KeyError:
+                raise BodyError(line, f"「{e}」がどこにもありません")
+        # 足し算・引き算は一番弱くつなぐ（`count of a + count of b` は (count of a) + (count of b)）。左から順に
+        parts = re.split(r' (\+|-) (?=(?:[^"]*"[^"]*")*[^"]*$)', e)
+        if len(parts) > 1:
+            total = ev(parts[0])
+            for op, x in zip(parts[1::2], parts[2::2]):
+                v = ev(x)
+                if not isinstance(total, (int, float)) or not isinstance(v, (int, float)):
+                    raise BodyError(line, f"{op} は数どうしだけです: '{e}'")
+                total = total + v if op == "+" else total - v
+            return total
+        # 道具
+        m = re.fullmatch(r"find all (\w+) in (.+)", e)
+        if m:
+            if m.group(1) not in self.shapes:
+                raise BodyError(line, f"shape {m.group(1)} がありません")
+            text = str(ev(m.group(2)))
+            return [dict(mm.groupdict(), text=mm.group(0)) for mm in self.shapes[m.group(1)].finditer(text)]
+        m = re.fullmatch(r"add (\d+) days? to (.+)|weekday of (.+)", e)
+        if m:
+            from datetime import timedelta
+            from .values import _FULL
+            raw = str(ev(m.group(2) or m.group(3))).strip()
+            mm = _FULL.match(raw)
+            if not mm:
+                raise BodyError(line, f"年の入った日付（2026/9/24）が要ります: '{raw}'（年は推測しません）")
+            y, mo, d, h, mi = mm.groups()
+            from datetime import datetime as _dt
+            try:
+                t = _dt(int(y), int(mo), int(d))
+            except ValueError:
+                raise BodyError(line, f"無い日付です: '{raw}'")
+            if m.group(3):
+                return ["mon", "tue", "wed", "thu", "fri", "sat", "sun"][t.weekday()]
+            t += timedelta(days=int(m.group(1)))
+            return f"{t.year}/{t.month}/{t.day}" + (f" {int(h)}:{mi}" if h is not None else "")
+        m = re.fullmatch(r"days until (.+)", e)
+        if m:
+            from .values import parse_time
+            now = memo.get("__now__")
+            if now is None:
+                raise BodyError(line, "days until: 今の時刻がありません")
+            try:
+                t = parse_time(str(ev(m.group(1))), now.year)
+            except ValueError as err:
+                raise BodyError(line, str(err))
+            return (t.date() - now.date()).days
+        m = re.fullmatch(r"(count|length|first|last|monthday|date|time|number) of (.+)", e)
+        if m:
+            v = ev(m.group(2))
+            op = m.group(1)
+            if op in ("count", "length", "first", "last") and not isinstance(v, (list, str)):
+                raise BodyError(line, f"{op} of: 集まりか文字が要ります（{type(v).__name__} でした）")
+            if op in ("count", "length"):
+                return len(v)
+            if op in ("first", "last"):
+                if not v:
+                    raise BodyError(line, f"{op} of: 空の集まりです（先に count で分けてください）")
+                return v[0] if op == "first" else v[-1]
+            if op == "number":
+                t = str(v).strip().replace(",", "")
+                try:
+                    return int(t)
+                except ValueError:
+                    try:
+                        return float(t)
+                    except ValueError:
+                        raise BodyError(line, f"number of: 数として読めません: {str(v)[:30]!r}（先に find all で数字だけ取り出す）")
+            if op == "time":
+                if isinstance(v, dict) and v.get("hour") is not None and v.get("minute") is not None:
+                    return f"{int(v['hour'])}:{int(v['minute']):02d}"
+                mt = re.search(r"(\d{1,2}):(\d{2})", str(v)) if isinstance(v, str) else None
+                if mt:
+                    return f"{int(mt.group(1))}:{mt.group(2)}"
+                raise BodyError(line, "time of: hour と minute を取り出した shape の結果か、時刻（12:00）の入った文字が要ります")
+            if op == "date":
+                if not isinstance(v, dict) or not {"year", "month", "day"} <= set(v):
+                    raise BodyError(line, "date of: year と month と day を取り出した shape の結果が要ります（年は推測しません）")
+                return f"{int(v['year'])}/{int(v['month'])}/{int(v['day'])}"
+            if not isinstance(v, dict) or not {"month", "day"} <= set(v):
+                raise BodyError(line, "monthday of: month と day を取り出した shape の結果が要ります")
+            h, mi = v.get("hour"), v.get("minute")
+            s = f"{int(v['month'])}/{int(v['day'])}"
+            return s + (f" {int(h)}:{mi}" if h is not None and mi is not None else "")
+        m = re.fullmatch(r"(sum|min|max|avg|unique) of (.+)", e)
+        if m:
+            v = ev(m.group(2))
+            if not isinstance(v, list):
+                raise BodyError(line, f"{m.group(1)} of: 集まりが要ります")
+            if m.group(1) == "unique":
+                return list(dict.fromkeys(v))
+            nums = []
+            for x in v:
+                try:
+                    nums.append(x if isinstance(x, (int, float)) else int(str(x)))
+                except ValueError:
+                    raise BodyError(line, f"{m.group(1)} of: 数でないものがあります: {x!r}")
+            if not nums and m.group(1) != "sum":
+                raise BodyError(line, f"{m.group(1)} of: 空の集まりです（先に count で分けてください）")
+            if m.group(1) == "avg":
+                return sum(nums) / len(nums)
+            return {"sum": sum, "min": min, "max": max}[m.group(1)](nums) if nums else 0
+        m = re.fullmatch(r"take (\d+) of (.+)", e)
+        if m:
+            v = ev(m.group(2))
+            if not isinstance(v, list):
+                raise BodyError(line, "take: 集まりが要ります")
+            return v[:int(m.group(1))]
+        m = re.fullmatch(r"sort (.+?)( desc)?", e)
+        if m:
+            v = ev(m.group(1))
+            if not isinstance(v, list):
+                raise BodyError(line, "sort: 集まりが要ります")
+            return sorted(v, key=lambda x: (not isinstance(x, (int, float)), x if isinstance(x, (int, float)) else str(x)),
+                          reverse=bool(m.group(2)))
+        m = re.fullmatch(r"round (.+)", e)
+        if m:
+            v = ev(m.group(1))
+            if not isinstance(v, (int, float)):
+                raise BodyError(line, "round: 数が要ります")
+            import math
+            return int(math.floor(abs(v) + 0.5)) * (1 if v >= 0 else -1)     # 四捨五入（2.5 → 3。Python の round は 2）
+        m = re.fullmatch(r"abs (.+)", e)
+        if m:
+            v = ev(m.group(1))
+            if not isinstance(v, (int, float)):
+                raise BodyError(line, "abs: 数が要ります")
+            return abs(v)
+        m = re.fullmatch(r'(.+) (contains|starts with) "([^"]*)"', e)
+        if m:                                          # 答えは yes / no（状態の名前として match で分ける）
+            v = ev(m.group(1))
+            if isinstance(v, list):                    # リストなら「その値が入っているか」
+                hit = m.group(3) in [str(x) for x in v] if m.group(2) == "contains" else bool(v) and str(v[0]).startswith(m.group(3))
+            else:
+                v = str(v)
+                hit = m.group(3) in v if m.group(2) == "contains" else v.startswith(m.group(3))
+            return "yes" if hit else "no"
+        m = re.fullmatch(r"(\w+) of (.+)", e)          # shape で名前を付けた部分・当たった文字（text of X）
+        if m:
+            v = ev(m.group(2))
+            if isinstance(v, dict):
+                if m.group(1) not in v or v[m.group(1)] is None:
+                    raise BodyError(line, f"{m.group(1)} of: この当たりに {m.group(1)} はありません（あるのは {', '.join(k for k in v if v[k] is not None)}）")
+                return v[m.group(1)]
+        m = re.fullmatch(r"(normalize|trim|lower|upper) (.+)", e)
+        if m:
+            v = str(ev(m.group(2)))
+            return {"normalize": lambda s: unicodedata.normalize("NFKC", s), "trim": str.strip,
+                    "lower": str.lower, "upper": str.upper}[m.group(1)](v)
+        m = re.fullmatch(r'split (.+) by "([^"]*)"', e)
+        if m:
+            return str(ev(m.group(1))).split(m.group(2))
+        m = re.fullmatch(r'join (.+) by "([^"]*)"', e)
+        if m:
+            return m.group(2).join(str(x) for x in ev(m.group(1)))
+        m = re.fullmatch(r'replace "([^"]*)" with "([^"]*)" in (.+)', e)
+        if m:
+            return str(ev(m.group(3))).replace(m.group(1), m.group(2))
+        raise BodyError(line, f"式が分かりません: '{e}'" + (habit_hint(e) or TOOLS_HINT))
+
+
+# ---------------------------------------------------------------------------
+# action から Body を作る
+# ---------------------------------------------------------------------------
+
+def out_states_of(action: Node) -> dict[str, bool]:
+    o = action.child("out")
+    alts = [a.strip().split() for a in (o.text.split("|") if o else [])]
+    return {a[0]: len(a) > 1 for a in alts if a and len(a) >= 1 and not (len(a) == 1 and a[0] in ("text", "number", "monthday", "date"))}
+
+
+def input_names(action: Node) -> list[str]:
+    i = action.child("in")
+    return [i.text.split()[0]] if i and i.text else []
+
+
+def body_of(action: Node, do: Node, shapes: dict[str, Node]) -> Body:
+    return Body(do, shapes, input_names(action), out_states_of(action))
+
+
+def parse_expected(text: str, out_states: dict[str, bool]):
+    """example の右側 → 比べる値"""
+    t = text.strip()
+    head, _, rest = t.partition(" ")
+    if head in out_states:
+        return Tagged(head, rest.strip() or None) if out_states[head] else Tagged(head)
+    return t.strip('"')
+
+
+def same(got, want) -> bool:
+    if isinstance(want, Tagged):
+        return isinstance(got, Tagged) and got.state == want.state and (want.value is None or str(got.value) == str(want.value))
+    return str(got) == str(want)

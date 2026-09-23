@@ -1,0 +1,44 @@
+<div class="wrap">
+
+{HEADER}
+
+<p class="tagline">Ponte は、アプリの仕様を書き、それをそのまま動かすためのプログラミング言語です。決まっていないことがあれば、動かす前にエラーとして示します。 <a href="spec.html">詳しく ›</a> <a href="play.html">ブラウザで試す ›</a></p>
+
+<section class="show sticker" aria-label="書き方の見本">
+{SLIDES}
+  <div class="ctrl">
+    <button type="button" id="prev" aria-label="前の見本">‹</button>
+    <div class="dots">{DOTS}</div>
+    <button type="button" id="next" aria-label="次の見本">›</button>
+  </div>
+</section>
+
+
+<section class="cols">
+  <div class="col sticker"><h3>はじめる</h3><p>入門では、やることアプリをエラーを見ながら少しずつ作ります。はじめての方は、ここから読んでください。</p><a class="more" href="learn.html">入門を読む ›</a></div>
+  <div class="col sticker"><h3>入れる</h3><p>Python 3.11 があれば動きます。ほかに入れるものはありません。</p><pre>pip install -e .
+ponte new myapp</pre><a class="more" href="{REPO}">GitHub から入手 ›</a></div>
+  <div class="col sticker"><h3>ドキュメント</h3><p>書き方の決まりは仕様書にまとめています。使える道具とエラーの一覧も用意しています。</p><a class="more" href="reference.html">道具とエラーを見る ›</a></div>
+  <div class="col sticker"><h3>試す</h3><p>インストールしなくても、ブラウザの中で書いて確かめられます。書いたものはどこにも送りません。</p><a class="more" href="play.html">試してみる ›</a></div>
+</section>
+
+<footer>
+  <p>Ponte（ポンテ）はイタリア語で「橋」という意味です。人と AI のあいだにかける橋という意味を込めて名付けました。</p>
+  <p>v0.3 ・ Python 3.11 ・ <a href="how.html">しくみ</a></p>
+</footer>
+</div>
+
+<script>
+(() => {
+  const slides = [...document.querySelectorAll(".slide")], dots = [...document.querySelectorAll("[data-go]")];
+  let i = 0;
+  const show = n => {
+    i = (n + slides.length) % slides.length;
+    slides.forEach((s, k) => s.hidden = k !== i);
+    dots.forEach((d, k) => d.setAttribute("aria-current", k === i ? "true" : "false"));
+  };
+  document.getElementById("prev").onclick = () => show(i - 1);
+  document.getElementById("next").onclick = () => show(i + 1);
+  dots.forEach(d => d.onclick = () => show(+d.dataset.go));
+})();
+</script>

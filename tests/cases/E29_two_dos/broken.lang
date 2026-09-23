@@ -62,6 +62,7 @@ rule Remind
 rule MarkSubmitted
   when  user taps submitted-button on DueSoon
   do    move this to submitted
+  do    notify me "提出しました"
   example
     given   Application(company "Osaka Gas", status draft)
     taps    submitted-button on Application(company "Osaka Gas")
@@ -99,6 +100,3 @@ input AddApplication
 style DueSoon
   card   round 12, shadow soft, pad 16
   title  size 18, bold
-
-change Application to v2
-  add memo text = ""

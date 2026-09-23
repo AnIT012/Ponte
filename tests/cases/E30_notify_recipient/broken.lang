@@ -53,7 +53,7 @@ rule ReadMail
 rule Remind
   why   締切を落とさないため
   when  every day at 21:00
-  do    notify owner each of DueSoon
+  do    notify each of DueSoon
   example
     given   Application(company "Osaka Gas", deadline "9/24 23:59", status draft)
     at      "9/21 21:00"
@@ -99,6 +99,3 @@ input AddApplication
 style DueSoon
   card   round 12, shadow soft, pad 16
   title  size 18, bold
-
-change Application to v2
-  add memo text = ""

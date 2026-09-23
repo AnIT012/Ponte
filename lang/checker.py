@@ -1,4 +1,4 @@
-"""チェッカー（仕様 v0.2 13章「エラー一覧」28個）。1つ1関数。
+"""チェッカー（仕様 v0.2 13章「エラー一覧」30個）。1つ1関数。
 
 判定の細かい定義で仕様に書いてないものは QUESTIONS_v0.2.md に書いた（仮の扱い）。
 コードが W で始まるものは警告（渡せる判定には数えない）。
@@ -220,7 +220,6 @@ WHEN = [
     r"user drags \S+ to \S+",
     r"user types in \S+",
     r"user (opens|leaves) \w+",
-    r"user does \S.*",
     r"[A-Z][\w.]* is (created|removed)",
     r"[A-Z][\w.]* moves to \w+",
     r"[A-Z]\w* gives \S.*",
@@ -867,6 +866,42 @@ def check_undefined(spec: Spec, opt: Options) -> list[Finding]:
 
 
 # ---------------------------------------------------------------------------
+# 29. rule の do が2つ以上（上から順に動く＝順序が生まれる）
+# ---------------------------------------------------------------------------
+
+def check_single_do(spec: Spec, opt: Options) -> list[Finding]:
+    out = []
+    for r in rules(spec).values():
+        dos = r.children_of("do")
+        if len(dos) > 1:
+            out.append(Finding("E29", dos[1].line, f"rule {r.name}: do は1つだけです。2つやりたい時は rule を分けて、relate の then でつなぐ（順序を書かない）"))
+    return out
+
+
+# ---------------------------------------------------------------------------
+# 30. 通知の宛先が書いていない
+# ---------------------------------------------------------------------------
+
+_NOTIFY = re.compile(r'^notify\s+(\S+)\s+(each of \w+|".*")$')
+
+
+def check_notify_recipient(spec: Spec, opt: Options) -> list[Finding]:
+    out = []
+    user_fields = {f.name for t in things(spec).values() for f in thing_fields(t)
+                   if f.type in things(spec) and "name" in {x.name for x in thing_fields(things(spec)[f.type])} or f.type == "User"}
+    for r in rules(spec).values():
+        for d in r.children_of("do"):
+            if not d.text.startswith("notify"):
+                continue
+            m = _NOTIFY.match(d.text)
+            if not m:
+                out.append(Finding("E30", d.line, f"rule {r.name}: 通知の宛先がありません（`notify me \"...\"` / `notify owner each of 一覧`）: '{d.text}'"))
+            elif m.group(1) != "me" and m.group(1) not in user_fields:
+                out.append(Finding("E30", d.line, f"rule {r.name}: 宛先「{m.group(1)}」は me か、人を指す項目の名前（{', '.join(sorted(user_fields)) or 'なし'}）です"))
+    return out
+
+
+# ---------------------------------------------------------------------------
 
 ALL_CHECKS = [
     check_match_else, check_until_limit, check_examples, check_else, check_tbd,
@@ -875,7 +910,7 @@ ALL_CHECKS = [
     check_relate_cycle, check_relate_contradiction, check_before_possible,
     check_double_else, check_match_states, check_who, check_gone, check_change,
     check_ask_ai_limit, check_connect_fallback, check_scene_move, check_words,
-    check_a11y, check_money, check_undefined,
+    check_a11y, check_money, check_undefined, check_single_do, check_notify_recipient,
 ]
 
 

@@ -325,6 +325,16 @@ class Engine:
     def match_for(self, thing: str, fld: str, target: str = "color") -> Node | None:
         return self.matches.get(f"{thing}.{fld} to {target}")
 
+    def recipient(self, who: str, box: Box | None, ctx: Ctx) -> User | None:
+        """通知の宛先: me ならきっかけの人、項目の名前ならその箱のその項目が指す人"""
+        if who == "me":
+            return ctx.user
+        if box is not None:
+            ub = self.boxes.get("User", {}).get(box.values.get(who))
+            if ub is not None:
+                return User(ub.id, ub.values.get("name", ub.id))
+        return None
+
     def owner_of(self, box: Box) -> User | None:
         """通知の宛先: その箱の User を指す項目（QUESTIONS_v0.2 R3）"""
         for name, f in self.fields[box.thing].items():
@@ -448,14 +458,14 @@ class Engine:
         return re.sub(r"\{(\w+)\}", rep, text)
 
     def _do(self, rule: Node, text: str, ctx: Ctx):
-        m = re.match(r"^notify each of (\w+)$", text)
+        m = re.match(r"^notify (\w+) each of (\w+)$", text)
         if m:
-            for b in self.list_items(m.group(1), ctx):
-                self.notify(rule.name, self.label(b), ctx.user or self.owner_of(b))
+            for b in self.list_items(m.group(2), ctx):
+                self.notify(rule.name, self.label(b), self.recipient(m.group(1), b, ctx))
             return
-        m = re.match(r'^notify "(.*)"$', text)
+        m = re.match(r'^notify (\w+) "(.*)"$', text)
         if m:
-            self.notify(rule.name, self._fill(m.group(1), ctx), ctx.user)
+            self.notify(rule.name, self._fill(m.group(2), ctx), self.recipient(m.group(1), ctx.this, ctx))
             return
         m = re.match(r"^move this to (\w+)$", text)
         if m:

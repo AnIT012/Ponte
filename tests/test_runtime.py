@@ -118,20 +118,20 @@ who
 
 rule A
   when  Job is created
-  do    notify "A"
+  do    notify me "A"
 
 rule B
-  do    notify "B"
+  do    notify me "B"
 
 rule C
   when  Job is created
-  do    notify "C"
+  do    notify me "C"
 
 rule D
   do    move this to filed
 
 rule E
-  do    notify "E"
+  do    notify me "E"
 
 relate
   A then B

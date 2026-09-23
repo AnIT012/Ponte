@@ -4,7 +4,7 @@ name: pages
 on:
   push:
     branches: [main]
-    paths: [site/**, docs/screenshots/**]
+    paths: [site/**, docs/**, ponte/**]
   workflow_dispatch:
 
 permissions:

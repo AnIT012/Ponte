@@ -98,12 +98,15 @@ def test_markdown_tables_have_even_rows():
                 rows = []
 
 
-def test_playground_zip_has_current_sources():
-    """試す（play.html）がブラウザで読む ponte.zip は、今の ponte/ と同じ中身"""
+def test_playground_zip_is_built_from_sources(tmp_path):
+    """試す（play.html）がブラウザで読む ponte.zip は、build.py が今の ponte/ から作る（git には入れない）"""
+    import subprocess
+    import sys
     import zipfile
     from pathlib import Path
+    subprocess.run([sys.executable, "site/build.py"], check=True, capture_output=True)
     z = zipfile.ZipFile("site/ponte.zip")
     for p in Path("ponte").rglob("*"):
         if p.suffix in (".py", ".ponte") and "__pycache__" not in p.parts:
-            assert z.read(str(p)) == p.read_bytes(), f"{p} が古い。python site/build.py"
-    assert z.read("highlight.py") == Path("site/highlight.py").read_bytes()
+            assert z.read(str(p)) == p.read_bytes(), p
+    assert "highlight.py" in z.namelist()

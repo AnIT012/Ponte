@@ -10,3 +10,4 @@ site/artifact.html
 *.users.json.tmp
 site/ponte.zip
 .coverage
+*.data.jsonl.files/

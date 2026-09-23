@@ -103,6 +103,7 @@ pip install -e .                           # 入れると `ponte run spec/todo.p
 | `python -m ponte build 仕様.ponte` | 1つのファイル（.pyz）にまとめる → `python app.pyz` |
 | `python -m ponte role 仕様.ponte 名前 admin` | 最初の管理者を決める |
 | `python -m ponte data export 仕様.ponte` | 保存したデータを JSON で（`--csv フォルダ` で Excel 向けの CSV）。`data compact` で伸び続ける記録を今の中身に詰める |
+| `python -m ponte lsp` | エディタ向けの言語サーバー（エラー・説明・補い。設定は [editor/vscode/README.md](editor/vscode/README.md)） |
 | `python -m pytest` | 言語そのもののテスト |
 
 ## 見本のアプリ

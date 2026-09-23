@@ -465,6 +465,8 @@ def build_parser() -> argparse.ArgumentParser:
     da.add_argument("--data", help="データのファイル（既定は <spec>.data.jsonl）")
     da.add_argument("--csv", metavar="DIR", help="export を thing ごとの CSV にする")
     da.set_defaults(fn=cmd_data)
+    ls = sub.add_parser("lsp", help="エディタ向けの言語サーバー（標準入出力。エラー・説明・補い）")
+    ls.set_defaults(fn=lambda a: __import__("ponte.lsp", fromlist=["serve"]).serve())
     ex = sub.add_parser("explain", help="エラーの意味と直し方（例: explain E32。無しなら一覧）")
     ex.add_argument("code", nargs="?")
     ex.set_defaults(fn=cmd_explain)

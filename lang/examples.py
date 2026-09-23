@@ -31,6 +31,7 @@ class Result:
     line: int
     ok: bool
     message: str = ""
+    trace: tuple = ()
 
 
 def run_example(spec: Spec, rule: Node, ex: Node) -> Result:
@@ -68,10 +69,13 @@ def run_example(spec: Spec, rule: Node, ex: Node) -> Result:
             elif k == "expect":
                 bad = _expect(eng, t, ctx, c)
                 if bad:
-                    return Result(rule.name, c.line, False, bad)
+                    why = [n["text"] for n in eng.notifications if n["text"].startswith("うまくいきませんでした")]
+                    if why and not t.startswith("notify"):     # 途中で止まった理由も見せる
+                        bad += f"（途中で止まっています: {why[0].split(': ', 1)[-1]}）"
+                    return Result(rule.name, c.line, False, bad, tuple(eng.trace))
     except Exception as e:   # 例の途中で止まったら、それも失敗として返す
-        return Result(rule.name, ex.line, False, f"{type(e).__name__}: {e}")
-    return Result(rule.name, ex.line, True)
+        return Result(rule.name, ex.line, False, f"{type(e).__name__}: {e}", tuple(eng.trace))
+    return Result(rule.name, ex.line, True, "", tuple(eng.trace))
 
 
 def _expect(eng: Engine, t: str, ctx: Ctx, node: Node | None = None) -> str | None:
@@ -139,4 +143,47 @@ def run_examples(spec: Spec) -> list[Result]:
     for r in spec.decls("rule"):
         for ex in r.children_of("example"):
             out.append(run_example(spec, r, ex))
+    return out
+
+
+@dataclass
+class Hole:
+    line: int
+    message: str
+
+
+def holes(spec: Spec, results: list[Result]) -> list[Hole]:
+    """example で一度も確かめていない所（穴）。通っていても、ここは誰も見ていない。
+
+      - 出来事（when）がある rule なのに、example が無い
+      - flow の矢印を、どの example も通っていない
+      - action の out の答えの形を、どの example も出していない
+    """
+    from .body import out_states_of
+    from .parser import flow_parts
+    trace = [t for r in results for t in r.trace]
+    ran = {t[1] for t in trace if t[0] == "rule"}
+    moved = {(t[1], t[2], t[3], t[4]) for t in trace if t[0] == "move"}
+    tested_actions = {a.name for a in spec.decls("action") if a.children_of("example")}
+    out: list[Hole] = []
+    for r in spec.decls("rule"):
+        if not r.child("when") or r.children_of("example"):
+            continue
+        dos = [d.text.strip() for d in r.children_of("do")]
+        if len(dos) == 1 and dos[0] in tested_actions:      # 中身は action の example で確かめている
+            continue
+        out.append(Hole(r.line, f"rule {r.name}: when があるのに example がありません"))
+    for f in spec.decls("flow"):
+        if "." not in f.name:
+            continue
+        thing, fld = f.name.split(".", 1)
+        edges, _ = flow_parts(f)
+        for a, b in edges:
+            if (thing, fld, a, b) not in moved:
+                out.append(Hole(f.line, f"flow {f.name}: {a} -> {b} をどの example も通っていません"))
+    for a in spec.decls("action"):
+        seen = {ex.text.split("->", 1)[1].split()[0] for ex in a.children_of("example") if "->" in ex.text}
+        for s in out_states_of(a):
+            if s not in seen:
+                out.append(Hole(a.line, f"action {a.name}: 答えが {s} になる example がありません"))
     return out

@@ -1008,6 +1008,191 @@ def check_do_form(spec: Spec, opt: Options) -> list[Finding]:
 
 
 # ---------------------------------------------------------------------------
+# 32. 型：rule ごとに this が何の thing かを決めて、項目と値の型を確かめる
+# ---------------------------------------------------------------------------
+
+NUMERIC = {"number", "count", "money", "percent"}
+
+
+def list_thing(spec: Spec, name: str) -> str:
+    seen = set()
+    while spec.find("list", name) is not None and name not in seen:
+        seen.add(name)
+        of = spec.find("list", name).child("of")
+        name = of.text.strip() if of is not None else name
+    return name
+
+
+def rule_this(spec: Spec) -> dict[str, str | None]:
+    """rule → this の thing。when から決め、relate の then でつながる先へ渡す（create の後は作った箱）"""
+    ths = things(spec)
+    rs = rules(spec)
+    this: dict[str, str | None] = {}
+    for r in rs.values():
+        w = r.child("when")
+        t = None
+        if w is not None:
+            m = re.match(r"^user (?:taps|holds|swipes) \S+ on (\w+)", w.text.strip()) or \
+                re.match(r"^(\w+) (?:is created|moves to \w+|is removed)$", w.text.strip())
+            if m:
+                t = list_thing(spec, m.group(1))
+                t = t if t in ths else None
+        this[r.name] = t
+
+    def after(name):
+        for d in rs[name].children_of("do"):
+            m = re.fullmatch(r"create (\w+)", d.text.strip())
+            if m:
+                return m.group(1)
+        return this[name]
+    for _ in range(len(rs) + 1):                     # then の先へ、決まるまで渡す
+        for a, rel, b, _ in relate_lines(spec):
+            if rel == "then" and a in rs and b in rs and this[b] is None and after(a) is not None:
+                this[b] = after(a)
+    return this
+
+
+def rule_result(spec: Spec) -> dict[str, str | None]:
+    """rule → 直前の action の答えの型（then で渡る）"""
+    rs, acts = rules(spec), actions(spec)
+    res: dict[str, str | None] = {n: None for n in rs}
+
+    def out_type(a):
+        o = acts[a].child("out")
+        for alt in (o.text.split("|") if o else []):
+            w = alt.split()
+            if len(w) >= 2:
+                return w[1]
+            if len(w) == 1 and w[0] in BUILTIN_TYPES:
+                return w[0]
+        return None
+    for r in rs.values():
+        for d in r.children_of("do"):
+            name = d.text.strip().split()[0] if d.text.strip() else ""
+            if name in acts:
+                res[r.name] = out_type(name)
+    for _ in range(len(rs) + 1):
+        for a, rel, b, _ in relate_lines(spec):
+            if rel == "then" and a in rs and b in rs and res[b] is None:
+                res[b] = res[a]
+    return res
+
+
+def check_types(spec: Spec, opt: Options) -> list[Finding]:
+    out = []
+    ths = things(spec)
+    fields = {n: {f.name: f for f in thing_fields(t)} for n, t in ths.items()}
+    this_of, result_of = rule_this(spec), rule_result(spec)
+
+    def ftype(thing, name):
+        f = fields.get(thing, {}).get(name)
+        return None if f is None else ("state" if f.states else f.type)
+
+    def value_type(expr, r, this):
+        """値の式 → 型（分からなければ None）"""
+        e = expr.strip()
+        if e == "this":
+            return this
+        if e == "me":
+            return "User"
+        if e == "result":
+            return result_of.get(r.name)
+        if re.fullmatch(r"\d+ (minutes?|hours?|days?|weeks?) from now", e):
+            return "monthday"
+        m = re.fullmatch(r"(\w+) of this", e)
+        if m and this:
+            return ftype(this, m.group(1))
+        if re.fullmatch(r'"-?\d+"|-?\d+', e):
+            return "number"
+        if re.fullmatch(r'".*"', e):
+            return "text"
+        return None
+
+    def fits(want, got):
+        if want is None or got is None or want == got:
+            return True
+        if want in ("text",):
+            return got not in ths                       # 文字には何でも入る（別の箱は入らない）
+        if want in NUMERIC:
+            return got in NUMERIC
+        if want in ("monthday", "date"):
+            return got in ("monthday", "date")
+        return False
+
+    def need_this(r, d, this):
+        if this is None:
+            out.append(Finding("E32", d.line, f"rule {r.name}: this が何の thing か決まりません（when に `on 〇〇` か `〇〇 is created` を書くか、relate の then で前の rule からつなぐ）"))
+            return False
+        return True
+
+    for l in spec.decls("list"):                   # list の where の項目も
+        t = list_thing(spec, l.name)
+        for w in l.children_of("where"):
+            f = w.text.split()[0] if w.text.split() else ""
+            if f != "it" and t in fields and f not in fields[t]:
+                out.append(Finding("E32", w.line, f"list {l.name}: {t} に「{f}」という項目はありません（{', '.join(fields[t])}）"))
+    for d in spec.decls("scene"):                  # stats の sum は数の項目だけ
+        for c in d.walk():
+            st = re.search(r"(?:^|\s)stats\s+(.+)$", c.raw) if c is not d else None
+            for x in (st.group(1).split(",") if st else []):
+                m = re.fullmatch(r"sum (\w+) of (\w+)", x.strip())
+                if m:
+                    t = list_thing(spec, m.group(2))
+                    ty = ftype(t, m.group(1))
+                    if ty is None or ty not in NUMERIC:
+                        out.append(Finding("E32", c.line, f"stats: {t}.{m.group(1)} は{'ありません' if ty is None else f' {ty} で、足せません（数の項目だけ）'}"))
+    for r in rules(spec).values():
+        this = this_of[r.name]
+        for w in r.children_of("where"):
+            f = w.text.split()[0]
+            if f != "it" and this and f not in fields.get(this, {}):
+                out.append(Finding("E32", w.line, f"rule {r.name}: {this} に「{f}」という項目はありません（{', '.join(fields[this])}）"))
+        for d in r.children_of("do"):
+            t = d.text.strip()
+            m = re.fullmatch(r"move this to (\w+)", t)
+            if m and need_this(r, d, this):
+                sts = [x for f in fields[this].values() for x in (f.states or [])]
+                if m.group(1) not in sts:
+                    out.append(Finding("E32", d.line, f"rule {r.name}: {this} に「{m.group(1)}」という状態はありません（{' / '.join(sts)}）"))
+            m = re.fullmatch(r"move (\w+) of this to (\w+)", t)
+            if m and need_this(r, d, this):
+                ref = ftype(this, m.group(1))
+                if ref not in ths:
+                    out.append(Finding("E32", d.line, f"rule {r.name}: {this}.{m.group(1)} は別の thing を指す項目ではありません"))
+                else:
+                    sts = [x for f in fields[ref].values() for x in (f.states or [])]
+                    if m.group(2) not in sts:
+                        out.append(Finding("E32", d.line, f"rule {r.name}: {ref} に「{m.group(2)}」という状態はありません（{' / '.join(sts)}）"))
+            m = re.fullmatch(r"set (\w+) to (.+)", t)
+            if m and need_this(r, d, this):
+                want = ftype(this, m.group(1))
+                if want is None:
+                    out.append(Finding("E32", d.line, f"rule {r.name}: {this} に「{m.group(1)}」という項目はありません（{', '.join(fields[this])}）"))
+                elif want == "state":
+                    out.append(Finding("E32", d.line, f"rule {r.name}: {m.group(1)} は状態です。set ではなく move で動かします（flow を守るため）"))
+                elif not fits(want, value_type(m.group(2), r, this)):
+                    out.append(Finding("E32", d.line, f"rule {r.name}: {this}.{m.group(1)} は {want} なのに、{m.group(2).strip()} は {value_type(m.group(2), r, this)} です"))
+            m = re.fullmatch(r"(\w+) with (\w+)", t)
+            if m and m.group(1) in actions(spec) and need_this(r, d, this) and ftype(this, m.group(2)) is None:
+                out.append(Finding("E32", d.line, f"rule {r.name}: {this} に「{m.group(2)}」という項目はありません（{', '.join(fields[this])}）"))
+            m = re.fullmatch(r"create (\w+)", t)
+            if m and m.group(1) in ths:
+                for c in d.children:
+                    want = ftype(m.group(1), c.keyword)
+                    got = value_type(c.text, r, this)
+                    if want is not None and want != "state" and not fits(want, got):
+                        out.append(Finding("E32", c.line, f"create {m.group(1)}: {c.keyword} は {want} なのに、{c.text.strip()} は {got} です"))
+            m = re.fullmatch(r'notify \w+ "(.*)"', t)
+            if m and this:
+                w = r.child("when")
+                vars_ = set(re.findall(r"\{(\w+)\}", w.text)) if w is not None else set()
+                for x in re.findall(r"\{(\w+)\}", m.group(1)):
+                    if x not in fields[this] and x not in vars_:
+                        out.append(Finding("E32", d.line, f"rule {r.name}: 通知の {{{x}}} が {this} の項目にも when の {{…}} にもありません"))
+    return out
+
+
+# ---------------------------------------------------------------------------
 # 30. 通知の宛先が書いていない
 # ---------------------------------------------------------------------------
 
@@ -1039,7 +1224,7 @@ ALL_CHECKS = [
     check_relate_cycle, check_relate_contradiction, check_before_possible,
     check_double_else, check_match_states, check_who, check_gone, check_change,
     check_ask_ai_limit, check_connect_fallback, check_scene_move, check_words,
-    check_a11y, check_money, check_undefined, check_single_do, check_do_form, check_roles, check_notify_recipient,
+    check_a11y, check_money, check_undefined, check_single_do, check_do_form, check_roles, check_types, check_notify_recipient,
 ]
 
 

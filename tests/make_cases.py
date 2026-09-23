@@ -108,6 +108,7 @@ cases["E31_create_value"] = (rep("  do    move this to submitted\n", "  do    cr
                              rep("  do    move this to submitted\n", "  do    create Application\n          company  company of this\n"))
 cases["E28_unknown_role"] = (rep("who\n", "who\n  admin can remove Application\n"),
                              rep("thing User\n  name text\n", "thing User\n  name text\n  role[member | admin]\n").replace("who\n", "who\n  admin can remove Application\n", 1))
+cases["E32_unknown_state"] = (rep("  do    move this to submitted\n", "  do    move this to submited\n"), base)
 cases["E28_tone_in_style"] = (base + "\nstyle DueSoon\n  submitted-button  tone good\n",
                               rep("  button  submitted-button named 提出した\n", "  button  submitted-button named 提出した tone good\n"))
 cases["E28_unknown_field"] = (rep("  title   company\n", "  title   compny\n"), base)

@@ -144,6 +144,6 @@ def test_input_from_now_is_enforced_by_server():
         op.open(req)
         raise AssertionError("過去の締切が通ってしまった")
     except urllib.error.HTTPError as err:
-        assert "from now" in json.loads(err.read())["error"]
+        assert "今より後" in json.loads(err.read())["error"]
     finally:
         httpd.shutdown()

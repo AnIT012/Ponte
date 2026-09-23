@@ -50,7 +50,7 @@ const HL = (() => {
   }
   function statesIn(src) {
     const n = new Set();
-    for (const m of src.matchAll(/[\p{L}\p{N}_]+\[([^\]]*)\]/gu)) if (!m[0].startsWith("gone[")) m[1].split("|").forEach(x => n.add(x.trim()));
+    for (const m of src.matchAll(/[\p{L}\p{N}_]+ *\[([^\]]*)\]/gu)) if (!m[0].startsWith("gone[")) m[1].split("|").forEach(x => n.add(x.trim()));
     for (const m of src.matchAll(/^\s+([\p{L}\p{N}_].*->.*)$/gmu)) (m[1].match(/[a-z_][\p{L}\p{N}_]*/gu) || []).forEach(x => n.add(x));
     return n;
   }

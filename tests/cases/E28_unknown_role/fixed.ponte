@@ -4,11 +4,11 @@ thing Application
   company   text
   deadline  monthday
   owner     User   gone[remove too]
-  status[draft | submitted | passed | failed]
+  status    [draft | submitted | passed | failed]
 
 thing User
-  name text
-  role[member | admin]
+  name  text
+  role  [member | admin]
 
 flow Application.status
   draft -> submitted -> passed | failed

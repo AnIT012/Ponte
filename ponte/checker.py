@@ -979,7 +979,7 @@ def check_roles(spec: Spec, opt: Options) -> list[Finding]:
             r = c.raw.split()[0] if c.raw.split() else ""
             if r in ("user", "nobody") or r in known:
                 continue
-            hint = f"（{' / '.join(sorted(known))}）" if known else "。thing User に `role[member | " + r + "]` を書きます"
+            hint = f"（{' / '.join(sorted(known))}）" if known else "。thing User に `role [member | " + r + "]` を書きます"
             out.append(Finding("E28", c.line, f"who: 「{r}」という役割がありません{hint}"))
     return out
 

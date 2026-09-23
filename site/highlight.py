@@ -67,7 +67,7 @@ def line(src: str, in_fields: bool, states: frozenset = frozenset()) -> str:
 def states_in(src: str) -> frozenset:
     """[a | b] と flow の行から、状態の名前を集める"""
     names = set()
-    for m in re.finditer(r"\w+\[([^\]]*)\]", src):
+    for m in re.finditer(r"\w+ *\[([^\]]*)\]", src):
         if not m.group(0).startswith("gone["):
             names |= {x.strip() for x in m.group(1).split("|")}
     for l in re.findall(r"^\s+(\w.*->.*)$", src, re.M):

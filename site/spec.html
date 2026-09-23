@@ -202,7 +202,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 <hr>
 <h2 id="2-型">2. 型 ★</h2>
 <div class="table"><table><tr><th>型</th><th>意味</th></tr><tr><td>text</td><td>文字</td></tr><tr><td>number</td><td>数</td></tr><tr><td>count</td><td>0以上の整数</td></tr><tr><td>money</td><td>お金。通貨付き、小数の誤差なし。<code>money yen</code></td></tr><tr><td>percent</td><td>割合</td></tr><tr><td>date</td><td>日時</td></tr><tr><td>monthday</td><td>年の無い月日と時刻。<code>10/15 12:00</code></td></tr><tr><td>duration</td><td>期間。<code>3 days</code> <code>5 seconds</code></td></tr><tr><td>file / image / pdf</td><td>ファイル</td></tr><tr><td><code>[a | b | c]</code></td><td>決まった状態のどれか1つ（旧 <code>one of [a, b, c]</code>）</td></tr><tr><td>箱の名前</td><td>別の箱を1つ指す。<code>owner User</code>（旧 <code>ref User</code>）</td></tr><tr><td><code>list of 箱の名前</code></td><td>別の箱を複数指す（旧 <code>many</code>）</td></tr></table></div>
-<ul><li><strong>true / false は無い。</strong> <code>done[todo | done]</code> のように、全部名前の付いた状態にする（if を生ませないため）。</li><li>組み込みの値: <code>now</code>、<code>me</code>（今使っている人。旧 current user）。</li></ul>
+<ul><li><strong>true / false は無い。</strong> <code>done [todo | done]</code> のように、全部名前の付いた状態にする（if を生ませないため）。</li><li>組み込みの値: <code>now</code>、<code>me</code>（今使っている人。旧 current user）。</li></ul>
 <hr>
 <h2 id="3-記号とコメント">3. 記号とコメント</h2>
 <div class="table"><table><tr><th>記号</th><th>意味</th><th>使う所</th></tr><tr><td><code>|</code></td><td>または（どれか1つ）</td><td>状態、flow の分かれ道、出力、match の左側</td></tr><tr><td><code>-&gt;</code></td><td>移る・対応する</td><td>flow、match、example</td></tr><tr><td><code>&gt;</code></td><td>ぶつかったらこっちが勝つ</td><td>flow、relate</td></tr><tr><td><code>[ ]</code></td><td>状態を並べる</td><td>状態の宣言だけ</td></tr><tr><td><code>{ }</code></td><td>取り出した値</td><td>user says など</td></tr><tr><td><code>#</code></td><td>普通のコメント</td><td>どこでも。ビルドに関係無い</td></tr><tr><td><code>##</code></td><td>止めるコメント</td><td>1つでも残っていたらビルドできない</td></tr></table></div>
@@ -225,7 +225,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
   <span class="field">deadline</span>  <span class="type">date</span>
   <span class="field">owner</span>     <span class="name">User</span>      <span class="guard">gone</span><span class="guard">[</span><span class="guard">remove</span> <span class="guard">too</span><span class="guard">]</span>
   <span class="field">memo</span>      <span class="val">text</span>
-  <span class="field">status</span><span class="op">[</span><span class="val">draft</span> <span class="op">|</span> <span class="val">submitted</span> <span class="op">|</span> <span class="val">passed</span> <span class="op">|</span> <span class="val">failed</span><span class="op">]</span></pre>
+  <span class="field">status</span>    <span class="op">[</span><span class="val">draft</span> <span class="op">|</span> <span class="val">submitted</span> <span class="op">|</span> <span class="val">passed</span> <span class="op">|</span> <span class="val">failed</span><span class="op">]</span></pre>
 <ul><li>1件が1つの「箱」。箱の中の書き換えは1つずつ処理される。</li><li>項目は <code>名前 型</code> を並べるだけ。<code>:</code> は付けない。名前と型は色分けで見分ける。</li><li>状態は <code>名前[a | b]</code>。</li><li>別の箱を指す項目には、指した先が消えた時どうするかを <code>gone[...]</code> で必ず書く（7.3）。</li></ul>
 <h3 id="flow-状態の流れ">flow ★ — 状態の流れ</h3>
 <pre class="code"><span class="head">flow</span> <span class="name">Application</span>.status
@@ -459,7 +459,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
   user   can change <span class="name">Application</span> where owner is me
   admin  can do     everything
   nobody can <span class="val">remove</span> <span class="name">Application</span></pre>
-<ul><li>書いてないことは誰もできない。</li><li>who が1行も無い thing → エラー。</li><li>rule も who に従う。user says や user taps で動く rule は、その人ができることしかできない。</li><li>ログインの方法は connect に任せる。</li><li><strong>役割。</strong> <code>user</code> 以外の役割（admin など）は、<code>thing User</code> の <code>role[member | admin]</code> に書く。その人の role の値が役割になる。書いてない役割を who に使うとエラー（E28）。</li><li>役割を変えるのも、ふつうの状態と同じ（flow User.role・rule・who で守る）。</li><li><strong>最初の1人だけ</strong>は仕様から決められないので、<code>ponte role spec.ponte taro admin</code> で決める。2人目からは画面で。</li><li><code>where it is not me</code> で「自分には使えない」を書ける（自分を管理者から外せない＝管理者が0人にならない）。</li><li>動詞: <code>see</code> / <code>create</code> / <code>move</code>（状態を動かすだけ）/ <code>change</code>（作る・動かす・書き換える）/ <code>remove</code>。</li><li>入力を開くボタンは、その thing を作れる人にだけ出る。</li></ul>
+<ul><li>書いてないことは誰もできない。</li><li>who が1行も無い thing → エラー。</li><li>rule も who に従う。user says や user taps で動く rule は、その人ができることしかできない。</li><li>ログインの方法は connect に任せる。</li><li><strong>役割。</strong> <code>user</code> 以外の役割（admin など）は、<code>thing User</code> の <code>role [member | admin]</code> に書く。その人の role の値が役割になる。書いてない役割を who に使うとエラー（E28）。</li><li>役割を変えるのも、ふつうの状態と同じ（flow User.role・rule・who で守る）。</li><li><strong>最初の1人だけ</strong>は仕様から決められないので、<code>ponte role spec.ponte taro admin</code> で決める。2人目からは画面で。</li><li><code>where it is not me</code> で「自分には使えない」を書ける（自分を管理者から外せない＝管理者が0人にならない）。</li><li>動詞: <code>see</code> / <code>create</code> / <code>move</code>（状態を動かすだけ）/ <code>change</code>（作る・動かす・書き換える）/ <code>remove</code>。</li><li>入力を開くボタンは、その thing を作れる人にだけ出る。</li></ul>
 <h3 id="7-2-保存">7.2 保存</h3>
 <ul><li>保存は言語が持つ。thing を書けばデータは残る。何のDBかは書かない。</li></ul>
 <h3 id="7-3-消した時の扱い">7.3 消した時の扱い</h3>
@@ -550,7 +550,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
   <span class="field">company</span>   <span class="val">text</span>
   <span class="field">deadline</span>  <span class="val">monthday</span>
   <span class="field">owner</span>     <span class="name">User</span>   <span class="guard">gone</span><span class="guard">[</span><span class="guard">remove</span> <span class="guard">too</span><span class="guard">]</span>
-  <span class="field">status</span><span class="op">[</span><span class="val">draft</span> <span class="op">|</span> <span class="val">submitted</span> <span class="op">|</span> <span class="val">passed</span> <span class="op">|</span> <span class="val">failed</span><span class="op">]</span>
+  <span class="field">status</span>    <span class="op">[</span><span class="val">draft</span> <span class="op">|</span> <span class="val">submitted</span> <span class="op">|</span> <span class="val">passed</span> <span class="op">|</span> <span class="val">failed</span><span class="op">]</span>
 
 <span class="head">thing</span> <span class="name">User</span>
   <span class="field">name</span>  <span class="val">text</span>

@@ -68,6 +68,13 @@ def pad(s: str, w: int) -> str:
     return s + " " * max(0, w - dwidth(s))
 
 
+def _is_state(n) -> bool:
+    """thing / input の中の `status [a | b]`（状態の宣言）。型の列にそろえる"""
+    p = n.parent
+    return (n.text.startswith("[") and p is not None and p.is_decl and p.keyword in ("thing", "input")
+            and re.fullmatch(r"\w[\w-]*", n.keyword) is not None)
+
+
 def format_source(src: str) -> str:
     if re.search(r"^do\s*$", src, re.M):             # action の中身だけのファイル: 仮の action に包んで整形し、外す
         return _format_body_only(src)
@@ -84,7 +91,7 @@ def format_source(src: str) -> str:
         kids = [c for c in n.children if not c.children or c.keyword in ("how", "example", "do", "given", "taps", "expect", "adds", "at", "says", "gets")]
         if n.is_decl and n.keyword in ("flow", "relate"):     # 矢印や関係の行は、節ではないので揃えない
             continue
-        simple = [c for c in kids if not _is_arm(c) and c.text and not c.text.startswith(("[", "=")) and not c.is_decl and not _is_one_of(c)]
+        simple = [c for c in kids if not _is_arm(c) and c.text and (not c.text.startswith(("[", "=")) or _is_state(c)) and not c.is_decl and not _is_one_of(c)]
         if simple and not (n.is_decl and n.keyword == "who"):   # 1つだけの塊も、名前と値の間は空白2つ以上
             widths[id(n)] = max(dwidth(c.keyword) for c in simple)
         if n.is_decl and n.keyword == "who":                     # who は表のように列を揃える
@@ -153,7 +160,7 @@ def format_source(src: str) -> str:
         elif _is_arm(n) and p is not None and id(p) in arm_widths:
             left, right = [x.strip() for x in n.raw.split("->", 1)]
             body = f"{pad(left, arm_widths[id(p)])} -> {right}"
-        elif p is not None and id(p) in widths and n.text and not n.text.startswith(("[", "=")) and not _is_arm(n):
+        elif p is not None and id(p) in widths and n.text and (not n.text.startswith(("[", "=")) or _is_state(n)) and not _is_arm(n):
             body = f"{pad(n.keyword, widths[id(p)])}  {n.text}"
         elif not n.is_decl and n.text and not n.text.startswith("["):
             body = f"{n.keyword} {n.text}"             # 1つだけの節は、名前と値の間を空白1つに

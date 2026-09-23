@@ -26,7 +26,7 @@ AIにアプリを作ってもらうとき、いちばん困るのは「決めて
 ```
 thing Item
   name    text
-  status[free | lent | broken]
+  status  [free | lent | broken]
 
 rule Borrow
   why   空いている備品を借りる
@@ -124,7 +124,7 @@ pip install -e .                           # 入れると `ponte run spec/todo.p
 
 | パーツ | 書くこと |
 |---|---|
-| `thing` | データの形。`status[draft \| submitted]` のような状態も |
+| `thing` | データの形。`status [draft \| submitted]` のような状態も |
 | `flow` | 状態の流れ（`draft -> submitted`）と、ぶつかった時の勝ち（`failed > passed`） |
 | `who` | 誰が何をできるか。書いてないことは誰もできない |
 | `list` | 条件で絞った一覧 |

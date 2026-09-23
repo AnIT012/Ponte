@@ -34,7 +34,7 @@ match A.status to color
       b    -> blue
 """
     out = format_source(src)
-    assert out.startswith("# 頭のコメント\n\nthing A\n  x  text  # 項目のコメント\n")
+    assert out.startswith("# 頭のコメント\n\nthing A\n  x       text  # 項目のコメント\n  status  [a | b]\n")  # 状態も型の列にそろえる
     assert "## 承認待ち" in out and "\n\n## 承認待ち\nlist L\n  of     A\n  where  x is \"1\"\n  sort   x\n" in out
     assert "\n  a -> red\n  b -> blue\n" in out
     assert parse(out).blocking == [(out.splitlines().index("## 承認待ち") + 1, "承認待ち")]

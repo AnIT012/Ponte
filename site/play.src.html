@@ -117,6 +117,9 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 .prose blockquote{margin:0 0 16px;padding:10px 16px;border-left:4px solid var(--lemon);background:var(--panel);border-radius:0 10px 10px 0}
 .prose :not(pre)>code{font-size:.88em;background:var(--panel);border:1px solid var(--line);padding:1px 6px;border-radius:6px;overflow-wrap:anywhere}
 .prose .code{margin:0 0 18px;font-size:13.5px}
+.prose .code:has(+ .try){margin-bottom:4px}
+.prose .try{text-align:right;font-size:13px;margin:0 0 18px}
+.prose .try a{text-decoration:none}
 .term{margin:0 0 18px;background:#101326;color:#D7DBF5;border-radius:10px;padding:14px 18px;font-size:13px;line-height:1.7;overflow-x:auto;white-space:pre}
 .term .prompt{color:#6BE3A4;user-select:none}
 .term .ecode{color:#FF9D5C;font-weight:700}

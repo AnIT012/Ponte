@@ -112,7 +112,7 @@ FOOT = {
 
 
 def doc_page(md_path: Path, title: str, current: str, depth: int = 3) -> str:
-    content, toc = render(md_path.read_text(encoding="utf-8"), link)
+    content, toc = render(md_path.read_text(encoding="utf-8"), link, try_links=(current == "learn"))
     toc = [t for t in toc if t[0] <= depth]
     content = re.sub(r"^<h1[^>]*>.*?</h1>\n", "", content)        # 見出しはページの上に出す
     content = content.replace("<p>", '<p class="lead">', 1)       # 最初の段落を、見出しの下の一文に

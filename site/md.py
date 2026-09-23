@@ -35,9 +35,14 @@ def is_ponte(code: str) -> bool:
     return not first.startswith("$") and bool(re.match(r"^(thing|flow|list|match|rule|relate|action|who|scene|look|part|input|words|shape|use|change|connect|style|group|tbd|#)\b", first))
 
 
-def code_block(code: str, lang: str, states) -> str:
+def code_block(code: str, lang: str, states, try_link: bool = False) -> str:
     if lang in ("", "ponte", "lang") and is_ponte(code):
-        return f'<pre class="code">{highlight(code, states)}</pre>'
+        pre = f'<pre class="code">{highlight(code, states)}</pre>'
+        if try_link:                                   # その場で「試す」で開く（書いたものは URL の # に入る）
+            import base64
+            h = base64.urlsafe_b64encode(code.encode("utf-8")).decode().rstrip("=")
+            pre += f'<p class="try"><a href="play.html#code={h}">このコードを試す ›</a></p>'
+        return pre
     rows = []
     for l in code.split("\n"):
         e = html.escape(l)
@@ -50,7 +55,7 @@ def code_block(code: str, lang: str, states) -> str:
     return f'<pre class="term">{body}</pre>'
 
 
-def render(src: str, link=lambda u: u) -> tuple[str, list[tuple[int, str, str]]]:
+def render(src: str, link=lambda u: u, try_links: bool = False) -> tuple[str, list[tuple[int, str, str]]]:
     """(HTML, 目次 [(深さ, id, 見出し)])"""
     lines = src.split("\n")
     states = states_in("\n".join(re.findall(r"```[^\n]*\n(.*?)```", src, re.S)))
@@ -72,7 +77,7 @@ def render(src: str, link=lambda u: u) -> tuple[str, list[tuple[int, str, str]]]
             lang, j = l[3:].strip(), i + 1
             while j < len(lines) and not lines[j].startswith("```"):
                 j += 1
-            out.append(code_block("\n".join(lines[i + 1:j]), lang, states))
+            out.append(code_block("\n".join(lines[i + 1:j]), lang, states, try_links))
             i = j + 1
             continue
         if l.strip().startswith("<!--"):          # 自動の所の印（見せない）

@@ -9,6 +9,7 @@
   python -m ponte new  myapp                       ひな形から新しいアプリを作る
   python -m ponte guide                            AIに渡す書き方の説明（実装から作る。--spec で仕様書の表も）
   python -m ponte role  spec/lend.ponte taro admin   最初の管理者を決める（2人目からは画面で）
+  python -m ponte explain E32                      エラーの意味と直し方
 """
 from __future__ import annotations
 
@@ -42,11 +43,19 @@ def cmd_check(args) -> int:
     findings = check(spec, Options(publish=args.publish, prev_shape=prev))
     errors = [f for f in findings if f.is_error]
     warnings = [f for f in findings if not f.is_error]
+    if args.json:
+        rows = []
+        for f in findings:
+            path, line = spec.where(f.line)
+            rows.append({"code": f.code, "file": path, "line": line, "message": f.message, "error": f.is_error})
+        print(json.dumps({"ok": not errors, "findings": rows}, ensure_ascii=False, indent=2))
+        return 1 if errors else 0
     if errors:
         print(f"渡せません（{len(errors)}件）")
         for f in errors:
             path, line = spec.where(f.line)
             print(f"  {path}:{line}  {f.code}  {f.message}")
+        print(f"  （直し方: ponte explain {errors[0].code}）")
     else:
         print("決めてないことなし。AIに渡せます")
         if args.save_shape:
@@ -238,6 +247,20 @@ def cmd_build(args) -> int:
     return 0
 
 
+def cmd_explain(args) -> int:
+    from .errors import ERRORS, explain
+    if not args.code:
+        for c, title, _, _ in ERRORS:
+            print(f"  {c}  {title}")
+        return 0
+    text = explain(args.code)
+    if text is None:
+        print(f"{args.code} というエラーはありません（一覧は ponte explain）")
+        return 1
+    print(text)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="ponte", description="Ponte — 人は決めて、AIが書いて、言語が守る（v0.3）")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -245,6 +268,7 @@ def main(argv: list[str] | None = None) -> int:
     c.add_argument("spec")
     c.add_argument("--publish", action="store_true", help="公開する時の検査")
     c.add_argument("--save-shape", action="store_true", help="通ったら thing の形を残す")
+    c.add_argument("--json", action="store_true", help="結果を JSON で出す（エディタや AI のループ向け）")
     c.set_defaults(fn=cmd_check)
     t = sub.add_parser("test", help="rule の example を全部流す")
     t.add_argument("spec")
@@ -287,6 +311,9 @@ def main(argv: list[str] | None = None) -> int:
     ro.add_argument("role")
     ro.add_argument("--data", help="データのファイル（既定は <spec>.data.jsonl）")
     ro.set_defaults(fn=cmd_role)
+    ex = sub.add_parser("explain", help="エラーの意味と直し方（例: explain E32。無しなら一覧）")
+    ex.add_argument("code", nargs="?")
+    ex.set_defaults(fn=cmd_explain)
     args = p.parse_args(argv)
     return args.fn(args)
 

@@ -93,12 +93,23 @@ shape の部品:
 {SPEC_END}"""
 
 
+ERR_BEGIN = "<!-- 自動: エラー（ここから） -->"
+ERR_END = "<!-- 自動: エラー（ここまで） -->"
+
+
+def errors_block() -> str:
+    from .errors import errors_table
+    return f"{ERR_BEGIN}\n{errors_table()}\n{ERR_END}"
+
+
 def write_spec(path: str) -> bool:
-    """仕様書の自動の所を書き直す。変わったら True"""
+    """仕様書の自動の所（10章の道具・13章のエラー）を書き直す。変わったら True"""
     text = open(path, encoding="utf-8").read()
-    if SPEC_BEGIN not in text:
-        raise ValueError(f"{path} に {SPEC_BEGIN} がありません")
-    new = re.sub(re.escape(SPEC_BEGIN) + r".*?" + re.escape(SPEC_END), lambda m: spec_block(), text, flags=re.S)
+    new = text
+    for begin, end, block in ((SPEC_BEGIN, SPEC_END, spec_block), (ERR_BEGIN, ERR_END, errors_block)):
+        if begin not in new:
+            raise ValueError(f"{path} に {begin} がありません")
+        new = re.sub(re.escape(begin) + r".*?" + re.escape(end), lambda m: block(), new, flags=re.S)
     if new != text:
         open(path, "w", encoding="utf-8").write(new)
     return new != text

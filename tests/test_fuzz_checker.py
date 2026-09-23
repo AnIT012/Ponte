@@ -140,3 +140,32 @@ def test_a_typo_in_any_clause_word_is_not_silently_ignored():
         except ParseError:
             pass
     assert passed == []
+
+
+def test_a_typo_in_any_value_word_is_not_silently_ignored():
+    """行の中の言葉（状態・項目・ボタン・見せ方・期間など）を打ち間違えても、黙って通らない。
+    自由に書ける所（why・never・words・"文字"）は除く"""
+    import re
+    passed = []
+    for path in ("spec/todo.ponte", "spec/kakeibo.ponte"):
+        lines = open(path, encoding="utf-8").read().split("\n")
+        for i, l in enumerate(lines):
+            if not l.startswith(" ") or l.strip().startswith(("#", "why", "never")):
+                continue
+            j = i
+            while j >= 0 and lines[j].startswith(" "):
+                j -= 1
+            if lines[j].split()[0] in ("words", "style", "part"):
+                continue
+            for m in re.finditer(r"(?<![\"\w-])([a-z][a-z]{3,})(?![\w-])", l):
+                if m.start() == len(l) - len(l.lstrip()) or l[:m.start()].count('"') % 2:
+                    continue
+                w = m.group(1)
+                new = lines[:]
+                new[i] = l[:m.start()] + w[1] + w[0] + w[2:] + l[m.end():]
+                try:
+                    if not [f for f in check(parse("\n".join(new))) if f.is_error]:
+                        passed.append(f"{path}:{i + 1} {new[i].strip()}")
+                except ParseError:
+                    pass
+    assert passed == []

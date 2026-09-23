@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.data.jsonl
+*.pyz
+.pytest_cache/
+*.egg-info/
+build/
+site/artifact.html
+*.users.json
+*.users.json.tmp
+site/ponte.zip
+.coverage
+*.data.jsonl.files/

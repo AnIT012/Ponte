@@ -1,0 +1,31 @@
+# std/money FindYen の中身。¥ が前でも 円 が後ろでもよい。2つ以上あったら決めない（missing）
+
+do
+  clean = replace "," with "" in normalize text
+  front = find all YenFront in clean
+  back  = find all YenBack in clean
+  total = count of front + count of back
+  kind[one | none | many] = match total
+    1    -> one
+    0    -> none
+    else -> many
+  mark[yen | en] = match count of front
+    1    -> yen
+    else -> en
+  amount = match mark
+    yen -> number of amount of first of front
+    en  -> number of amount of first of back
+  answer = match kind
+    one  -> found amount
+    none -> missing
+    many -> missing
+
+shape YenFront
+  "¥"
+  maybe   space
+  amount  digits 1..9
+
+shape YenBack
+  amount  digits 1..9
+  maybe   space
+  "円"

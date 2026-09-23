@@ -1,0 +1,353 @@
+# EXPERIMENT v2 — 自然文 vs この言語（就活Hub）
+
+同じ要件を2通りで渡して、AIに各5回ずつ実装させた。採点は AI に見せていない同じ14個のテスト（`experiment/v2/harness.py`）。
+
+| | (A) 日本語で頼む | (B) この言語で頼む |
+|---|---|---|
+| AIが書くもの | 全部（Python 1ファイル） | action ExtractDeadline の中身（do と shape）だけ。残りは spec から言語が決まった通りに動かす |
+| AI | Claude のサブエージェント（Sonnet）。渡したプロンプト1つだけ読み、コードは動かさない | 同じ |
+| 言語のループ | 無し | 機械が確かめてダメなら、問題をそのまま返して書き直させる |
+
+## まとめ
+
+| 項目 | 1回目の実験 (A) | 1回目の実験 (B)1回目 | 1回目の実験 (B)ループ後 | 2回目の実験 (A) | 2回目の実験 (B)1回目 | 2回目の実験 (B)ループ後 | 3回目の実験 (A) | 3回目の実験 (B)1回目 | 3回目の実験 (B)ループ後 |
+|---|---|---|---|---|---|---|---|---|---|
+| 14テスト全部通った | 0/5 | 4/5 | 4/5 | 3/5 | 5/5 | 5/5 | 1/6 | 3/6 | 6/6 |
+| 仕様の例を全部通った | 0/5 | 5/5 | 5/5 | 4/5 | 5/5 | 5/5 | 1/6 | 3/6 | 6/6 |
+| バグ数の平均 | 2.2 | 0.2 | 0.2 | 1.0 | 0.0 | 0.0 | 3.5 | 0.8 | 0.0 |
+| 推測で埋めた所の合計 | 37 | 0 | — | 35 | 0 | — | 27 | 0 | — |
+| AIが書いた行数の平均 | 159 | 21 | — | 166 | 20 | — | 176 | 20 | — |
+| ブレ（差分行数の平均 / 書いた1行あたり） | 238 / 1.50 | — | 23 / 1.09 | 264 / 1.59 | — | 12 / 0.59 | 318 / 1.81 | — | 17 / 0.83 |
+
+## 1回目の実験（そのままの条件）
+
+### (A) 日本語で頼む（5回）
+
+| run | 動いた | 仕様の例を通過 | バグ数 | 推測で埋めた所（Q:） | AIが書いた行数 |
+|---|---|---|---|---|---|
+| A1 | ✓ | ✗ | 3 | 6 | 165 |
+| A2 | ✓ | ✗ | 2 | 8 | 161 |
+| A3 | ✓ | ✗ | 2 | 9 | 144 |
+| A4 | ✓ | ✗ | 2 | 7 | 153 |
+| A5 | ✓ | ✗ | 2 | 7 | 172 |
+
+### (B) この言語で頼む（5回）
+
+| run | 動いた | 仕様の例を通過 | バグ数（1回目） | 推測で埋めた所（Q:） | 言語のループの回数 | バグ数（ループ後） | AIが書いた行数 |
+|---|---|---|---|---|---|---|---|
+| B1 | ✓ | ✓ | 0 | 0 | 1 | 0 | 20 |
+| B2 | ✓ | ✓ | 0 | 0 | 1 | 0 | 28 |
+| B3 | ✓ | ✓ | 0 | 0 | 2 | 0 | 20 |
+| B4 | ✓ | ✓ | 0 | 0 | 1 | 0 | 20 |
+| B5 | ✓ | ✓ | 1 | 0 | 1 | 1 | 19 |
+
+### どの要件で間違えたか（落ちた回数）
+
+| 要件 | (A) | (B) 1回目 | (B) ループ後 |
+|---|---|---|---|
+| 仕様の例: 9/21 21:00 に 9/24 23:59 の下書きが通知される | 5 | 0 | 0 |
+| 締切が近い: 下書きだけ・3日を超えるものと過ぎたものは入らない | 1 | 0 | 0 |
+| 締切が近い: 締切の早い順 | 0 | 0 | 0 |
+| 通知は21時だけ・持ち主にだけ届く | 0 | 0 | 0 |
+| flow: draft から passed へは飛べない | 0 | 0 | 0 |
+| ぶつかったら failed が勝つ（passed の後の failed は上書き） | 0 | 0 | 0 |
+| ぶつかったら failed が勝つ（failed の後の passed はエラーにせず何もしない） | 0 | 0 | 0 |
+| 自分の応募しか見えない・動かせない | 0 | 0 | 0 |
+| 色の表（それ以外は gray） | 0 | 0 | 0 |
+| 締切の取り出し: 仕様の例2つ | 0 | 0 | 0 |
+| 締切の取り出し: 見つからなければ聞き返す | 0 | 0 | 0 |
+| 締切の取り出し: 2つあったら決めずに聞き返す | 0 | 0 | 0 |
+| 締切の取り出し: 全角の数字（例に無い） | 5 | 1 | 1 |
+| 同じ応募への同時の書き換えで壊れない | 0 | 0 | 0 |
+
+### 失敗の中身
+
+- A1: 仕様の例: 9/21 21:00 に 9/24 23:59 の下書きが通知される — AssertionError: <bound method System.tick of <a_4623666828966651753.System object at 0x7f6896e064d0>>
+- A1: 締切が近い: 下書きだけ・3日を超えるものと過ぎたものは入らない — AssertionError: 
+- A1: 締切の取り出し: 全角の数字（例に無い） — AssertionError: 
+- A2: 仕様の例: 9/21 21:00 に 9/24 23:59 の下書きが通知される — AssertionError: <bound method System.tick of <a_5754995161956478230.System object at 0x7f6896e06f10>>
+- A2: 締切の取り出し: 全角の数字（例に無い） — AssertionError: 
+- A3: 仕様の例: 9/21 21:00 に 9/24 23:59 の下書きが通知される — AssertionError: <bound method System.tick of <a_3661313885970413780.System object at 0x7f6896e07b50>>
+- A3: 締切の取り出し: 全角の数字（例に無い） — AssertionError: 
+- A4: 仕様の例: 9/21 21:00 に 9/24 23:59 の下書きが通知される — AssertionError: <bound method System.tick of <a_491145441900504908.System object at 0x7f6896e31cd0>>
+- A4: 締切の取り出し: 全角の数字（例に無い） — AssertionError: 
+- A5: 仕様の例: 9/21 21:00 に 9/24 23:59 の下書きが通知される — AssertionError: <bound method System.tick of <a_8965028002147151955.System object at 0x7f6896e32810>>
+- A5: 締切の取り出し: 全角の数字（例に無い） — AssertionError: 
+- B3: 言語が返した問題 → 
+- B5（1回目）: 締切の取り出し: 全角の数字（例に無い） — AssertionError: 
+
+### 推測で埋めた所（AIが書いた Q:）
+
+- A1: Q: 「締切が近い」の3日以内は、境界(ちょうど3日後)を含むと解釈した。
+- A1: Q: 「今の時刻が21:00」は分単位で厳密一致(時=21,分=0)とし、同じ21:00に複数回tickを呼んだ場合、
+- A1: Q: due_soon の対象は状態が draft のみとし、締切が過去(期限切れ)でも3日以内なら含めることとした
+- A1: Q: move で to が現在の状態と同じ場合(例: passed→passed)はエラーとせず何もしないこととした。
+- A1: Q: extract_deadline は年をまたぐ判定はせず、単純に「M/D H:MM」形式の抽出のみ行う。
+- A1: Q: ユーザーIDは呼び出し側が渡す文字列をそのまま信頼する(認証は本システムの範囲外)。
+- A2: Q: 「締切が近い」の3日以内は、切り捨てで72時間以内(今から3日後の同時刻まで)と解釈した。
+- A2: Q: tick() は「今の時刻がちょうど21:00(時=21,分=0)」の場合に動くと解釈し、同じ日の21:00に複数回呼ばれても
+- A2: Q: 通知の送信先・内容は「(持ち主, 会社名)」のタプルをtick()の戻り値として返すことのみとし、実際のメール送信等は行わない。
+- A2: Q: extract_deadline は「月/日 時:分」形式のみ対応。複数候補がある場合や範囲・「または」がある場合は None を返す。
+- A2: Q: move() で from==to など無意味な遷移(例: draft->draft)はエラーとした。
+- A2: Q: due_soon の対象は status=="draft" のみ(要件通り)。締切が過去(既に切れている)ものは対象外とした。
+- A2: Q: id は "app-<連番>" という形式の文字列とした。
+- A2: Q: set_now は tick() の通知済み記録をリセットしない(時刻を戻してテストする場合は別日として扱われる)。
+- A3: Q: 通知の送り先/送信方法は指定がないため、(持ち主, 会社名) のリストを返すのみとし、実際の送信(メール等)は行わない。
+- A3: Q: tick() は「ちょうど21:00」の判定を、秒・マイクロ秒を無視し時:分が21:00かどうかで行うと仮定。
+- A3: Q: 1日に複数回 21:00 ちょうどで tick() が呼ばれても、毎回同じ「締切が近い応募」があれば通知する（重複抑制の指定がないため）。
+- A3: Q: due_soon の「3日以内」は今から72時間以内ではなく、日付ベース(今日を含め3日先まで)ではなく、単純に (deadline - now) が 0 以上 3日以内(<=3日)と解釈。
+- A3: Q: 締切を過ぎた draft も due_soon の対象に含めるかは不明。ここでは deadline >= now のもののみ対象とする（過ぎたものは対象外）。
+- A3: Q: extract_deadline は月/日と時:分の組を1つだけ見つけた場合のみ返し、複数候補がある場合や範囲・選択肢がある場合は None を返す。
+- A3: Q: user の存在確認や company の重複チェックについては指定がないため行わない。
+- A3: Q: move() で to が不正な文字列(状態名でない)の場合も ValueError とする。
+- A3: Q: move() で同じ状態への遷移(例: submitted -> submitted)は許可しないものとしエラーとする（passed/failed 特殊ケースを除く）。
+- A4: Q: 通知の送信手段は指定がないため、送った (owner, company) を返すことだけを実装とする（実際の送信は行わない）。
+- A4: Q: due_soon の3日以内は「now <= deadline <= now+3日」とし、締切が既に過ぎたものは含めないと解釈した。
+- A4: Q: tick() は「今が21:00ちょうど（秒は0扱い）」のときに発火するとし、1分の窓を許容せず時:分が21:00と完全一致する場合に発火するものとした。
+- A4: Q: 同じ21:00の1分間に複数回 tick() が呼ばれた場合の重複通知防止は要件に無いため、実装しない（毎回 due_soon を再評価して返す）。
+- A4: Q: extract_deadline の年推測禁止・複数候補ありの場合は None、という仕様に沿い、月/日 時:分 のパターンが本文中に複数個ある場合は None を返す。
+- A4: Q: move で to が不正な文字列（未知の状態名）の場合も ValueError とする。
+- A4: Q: color の「それ以外」は未知の status 文字列が来た場合 gray を返す、とした。
+- A5: Q: 通知の実際の送信手段（メール等）は指定されていないため、tick() は送った(持ち主, 会社名)のリストを返すのみとする。
+- A5: Q: 21:00は「時:分が21:00」を指すと解釈した（秒は無視）。同じ分に複数回 tick() を呼ぶと重複通知しうるが、重複防止の仕様がないため未対応。
+- A5: Q: due_soon の「3日以内」は now <= deadline <= now + 3日 と解釈した（過ぎた締切は対象外）。
+- A5: Q: extract_deadline は複数候補がある場合や年をまたぐ可能性がある表現は None とし、単一の "M/D(曜)? H:MM" 形式のみ確実に抽出する。
+- A5: Q: move で to が不正な文字列（4状態以外）の場合も ValueError とする。
+- A5: Q: passed/failed 確定後に同じ状態への再遷移（例: failed->failed, passed->passed）はエラーにしないものとした。
+- A5: Q: submitted からの draft への逆行など、定義された順序に反する遷移は全てエラーとする。
+
+## 2回目の実験（粗を直した後。日本語の要件も同じだけはっきり書いた）
+
+### (A) 日本語で頼む（5回）
+
+| run | 動いた | 仕様の例を通過 | バグ数 | 推測で埋めた所（Q:） | AIが書いた行数 |
+|---|---|---|---|---|---|
+| A1 | ✓ | ✓ | 1 | 7 | 152 |
+| A2 | ✓ | ✓ | 0 | 6 | 177 |
+| A3 | ✓ | ✗ | 4 | 7 | 156 |
+| A4 | ✓ | ✓ | 0 | 8 | 161 |
+| A5 | ✓ | ✓ | 0 | 7 | 183 |
+
+### (B) この言語で頼む（5回）
+
+| run | 動いた | 仕様の例を通過 | バグ数（1回目） | 推測で埋めた所（Q:） | 言語のループの回数 | バグ数（ループ後） | AIが書いた行数 |
+|---|---|---|---|---|---|---|---|
+| B1 | ✓ | ✓ | 0 | 0 | 1 | 0 | 18 |
+| B2 | ✓ | ✓ | 0 | 0 | 1 | 0 | 20 |
+| B3 | ✓ | ✓ | 0 | 0 | 1 | 0 | 20 |
+| B4 | ✓ | ✓ | 0 | 0 | 2 | 0 | 23 |
+| B5 | ✓ | ✓ | 0 | 0 | 1 | 0 | 20 |
+
+### どの要件で間違えたか（落ちた回数）
+
+| 要件 | (A) | (B) 1回目 | (B) ループ後 |
+|---|---|---|---|
+| 仕様の例: 9/21 21:00 に 9/24 23:59 の下書きが通知される | 1 | 0 | 0 |
+| 締切が近い: 下書きだけ・3日を超えるものと過ぎたものは入らない | 1 | 0 | 0 |
+| 締切が近い: 締切の早い順 | 1 | 0 | 0 |
+| 通知は21時だけ・持ち主にだけ届く | 1 | 0 | 0 |
+| flow: draft から passed へは飛べない | 0 | 0 | 0 |
+| ぶつかったら failed が勝つ（passed の後の failed は上書き） | 0 | 0 | 0 |
+| ぶつかったら failed が勝つ（failed の後の passed はエラーにせず何もしない） | 1 | 0 | 0 |
+| 自分の応募しか見えない・動かせない | 0 | 0 | 0 |
+| 色の表（それ以外は gray） | 0 | 0 | 0 |
+| 締切の取り出し: 仕様の例2つ | 0 | 0 | 0 |
+| 締切の取り出し: 見つからなければ聞き返す | 0 | 0 | 0 |
+| 締切の取り出し: 2つあったら決めずに聞き返す | 0 | 0 | 0 |
+| 締切の取り出し: 全角の数字（例に無い） | 0 | 0 | 0 |
+| 同じ応募への同時の書き換えで壊れない | 0 | 0 | 0 |
+
+### 失敗の中身
+
+- A1: ぶつかったら failed が勝つ（failed の後の passed はエラーにせず何もしない） — AssertionError: 
+- A3: 仕様の例: 9/21 21:00 に 9/24 23:59 の下書きが通知される — AttributeError: 'datetime.datetime' object has no attribute 'strip'
+- A3: 締切が近い: 下書きだけ・3日を超えるものと過ぎたものは入らない — AttributeError: 'datetime.datetime' object has no attribute 'strip'
+- A3: 締切が近い: 締切の早い順 — AttributeError: 'datetime.datetime' object has no attribute 'strip'
+- A3: 通知は21時だけ・持ち主にだけ届く — AttributeError: 'datetime.datetime' object has no attribute 'strip'
+- B4: 言語が返した問題 → 
+
+### 推測で埋めた所（AIが書いた Q:）
+
+- A1: Q: 通知の実際の送信方法（メール送信など）は指定されていないため、送信は行わず対象を返すだけにしました。
+- A1: Q: tick() は「21:00」を時=21, 分=0 の瞬間とみなし、その分ちょうどに一度だけ呼ばれる想定としました（同じ分に複数回呼ばれた場合の重複防止までは仕様にないため実装していません）。
+- A1: Q: tick() が返す通知の順番は、全ユーザーを通して応募が追加された順（add した順）としました。
+- A1: Q: extract_deadline は「月/日 時:分」の形式にマッチする箇所がちょうど1つだけ見つかった場合のみ値を返し、0個または2個以上見つかった場合は None（自信がない）としました。
+- A1: Q: 年をまたぐ締切（例: 12月に登録した後、翌年1月が締切）の扱いは仕様に無いため、単純に「今の年」を使うこととしました。
+- A1: Q: move() で to に不正な文字列（draft/submitted/passed/failed 以外）が渡された場合も ValueError としました。
+- A1: Q: 応募が見つからない id が move() に渡された場合も ValueError としました（他人の応募と同様に扱う）。
+- A2: Q: 通知の実送信手段は指定がないため、実際の送信は行わず (持ち主, 会社名) を返すのみとした。
+- A2: Q: tick() で複数ユーザーの通知順は "応募を追加した順" とした（要件に明記なし）。
+- A2: Q: due_soon の「3日以内」の下限は「今より前（既に過ぎた締切）は除く」とし、下限チェックは now <= deadline とした。
+- A2: Q: extract_deadline は、本文中に月/日 時:分の形が「ちょうど1つ」見つかった場合のみ返し、0件または2件以上は None（自信がない扱い）とした。
+- A2: Q: 年をまたぐ締切（例: 12月に来年1月分の応募を追加）は考慮せず、常に now.year を使う。
+- A2: Q: add() の deadline 文字列は "M/D H:MM" 形式のみを受け付け、パースできない場合は ValueError とした。
+- A3: Q: 「今の時刻が21:00なら」の判定は、set_now/コンストラクタで与えられた datetime の
+- A3: Q: 1日に複数回 tick() が21:00ちょうどのまま呼ばれた場合の重複通知防止は要件に無いため、
+- A3: Q: deadline の年は「今の年」固定。年をまたぐ締切（例:12月末に1月の締切を足す）の扱いは指定が無いため、
+- A3: Q: extract_deadline で複数の日時候補が見つかった場合は自信が無いとみなし None を返す。
+- A3: Q: extract_deadline は年を含む文字列があっても年は無視し、月/日 時:分のみを見る。
+- A3: Q: move() で同じ状態への遷移（例: submitted -> submitted）は「順番に反する」として ValueError とした。
+- A3: Q: due_soon の「3日以内」は日付基準。今日を含めて3日後の日付の23:59までとした
+- A4: Q: 通知の送信手段（メール等）は指定がないため、tick() は (owner, company) のリストを返すのみとし、実際の送信は行わない。
+- A4: Q: 「21時ちょうど」の判定は、時=21かつ分=0とし、秒以下は無視する。
+- A4: Q: 同じ21:00の呼び出しで複数回 tick() が呼ばれた場合の重複通知抑止は要件に無いため、毎回対象を再計算して返す（重複抑止なし）。
+- A4: Q: move() で to に不正な文字列（未知の状態名）が来た場合も ValueError とする。
+- A4: Q: extract_deadline は本文中に複数の締切候補（曖昧な複数マッチ）がある場合は None を返す。
+- A4: Q: extract_deadline で見つかった月/日が実在しない日付（例 2/30）の場合はNoneを返す。
+- A4: Q: id はグローバルに一意な文字列（連番）とする。
+- A4: Q: 締切の年は「今の年」を使うとの指定通りに解釈する。年をまたぐ判定は行わない。
+- A5: Q: 「駄目な状態遷移」以外に submitted->draft のような逆行や draft/submitted 以外への
+- A5: Q: due_soon の「3日以内」の起点は set_now/コンストラクタで渡された now の「日」を基準に、
+- A5: Q: tick() は21:00ちょうど（分も0）のときのみ通知するものとした。
+- A5: Q: tick() が返す順序は、応募が追加された順（id発行順）とした。
+- A5: Q: extract_deadline は、本文中に候補となる日時表現が複数（重複除く）見つかった場合は
+- A5: Q: 年をまたぐ締切（deadline の年は常に「今の年」固定、add() 時点の now.year を使用）。
+- A5: Q: color() の「それ以外」は未知の status 文字列が渡された場合を想定し gray とした。
+
+## 3回目の実験（別のモデル Haiku で。条件は2回目と同じ。各6回・1回ごとに別のエージェント）
+
+### (A) 日本語で頼む（6回）
+
+| run | 動いた | 仕様の例を通過 | バグ数 | 推測で埋めた所（Q:） | AIが書いた行数 |
+|---|---|---|---|---|---|
+| A1 | ✓ | ✓ | 0 | 4 | 165 |
+| A2 | ✓ | ✗ | 2 | 7 | 188 |
+| A3 | ✓ | ✗ | 2 | 4 | 206 |
+| A4 | ✓ | ✗ | 4 | 7 | 187 |
+| A5 | ✓ | ✗ | 6 | 0 | 154 |
+| A6 | ✓ | ✗ | 7 | 5 | 157 |
+
+### (B) この言語で頼む（6回）
+
+| run | 動いた | 仕様の例を通過 | バグ数（1回目） | 推測で埋めた所（Q:） | 言語のループの回数 | バグ数（ループ後） | AIが書いた行数 |
+|---|---|---|---|---|---|---|---|
+| B1 | ✓ | ✗ | 1 | 0 | 2 | 0 | 21 |
+| B2 | ✓ | ✗ | 2 | 0 | 2 | 0 | 20 |
+| B3 | ✓ | ✓ | 0 | 0 | 1 | 0 | 20 |
+| B4 | ✓ | ✗ | 2 | 0 | 2 | 0 | 20 |
+| B5 | ✓ | ✓ | 0 | 0 | 1 | 0 | 20 |
+| B6 | ✓ | ✓ | 0 | 0 | 1 | 0 | 20 |
+
+### どの要件で間違えたか（落ちた回数）
+
+| 要件 | (A) | (B) 1回目 | (B) ループ後 |
+|---|---|---|---|
+| 仕様の例: 9/21 21:00 に 9/24 23:59 の下書きが通知される | 2 | 0 | 0 |
+| 締切が近い: 下書きだけ・3日を超えるものと過ぎたものは入らない | 2 | 0 | 0 |
+| 締切が近い: 締切の早い順 | 1 | 0 | 0 |
+| 通知は21時だけ・持ち主にだけ届く | 2 | 0 | 0 |
+| flow: draft から passed へは飛べない | 1 | 0 | 0 |
+| ぶつかったら failed が勝つ（passed の後の failed は上書き） | 1 | 0 | 0 |
+| ぶつかったら failed が勝つ（failed の後の passed はエラーにせず何もしない） | 1 | 0 | 0 |
+| 自分の応募しか見えない・動かせない | 0 | 0 | 0 |
+| 色の表（それ以外は gray） | 0 | 0 | 0 |
+| 締切の取り出し: 仕様の例2つ | 5 | 3 | 0 |
+| 締切の取り出し: 見つからなければ聞き返す | 0 | 0 | 0 |
+| 締切の取り出し: 2つあったら決めずに聞き返す | 1 | 0 | 0 |
+| 締切の取り出し: 全角の数字（例に無い） | 5 | 2 | 0 |
+| 同じ応募への同時の書き換えで壊れない | 0 | 0 | 0 |
+
+### 失敗の中身
+
+- A2: 締切の取り出し: 仕様の例2つ — AssertionError: 
+- A2: 締切の取り出し: 全角の数字（例に無い） — AssertionError: 
+- A3: 締切の取り出し: 仕様の例2つ — AssertionError: 
+- A3: 締切の取り出し: 全角の数字（例に無い） — AssertionError: 
+- A4: 仕様の例: 9/21 21:00 に 9/24 23:59 の下書きが通知される — 10秒たっても終わりません（止まっている。デッドロックなど）
+- A4: 通知は21時だけ・持ち主にだけ届く — 10秒たっても終わりません（止まっている。デッドロックなど）
+- A4: 締切の取り出し: 仕様の例2つ — AssertionError: 
+- A4: 締切の取り出し: 全角の数字（例に無い） — AssertionError: 
+- A5: 締切が近い: 下書きだけ・3日を超えるものと過ぎたものは入らない — ValueError: Unknown status draft
+- A5: flow: draft から passed へは飛べない — ValueError: Unknown status draft
+- A5: ぶつかったら failed が勝つ（passed の後の failed は上書き） — ValueError: Unknown status draft
+- A5: ぶつかったら failed が勝つ（failed の後の passed はエラーにせず何もしない） — ValueError: Unknown status draft
+- A5: 締切の取り出し: 仕様の例2つ — AssertionError: 
+- A5: 締切の取り出し: 全角の数字（例に無い） — AssertionError: 
+- A6: 仕様の例: 9/21 21:00 に 9/24 23:59 の下書きが通知される — AttributeError: 'datetime.date' object has no attribute 'date'
+- A6: 締切が近い: 下書きだけ・3日を超えるものと過ぎたものは入らない — AttributeError: 'datetime.date' object has no attribute 'date'
+- A6: 締切が近い: 締切の早い順 — AttributeError: 'datetime.date' object has no attribute 'date'
+- A6: 通知は21時だけ・持ち主にだけ届く — AttributeError: 'datetime.date' object has no attribute 'date'
+- A6: 締切の取り出し: 仕様の例2つ — AssertionError: 
+- A6: 締切の取り出し: 2つあったら決めずに聞き返す — AssertionError: 
+- A6: 締切の取り出し: 全角の数字（例に無い） — AssertionError: 
+- B1（1回目）: 締切の取り出し: 仕様の例2つ — AssertionError: 
+- B1: 言語が返した問題 → example L5: "【締切9/24 23:59】" → found 9/24 23:59 のはずが found 9/24 3:59
+- B2（1回目）: 締切の取り出し: 仕様の例2つ — AssertionError: 
+- B2（1回目）: 締切の取り出し: 全角の数字（例に無い） — AssertionError: 
+- B2: 言語が返した問題 → example L4: "10/15(木)12:00まで" → found 10/15 12:00 のはずが found 10/15
+- B4（1回目）: 締切の取り出し: 仕様の例2つ — AssertionError: 
+- B4（1回目）: 締切の取り出し: 全角の数字（例に無い） — AssertionError: 
+- B4: 言語が返した問題 → example L4: "10/15(木)12:00まで" → found 10/15 12:00 のはずが found 10/15 2:00 / example L5: "【締切9/24 23:59】" → found 9/24 23:59 のはずが found 9/24 3:59
+
+### 推測で埋めた所（AIが書いた Q:）
+
+- A1: Q: When adding a deadline like "9/24 23:59" while in October, the year is assumed to be the current year. If the deadline date has already passed this year (e.g., adding "9/24 23:59" on 10/1), it will be a past deadline.
+- A1: Q: The tick() method sends notifications only once per day when called at 21:00. Multiple calls to tick() at 21:00 on the same day will only send notifications on the first call.
+- A1: Q: Full-width characters (０-９, ／, ：, （, ）) are converted to half-width equivalents. Other full-width symbols are not handled.
+- A1: Q: The extract_deadline() method returns the first deadline pattern found. If multiple patterns exist with "or"/"または" between them (ambiguous), it returns None. Otherwise, multiple patterns without "or" between them result in the first one being returned.
+- A2: Q: Applications stored in-memory with no persistence across restarts
+- A2: Q: Thread-safe using per-user locks for concurrent access
+- A2: Q: Deadline returned as string in "月/日 時:分" format (without leading zeros)
+- A2: Q: "3 days within" means from now (exclusive) to 3 days later at 23:59 (inclusive)
+- A2: Q: extract_deadline returns None if zero or multiple matches found (user confirmation needed)
+- A2: Q: Full-width digits/symbols converted to half-width for email parsing
+- A2: Q: Notification at 21:00 means exactly hour=21 and minute=0
+- A3: Q: For "3日以内" (within 3 days), interpreting as: from current time to end-of-day (23:59)
+- A3: Q: Thread safety: using per-application locks for move() operations to prevent concurrent
+- A3: Q: For tick(), checking if hour==21 and minute==0. Returns list of (user, company) tuples
+- A3: Q: For extract_deadline(), if multiple matches found, returning None (ambiguous).
+- A4: Q: Applications are stored in-memory (dict by user), no persistence to disk
+- A4: Q: IDs are generated as incremental integers per user (uuid not needed per requirements)
+- A4: Q: "3 days" is interpreted as: today + 2 more days, so 3 calendar days total
+- A4: Q: Deadline extraction handles full-width characters by converting them to half-width
+- A4: Q: Thread-safe via threading.Lock on each application's state
+- A4: Q: If both passed and failed transitions arrive, failed wins (no error thrown)
+- A4: Q: Notifications at 21:00 check if any admin/system user has a pending notification queue
+- A6: Q: Applications are identified by a simple incrementing integer ID
+- A6: Q: Thread safety is implemented per-application using locks, not a global lock
+- A6: Q: Deadline string input uses "M/D H:MM" or "MM/DD HH:MM" format; year is assumed current year
+- A6: Q: When extracting deadline, full-width digits/symbols are converted to half-width equivalents
+- A6: Q: The "3 days within" calculation: if today is 9/21, 3 days within means up to 9/24 23:59
+
+## 読み方と、正直な注意
+
+### 表の数字について（大事）
+上の表は、**今の道具（粗を直した後のチェッカーと読み取り）で採点し直したもの**。実験した時の道具での数字はこう。
+
+| | 1回目 (A) | 1回目 (B)1回目 | 1回目 (B)ループ後 | 2回目 (A) | 2回目 (B)1回目 | 2回目 (B)ループ後 |
+|---|---|---|---|---|---|---|
+| 14テスト全部通った | 0/5 | 3/5 | 4/5 | 3/5 | 4/5 | 5/5 |
+| バグ数の平均 | 2.2 | 0.6 | 0.2 | 1.0 | 2.8 | 0.0 |
+
+違いは2か所。
+- 1回目の B3: 答えの行に `answer[found monthday | missing]` と書いて、当時は書き方のエラーになった（ループの2回目で直った）。今の言語はこの書き方を受け付ける。
+- 2回目の B4: 中身は正しかったのに、契約まで書き写して do を字下げの中に入れたので、当時の読み取りでは「do が無い」で0点になった（ループの2回目で直った）。今の読み取りはこの形も読める。
+
+### 1回目と2回目で何を変えたか
+- **この言語の粗を直した:** 答えの行に out の形を書いてもよい / `never depend on width`（全角と半角で答えを変えない）を足して、機械で確かめる / 書き方の説明をはっきり / lang test で never も流す / 返事の形のゆれを読めるようにした。
+- **日本語の要件を公平にした:** 1回目は「3日以内」の数え方と全角の扱いを、この言語の側だけがはっきり決めていた。2回目は日本語の要件にも同じことを1文ずつ足した（`prompts/A2_japanese_clear.md`）。
+
+### 分かったこと
+- **1回目の差の多くは「曖昧さ」だった。** 日本語の要件をはっきりさせると、(A) は全部通った回数が 0/5 → 3/5、バグ数の平均が 2.2 → 1.0 に良くなった。
+- **それでも、この言語の方が間違えなかった。** 2回目も (B) はループの後で 5/5、バグ0。(A) は5回中2回、要件を外した（A1: failed の後の passed を通してしまった、A3: 日時の受け取り方を間違えて通知が全部落ちた）。
+- **推測で埋める量が全然違う。** 要件をはっきりさせても、(A) は1回あたり約7個の推測を書いた（通知の送り方、同じ分に2回呼ばれたら、年をまたいだら…）。(B) は0。この言語では、推測が要る所は契約か言語の決まりに先に書いてある。
+- **AIに書かせる量が1/8。** (A) 約160行、(B) 約20行。バグが入る場所そのものが少ない。
+- **ブレも少ない。** 書いた1行あたりのブレは、2回目で (A) 1.59、(B) 0.59。
+
+### この言語が負けた・弱いところ
+- **初見の書き方で間違える。** 2回とも、(B) には (A) で起きない「書き方そのもの」の失敗が1回ずつあった（1回目 B3、2回目 B4）。どちらも言語が返した問題を見て、2回目で直った。ループが無ければ負けていた。
+- **例と never に書いてないことは守れない。** 1回目の B5 は全角で落ちた。`never depend on width` を足して止められるようにしたが、「書いてないことは守れない」性質そのものは変わらない。
+- **(B) の強さの一部は、私が作った実行エンジンのおかげ。** flow・ぶつかった時・who・通知は、AIでなくエンジンが動かしている。エンジンにバグがあれば (B) は全部同じように落ちる（エンジンは別のテスト166件で確かめている）。
+
+### 3回目（別のモデル Haiku）で分かったこと
+- **モデルを変えても、差は同じ向きで、もっと大きく出た。** (A) は全部通ったのが 1/6、バグ平均 3.5。(B) は1回目で 3/6（バグ平均 0.8）、ループの後で 6/6・バグ0。
+- **(A) の失敗は、要件の中身そのもの。** 6回中5回が締切の取り出しを間違え、A4・A6 は通知や「3日以内」も外した。A5 は flow と「ぶつかったら failed が勝つ」を丸ごと外した。
+- **(B) の失敗は、shape の書き方だけ。** 3回とも `maybe any` が時刻の数字を食う形の間違いで、言語が返した「found 9/24 3:59 になった」を見て、1回で直した。flow・通知・who はエンジンが持っているので、そもそも間違える場所が無い。
+- **最初のやり方は捨てた。** 最初は1つのエージェントに6回書かせたが、6本とも同じ所で同じように落ちた（独立していない）。1回ごとに別のエージェントを立ててやり直した。捨てた方の中に、ロックを2重に取って止まる（デッドロック）コードがあり、採点が止まったので、採点に1テスト10秒の時間制限を足した（止まったら落とす）。
+
+### 実験の限界
+- 各条件5回ずつを2回（Sonnet）と、6回ずつを1回（Haiku）。合わせて各条件16回。temperature は固定できない（サブエージェントなので）。
+- AIは Claude のサブエージェント。「渡したファイル1つだけ読む・コードを動かさない」と頼んだ。1回目の A2 は自分のコードをコンパイルしたと報告している。
+- 採点のテストは私が書いた。両方の参照実装（人が書いたもの）が14個全部通ることを先に確かめた。
+- AIの返事は全部 `experiment/v2/runs/`（1回目）と `experiment/v2/runs2/`（2回目）に残してある。`python experiment/v2/score.py` で同じ採点をやり直せる。
+

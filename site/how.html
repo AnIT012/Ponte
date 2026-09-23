@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Ponte — 人は決めて、AIが書いて、言語が守る。">
+</head>
+<body>
+<title>しくみ（ponte/ の中） — Ponte</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Cdefs%3E%3ClinearGradient id="pi" x1="0" x2="1"%3E%3Cstop offset=".15" stop-color="#FF7355"/%3E%3Cstop offset=".85" stop-color="#83C3FF"/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="100" height="100" rx="24" fill="#1F2340"/%3E%3Cpath d="M24 62 C 38 28, 62 28, 76 62" stroke="url%28#pi%29" stroke-width="9" fill="none" stroke-linecap="round"/%3E%3Ccircle cx="24" cy="62" r="13" fill="#FF7355"/%3E%3Ccircle cx="76" cy="62" r="13" fill="#83C3FF"/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+:root{
+  --ground:#F6F7FB; --panel:#FFFFFF; --ink:#1F2340; --muted:#5E6385;
+  --tomato:#FF5A36; --mint:#17B3A3; --lemon:#FFC93C; --sky:#2F6FD6;
+  --err:#E0412A; --ok:#12997F; --line:#DADCE8; --code:#1E2238; --codeink:#F3F5FF;
+  --pop:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;
+  --body:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#14172A; --panel:#1C2036; --ink:#E8EAF6; --muted:#A3A8C8; --line:#2E3350;
+  --tomato:#FF7355; --mint:#2FD1BF; --lemon:#FFD35C; --sky:#83C3FF; --err:#FF6B55; --ok:#3FE0B8;
+  --code:#0C0F22; --codeink:#E9ECFF; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --ground:#14172A; --panel:#1C2036; --ink:#E8EAF6; --muted:#A3A8C8; --line:#2E3350;
+  --tomato:#FF7355; --mint:#2FD1BF; --lemon:#FFD35C; --sky:#83C3FF; --err:#FF6B55; --ok:#3FE0B8;
+  --code:#0C0F22; --codeink:#E9ECFF; color-scheme:dark;}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.8;padding-inline:16px}
+.wrap{max-width:1040px;margin:0 auto}
+a{color:inherit}
+h1,h2,h3{font-family:var(--pop);font-weight:700;line-height:1.3;text-wrap:balance;margin:0}
+h2{font-size:clamp(24px,4vw,34px)}
+p{margin:0}
+code,pre{font-family:var(--mono)}
+.sticker{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 3px rgba(20,24,50,.06)}
+section{padding-block:56px}
+.eyebrow{font-family:var(--pop);font-size:13px;letter-spacing:.08em;color:var(--tomato)}
+
+/* ---- top bar ---- */
+.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-block:18px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo svg{width:44px;height:auto}
+.logo .word{font-size:28px}
+.nav{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--pop);font-size:14px}
+.nav a{text-decoration:none;padding:4px 2px;border-bottom:3px solid transparent}
+.nav a:hover{border-bottom-color:var(--ink)}
+.word{font-family:var(--pop);letter-spacing:.02em;line-height:1}
+.word{color:var(--ink);font-weight:500}
+
+/* ---- slides ---- */
+.show{padding:22px;margin-top:8px}
+.slide[hidden]{display:none}
+.slide{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:26px;align-items:center;min-height:310px}
+.code{background:var(--code);color:var(--codeink);border-radius:10px;border:0;padding:18px 20px;font-size:clamp(11.5px,1.35vw,14px);line-height:1.75;overflow-x:auto;margin:0}
+.code .c{white-space:pre-wrap}
+.code .head{color:#6BB6FF;font-weight:700}.code .clause{color:#C9A7FF}.code .guard{color:#FF9D5C;font-weight:700}
+.code .type{color:#2FD1BF}.code .name{color:#FF8FC7}.code .val{color:#FFD35C}.code .field{color:#FFFFFF}.code .op{color:#8A90C4}
+.code .c{color:#7C83BA;font-style:italic}.code .block{background:#E0412A;color:#fff;border-radius:4px;padding:0 4px}
+.explain h2{font-size:clamp(22px,3vw,28px);margin-bottom:12px}
+.explain p{line-height:1.95}
+.explain code,.col code{font-family:var(--mono);font-size:13px;background:var(--ground);padding:1px 6px;border-radius:6px}
+.ctrl{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:18px;flex-wrap:wrap}
+.ctrl button{font-family:var(--pop);border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--ink);padding:6px 14px;cursor:pointer}
+.ctrl button[aria-current="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.ctrl button:focus-visible{outline:3px dashed var(--tomato);outline-offset:3px}
+.dots{display:flex;gap:8px}
+.dots button{width:34px;height:34px;padding:0;font-size:13px}
+
+/* ---- tagline ---- */
+.tagline{text-align:center;padding-block:26px 30px;font-family:var(--pop);font-size:clamp(17px,2.3vw,21px);line-height:1.7;max-width:34em;margin:0 auto}
+.tagline a{color:var(--sky);text-decoration:none;white-space:nowrap}
+.tagline a + a{margin-left:1.2em}
+
+/* ---- columns ---- */
+.cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;padding-bottom:30px}
+.col{padding:20px;display:flex;flex-direction:column;gap:10px}
+.col h3{font-size:18px}
+.col p{font-size:14.5px;line-height:1.85}
+.col a.more{font-family:var(--pop);font-size:13px;color:var(--sky);text-decoration:none;margin-top:auto}
+.col pre{margin:0;font-family:var(--mono);font-size:13px;background:var(--code);color:var(--codeink);border-radius:10px;padding:8px 10px;overflow-x:auto}
+
+footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13.5px}
+
+@media (max-width:1100px){
+  .slide{grid-template-columns:minmax(0,1fr);min-height:0}
+  .code{font-size:clamp(11.5px,1.9vw,14px)}
+}
+@media (max-width:860px){
+  .cols{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:520px){
+  .cols{grid-template-columns:minmax(0,1fr)}
+  .show{padding:12px}
+  .code{padding:14px 12px;font-size:11.5px;white-space:pre-wrap;overflow-wrap:anywhere}
+  .ctrl{gap:6px}.dots{gap:5px}.dots button,.ctrl button{width:30px;height:30px;padding:0;font-size:12px}
+}
+/* ---- 読みものページ（入門・道具とエラー） ---- */
+.nav a[aria-current="page"]{border-bottom-color:var(--sky)}
+.doc{display:grid;grid-template-columns:200px minmax(0,1fr);gap:40px;padding-block:18px 40px;align-items:start}
+.toc{position:sticky;top:16px;font-size:13.5px;max-height:calc(100vh - 32px);overflow:auto}
+.toc-h{font-family:var(--pop);font-weight:700;color:var(--muted);margin-bottom:6px}
+.toc ol{list-style:none;margin:0;padding:0;border-left:2px solid var(--line)}
+.toc li a{display:block;padding:4px 0 4px 12px;text-decoration:none;color:var(--muted);line-height:1.5}
+.toc li.d3 a{padding-left:24px;font-size:12.5px}
+.toc li a:hover{color:var(--ink)}
+.toc li a.on{color:var(--sky);border-left:2px solid var(--sky);margin-left:-2px}
+
+.prose{min-width:0;max-width:760px}
+.prose .eyebrow{margin-bottom:6px}
+.prose h1{font-size:clamp(26px,4vw,36px);margin-bottom:12px}
+.prose .lead{font-size:17px;color:var(--muted);margin-bottom:28px;line-height:1.9}
+.prose h2{font-size:clamp(21px,3vw,26px);margin:44px 0 14px;padding-top:6px;scroll-margin-top:16px}
+.prose h3{font-size:18px;margin:30px 0 10px;scroll-margin-top:16px}
+.prose p{margin:0 0 14px;line-height:1.95}
+.prose ul,.prose ol{margin:0 0 16px;padding-left:1.4em;line-height:1.9}
+.prose li{margin:4px 0}
+.prose hr{border:0;border-top:1px solid var(--line);margin:34px 0}
+.prose img{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);margin:8px 0 18px}
+.prose a{color:var(--sky)}
+.prose blockquote{margin:0 0 16px;padding:10px 16px;border-left:4px solid var(--lemon);background:var(--panel);border-radius:0 10px 10px 0}
+.prose :not(pre)>code{font-size:.88em;background:var(--panel);border:1px solid var(--line);padding:1px 6px;border-radius:6px;overflow-wrap:anywhere}
+.prose .code{margin:0 0 18px;font-size:13.5px}
+.prose .code:has(+ .try){margin-bottom:4px}
+.prose .try{text-align:right;font-size:13px;margin:0 0 18px}
+.prose .try a{text-decoration:none}
+.term{margin:0 0 18px;background:#101326;color:#D7DBF5;border-radius:10px;padding:14px 18px;font-size:13px;line-height:1.7;overflow-x:auto;white-space:pre}
+.term .prompt{color:#6BE3A4;user-select:none}
+.term .ecode{color:#FF9D5C;font-weight:700}
+.note{font-size:14px;color:var(--muted)}
+.muted{color:var(--muted);font-size:.92em}
+.arrow{color:var(--muted);font-size:.9em;white-space:nowrap}
+
+.table{overflow-x:auto;margin:0 0 20px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.table table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.7}
+.table th{text-align:left;font-family:var(--pop);font-weight:700;background:var(--ground);white-space:nowrap}
+.table th,.table td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.table tr:last-child td{border-bottom:0}
+.table td:first-child{white-space:nowrap}
+
+.ref{padding-block:0}
+.errs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.errcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;scroll-margin-top:16px}
+.errcard:target{outline:3px solid var(--lemon)}
+.errcard p{margin:0 0 6px;font-size:14px;line-height:1.8}
+.errcard b{font-family:var(--pop);font-size:12.5px;color:var(--muted);margin-right:4px}
+.ehead{font-family:var(--pop);font-weight:700;font-size:15px!important}
+.badge{display:inline-block;font-family:var(--mono);font-size:12px;border-radius:6px;padding:0 7px;margin-right:6px;color:#fff}
+.badge.err{background:var(--err)}.badge.warn{background:var(--muted)}
+
+@media (max-width:860px){
+  .doc{grid-template-columns:minmax(0,1fr);gap:8px}
+  .toc{position:static;max-height:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:18px}
+  .toc ol{columns:2;column-gap:16px;border-left:0}
+  .toc li a{padding-left:0}
+  .toc li.d3{display:none}
+  .errs{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:520px){
+  .toc ol{columns:1}
+  .prose .code,.term{font-size:12px;padding:12px}
+  .table td:first-child{white-space:normal}
+}
+
+</style>
+
+<div class="wrap">
+<header class="bar">
+  <a class="logo" href="index.html" aria-label="Ponte">
+    <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="pg" x1="0" x2="1"><stop offset=".15" stop-color="#FF5A36"/><stop offset=".85" stop-color="#2F6FD6"/></linearGradient></defs><rect x="2" y="2" width="96" height="96" rx="24" fill="#fff" stroke="#DADCE8" stroke-width="2"/><path d="M24 62 C 38 28, 62 28, 76 62" stroke="url(#pg)" stroke-width="11" fill="none" stroke-linecap="round"/><circle cx="24" cy="62" r="13" fill="#FF5A36"/><circle cx="76" cy="62" r="13" fill="#2F6FD6"/></svg>
+    <span class="word">Ponte</span>
+  </a>
+  <nav class="nav">
+    <a href="play.html">試す</a>
+    <a href="learn.html">入門</a>
+    <a href="reference.html">道具とエラー</a>
+    <a href="spec.html">仕様書</a>
+    <a href="https://github.com/AnIT012/nameless-lang">GitHub</a>
+  </nav>
+</header>
+
+<div class="doc">
+  <aside class="toc" aria-label="目次"><p class="toc-h">目次</p><ol><li class="d2"><a href="#ファイル">ファイル</a></li><li class="d2"><a href="#実装の原則">実装の原則</a></li><li class="d2"><a href="#テスト">テスト</a></li></ol></aside>
+  <article class="prose">
+    <p class="eyebrow">HOW</p>
+    <h1>しくみ（ponte/ の中）</h1>
+<p class="lead"><code>ponte/</code> は Python 3.11 の標準機能だけで書いています。</p>
+<pre class="term"> .ponte ──parser──▶ 木（見出しと節） ──checker──▶ エラー32種・警告
+                        │
+                        ├──examples──▶ example と never を流す → 穴さがし
+                        │
+                        ├──fill──▶ AIに action の中身を書かせる ⇄ 確かめて問題を返す
+                        │
+                        └──runtime──▶ 実行エンジン ──server + page.html──▶ ブラウザの画面</pre>
+<h2 id="ファイル">ファイル</h2>
+<div class="table"><table><tr><th>ファイル</th><th>すること</th></tr><tr><td><code>parser.py</code></td><td>行の字下げから木を作る。行頭が見出し（thing / rule …）、字下げが節になる。<code>#</code> はコメント、<code>##</code> は止めるコメントで、<code>#4F46E5</code> のような色は値として読む。<code>use</code> で別ファイルを、<code>use std/…</code> で標準ライブラリを読む</td></tr><tr><td><code>checker.py</code></td><td>エラーを探す。1つの検査が1つの関数になっている（<code>ALL_CHECKS</code>）。E32 の型は、rule ごとに this が何の thing かを推論して確かめる</td></tr><tr><td><code>forms.py</code></td><td>rule の when、do、値の書き方の一覧。チェッカーも説明もここから作る</td></tr><tr><td><code>body.py</code></td><td>action の中身（do と shape）を動かす。<code>TOOLS</code> が道具の一覧で、説明、エラーの一言、仕様書の表もここから作る</td></tr><tr><td><code>examples.py</code></td><td>example を実行エンジンで流す。<code>holes()</code> が穴さがしをする</td></tr><tr><td><code>runtime.py</code></td><td>実行エンジン。レコードごとに鍵を1つ持ち、別々のレコードへの操作は並列に進む。flow、who、relate、通知、取り消しを扱う。保存は JSONL への追記で、読み直すと同じ中身に戻る</td></tr><tr><td><code>server.py</code></td><td>標準の http.server を使う。画面の組み立て（scene から部品の JSON を作る）、入力の検査、リアルタイム更新（SSE）、<code>--reload</code> の入れ替えを受け持つ</td></tr><tr><td><code>auth.py</code></td><td><code>ponte run --login</code> のログイン。合言葉は hashlib.scrypt で保存する。鍵は HttpOnly の cookie で、メモリにだけ持つ</td></tr><tr><td><code>errors.py</code></td><td>エラーの辞書（なぜ止めるか、どう直すか）。<code>ponte explain</code>、<code>check --json</code>、仕様書 13章、ホームページはここから作る</td></tr><tr><td><code>page.html</code></td><td>画面そのもの。ライブラリを使わない素の HTML / CSS / JavaScript で、ダークモード、スマホ、英語に対応する</td></tr><tr><td><code>fill.py</code></td><td>AI に中身を書かせる。SDK は使わず、urllib で API を呼ぶ。書いた中身は example と never で確かめ、通らなければ問題を返して書き直させる</td></tr><tr><td><code>guide.py</code></td><td>AI への書き方の説明を、<code>TOOLS</code>、<code>forms.py</code>、std から作る（<code>ponte guide</code>）</td></tr><tr><td><code>fmt.py</code></td><td>整形する。見た目の幅でそろえ、意味が変わる場合は書き換えない</td></tr><tr><td><code>build.py</code></td><td>1つの .pyz にまとめる。std も含める</td></tr><tr><td><code>values.py</code></td><td>日時と期間を読み書きする</td></tr><tr><td><code>icons.py</code></td><td>画面のアイコンを持つ</td></tr><tr><td><code>doc.py</code></td><td><code>ponte doc</code>。仕様を1枚の HTML にまとめる</td></tr><tr><td><code>lsp.py</code></td><td><code>ponte lsp</code>。エディタ向けの言語サーバー。標準入出力で JSON-RPC をやりとりし、check、errors、TOOLS を使う</td></tr><tr><td><code>cli.py</code></td><td>コマンドを受け付ける</td></tr><tr><td><code>std/</code></td><td>標準ライブラリ。中身も Ponte で書き、example を付けている</td></tr></table></div>
+<h2 id="実装の原則">実装の原則</h2>
+<ul><li><strong>一覧は1か所にだけ置きます。</strong> 道具は <code>body.TOOLS</code>、rule の書き方は <code>forms.py</code> にあります。エラーは <code>errors.ERRORS</code>、機械で確かめる never は <code>fill.MACHINE_NEVERS</code> にあります。説明、エラー、仕様書の表、ホームページはそこから作ります。ずれるとテストが失敗します（<code>tests/test_guide.py</code>、<code>test_errors.py</code>、<code>test_docs.py</code>）。</li><li>年は推測しません。年のない日付は、年のないまま持ちます。「今より前」になる締切は、画面で聞き返します。</li><li>書いていないことは誰もできません。who にない操作は、画面のボタンを出さないか、押せないようにします。</li><li>example が通っても、確かめていない部分は示します。これが <code>ponte test</code> の穴さがしです。</li></ul>
+<h2 id="テスト">テスト</h2>
+<p><code>python -m pytest</code> で流します。320件ほどあり、10秒ほどで終わります。</p>
+<div class="table"><table><tr><th>ファイル</th><th>確かめること</th></tr><tr><td><code>test_checker.py</code>、<code>cases/</code></td><td>エラーごとの「壊した仕様」と「直した仕様」の組（<code>make_cases.py</code> で作る）</td></tr><tr><td><code>test_types.py</code></td><td>型（E32）。わざと壊した12通りを止めること</td></tr><tr><td><code>test_engine_fuzz.py</code></td><td>エンジンにでたらめな操作（40通り×60操作）をして、flow、who、通知先、読み直しの約束が守られること</td></tr><tr><td><code>test_guide.py</code></td><td>道具の例がすべて動くこと、仕様書の表と実装がずれていないこと</td></tr><tr><td><code>test_docs.py</code></td><td>入門の出力が本物であること、見本のアプリがすべて通ること、ホームページが docs と実装から作ったものと同じこと</td></tr><tr><td><code>test_errors.py</code></td><td>check が出すエラーがすべて辞書にあること、<code>explain</code> と <code>check --json</code></td></tr><tr><td><code>test_auth.py</code></td><td>ログイン。本物のサーバーを立て、cookie、合言葉、登録、間違いが続いた場合、外に開くときの止め方を確かめる</td></tr><tr><td><code>test_std.py</code></td><td>標準ライブラリ</td></tr><tr><td><code>test_runtime.py</code>、<code>test_spec_gaps.py</code>、<code>test_ui_language.py</code></td><td>実行エンジン、サーバー、画面</td></tr><tr><td><code>test_lend.py</code></td><td>役割、取り消し、2つの thing</td></tr><tr><td><code>test_fill.py</code>、<code>test_experiment_v2.py</code></td><td>AI による穴埋めのループ、実験の採点</td></tr></table></div>
+  </article>
+</div>
+<footer><p>v0.3 ・ Python 3.11</p></footer>
+</div>
+<script>
+(() => {   // 目次の、いま読んでいる所に印を付ける
+  const links = [...document.querySelectorAll(".toc a")], map = new Map(links.map(a => [a.hash.slice(1), a]));
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if(!e.isIntersecting) return;
+    links.forEach(a => a.classList.remove("on")); const a = map.get(e.target.id); if(a) a.classList.add("on");
+  }), {rootMargin: "0px 0px -70% 0px"});
+  document.querySelectorAll(".prose h2[id], .prose h3[id], .prose section[id]").forEach(h => map.has(h.id) && io.observe(h));
+})();
+</script>
+</body>
+</html>

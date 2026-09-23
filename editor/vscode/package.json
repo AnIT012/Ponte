@@ -1,0 +1,109 @@
+{
+  "name": "ponte",
+  "displayName": "Ponte",
+  "version": "0.3.0",
+  "publisher": "ponte",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [
+    "onLanguage:ponte"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "ponte",
+        "aliases": [
+          "Ponte",
+          "ponte"
+        ],
+        "extensions": [
+          ".ponte"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "ponte",
+        "scopeName": "source.ponte",
+        "path": "./syntaxes/ponte.tmLanguage.json"
+      }
+    ],
+    "configurationDefaults": {
+      "editor.tokenColorCustomizations": {
+        "textMateRules": [
+          {
+            "scope": "keyword.declaration.ponte",
+            "settings": {
+              "foreground": "#8E4EC6",
+              "fontStyle": "bold"
+            }
+          },
+          {
+            "scope": "keyword.clause.ponte",
+            "settings": {
+              "foreground": "#8B8D98"
+            }
+          },
+          {
+            "scope": "keyword.guard.ponte",
+            "settings": {
+              "foreground": "#E5484D"
+            }
+          },
+          {
+            "scope": "storage.type.ponte",
+            "settings": {
+              "foreground": "#30A46C"
+            }
+          },
+          {
+            "scope": "entity.name.ponte",
+            "settings": {
+              "foreground": "#3E63DD"
+            }
+          },
+          {
+            "scope": [
+              "string.quoted.ponte",
+              "constant.numeric.ponte"
+            ],
+            "settings": {
+              "foreground": "#AD7F00"
+            }
+          },
+          {
+            "scope": "comment.line.ponte",
+            "settings": {
+              "foreground": "#A0A4AB",
+              "fontStyle": "italic"
+            }
+          },
+          {
+            "scope": "invalid.blocking.ponte",
+            "settings": {
+              "foreground": "#FFFFFF",
+              "background": "#E5484D"
+            }
+          }
+        ]
+      }
+    },
+    "configuration": {
+      "title": "Ponte",
+      "properties": {
+        "ponte.python": {
+          "type": "string",
+          "default": "python",
+          "description": "ponte check を動かす Python（Python 3.11 以上）"
+        }
+      }
+    }
+  }
+}

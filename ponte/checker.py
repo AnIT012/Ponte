@@ -1251,6 +1251,8 @@ SLOTS = ("top", "main", "side", "bottom", "over")
 CLAUSES = {"rule": ("why", "when", "where", "do", "example"),
            "list": ("of", "where", "sort"),
            "action": ("in", "out", "example", "never", "else", "by", "ask", "how", "do"),
+           "part": ("in", "do", "show", "mark"),
+           "connect": ("gives", "needs", "does", "limit"),
            "look": ("title", "sub", "mark", "lead", "image", "button", "empty", "heading", "search", "group", "take", "sum")}
 
 
@@ -1276,6 +1278,43 @@ def check_example_values(spec: Spec, opt: Options) -> list[Finding]:
                 continue
             if c.keyword not in SLOTS:
                 out.append(Finding("E28", c.line, f"scene {sc.name}: 「{c.keyword}」という置き場所はありません（{' / '.join(SLOTS)}）{did_you_mean(c.keyword, SLOTS)}"))
+    # flow の状態の打ち間違い（`otdo -> done` だと、黙って新しい状態ができ、始まりの状態まで変わる）
+    for f in spec.decls("flow"):
+        m = re.fullmatch(r"(\w+)\.(\w+)", f.name or "")
+        if not m or m.group(1) not in ths_all:
+            continue
+        fld = next((x for x in thing_fields(ths_all[m.group(1)]) if x.name == m.group(2)), None)
+        if fld is None or not fld.states:
+            continue
+        try:
+            edges, wins = flow_parts(f)
+        except ParseError:
+            continue
+        for st in dict.fromkeys([x for e in edges + wins for x in e if x]):
+            if st not in fld.states:
+                out.append(Finding("E18", f.line, f"flow {f.name}: 「{st}」は {f.name} の状態にありません（{' / '.join(fld.states)}）{did_you_mean(st, fld.states)}"))
+    # input の項目の打ち間違い（どの thing にも合わないと、画面を開いた時に止まる）
+    all_fields = {n: [x.name for x in thing_fields(t)] for n, t in ths_all.items()}
+    for inp in spec.decls("input"):
+        names = [c.keyword for c in inp.children]
+        if names and not any(set(names) <= set(fs) for fs in all_fields.values()):
+            best = max(all_fields, key=lambda n: len(set(names) & set(all_fields[n])), default=None)
+            for c in inp.children:
+                if best and c.keyword not in all_fields[best]:
+                    out.append(Finding("E28", c.line, f"input {inp.name}: {best} に「{c.keyword}」という項目はありません（{', '.join(all_fields[best])}）{did_you_mean(c.keyword, all_fields[best])}"))
+    # example の箱の中身の項目の打ち間違い
+    for r in rules(spec).values():
+        for ex in r.children_of("example"):
+            for c in ex.children:
+                if c.keyword not in ("given", "adds", "taps", "expect") or not c.children:
+                    continue
+                w = c.text.split()
+                thing = w[2] if c.keyword == "taps" and len(w) >= 3 else (w[0] if w else "")
+                if thing not in all_fields:
+                    continue
+                for v in c.children:
+                    if v.keyword not in all_fields[thing]:
+                        out.append(Finding("E32", v.line, f"rule {r.name}: {thing} に「{v.keyword}」という項目はありません（{', '.join(all_fields[thing])}）{did_you_mean(v.keyword, all_fields[thing])}"))
     # 節の打ち間違い（`wher status is todo` が黙って無視されると、条件の無い rule になってしまう）
     for kind, allowed in CLAUSES.items():
         for d in spec.decls(kind):

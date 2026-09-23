@@ -115,3 +115,28 @@ def test_broken_bodies_stop_with_body_errors():
                 b.run({"text": inp})
         except (ParseError, BodyError):
             pass
+
+
+def test_a_typo_in_any_clause_word_is_not_silently_ignored():
+    """見本の、字下げした行の最初の言葉を1か所ずつ打ち間違えても、黙って通らない（style と part の中の名前は除く）"""
+    import re
+    lines = open("spec/todo.ponte", encoding="utf-8").read().split("\n")
+    passed = []
+    for i, l in enumerate(lines):
+        m = re.match(r"^( +)([a-z][\w-]{2,})(.*)$", l)
+        if not m:
+            continue
+        j = i
+        while j >= 0 and lines[j].startswith(" "):
+            j -= 1
+        if lines[j].split()[0] in ("style", "part"):
+            continue
+        w = m.group(2)
+        new = lines[:]
+        new[i] = m.group(1) + w[1] + w[0] + w[2:] + m.group(3)
+        try:
+            if not [f for f in check(parse("\n".join(new))) if f.is_error]:
+                passed.append(new[i].strip())
+        except ParseError:
+            pass
+    assert passed == []

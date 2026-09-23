@@ -43,8 +43,8 @@ cases["E06_blocking_line"] = (rep("  sort  deadline\n", "  sort  deadline\n  ## 
 cases["E06_blocking_inline"] = (rep("  where status is draft\n", "  where status is draft    ## draft だけでいい？\n"), base)
 cases["E07_when_is_state"] = (rep("  when  every day at 21:00\n", "  when  deadline within 3 days\n"), base)
 cases["E08_move_narrowed"] = (rep("  do    move this to submitted\n", "  do    move Application to submitted\n"), rep("  do    move this to submitted\n", '  do    move Application where company is "x" to submitted\n'))
-cov = base + '\nrule OnSubmitted\n  when  Application moves to submitted\n  do    notify "提出しました"\n\nrule OnPassed\n  when  Application moves to passed\n  do    notify "通過しました"\n'
-cases["W09_flow_coverage"] = (cov, cov + '\nrule OnFailed\n  when  Application moves to failed\n  do    notify "残念でした"\n')
+cov = base + '\nrule OnSubmitted\n  when  Application moves to submitted\n  do    notify owner "提出しました"\n\nrule OnPassed\n  when  Application moves to passed\n  do    notify owner "通過しました"\n'
+cases["W09_flow_coverage"] = (cov, cov + '\nrule OnFailed\n  when  Application moves to failed\n  do    notify owner "残念でした"\n')
 cases["E10_conflict"] = (rep("  failed > passed\n", ""), base)
 cases["E11_list_cycle"] = (base + "\nlist A\n  of    B\n  where status is draft\n\nlist B\n  of    A\n  where status is draft\n",
                            base + "\nlist A\n  of    Application\n  where status is draft\n\nlist B\n  of    A\n  where status is draft\n")
@@ -86,6 +86,9 @@ cases["E28_undefined_relate"] = (base + "\nrelate\n  Remind > Remindd\n", base)
 cases["E28_unknown_icon"] = (rep("  button  submitted-button named 提出した\n", "  button  submitted-button named 提出した icon sendd\n"),
                              rep("  button  submitted-button named 提出した\n", "  button  submitted-button named 提出した icon send\n"))
 cases["E28_unknown_type"] = (rep("  owner     User   gone[remove too]\n", "  owner     Usr    gone[remove too]\n"), base)
+cases["E29_two_dos"] = (rep("  do    move this to submitted\n", "  do    move this to submitted\n  do    notify me \"提出しました\"\n"), base)
+cases["E30_notify_recipient"] = (rep("notify owner each of DueSoon", "notify each of DueSoon"), base)
+cases["E30_notify_unknown_recipient"] = (rep("notify owner each of DueSoon", "notify boss each of DueSoon"), base)
 cases["E28_unknown_field"] = (rep("  title   company\n", "  title   compny\n"), base)
 cases["E28_bad_button"] = (rep("  button  submitted-button named 提出した\n", "  button  submitted-button named 提出した blink\n"), base)
 cases["E25_words_quoted"] = (base + '\nwords ja\n  "提出した"  提出した\n\nwords en\n  draft  Draft\n', base + '\nwords ja\n  "提出した"  提出した\n\nwords en\n  "提出した"  Submit\n')

@@ -53,7 +53,7 @@ rule ReadMail
 rule Remind
   why   締切を落とさないため
   when  every day at 21:00
-  do    notify each of DueSoon
+  do    notify owner each of DueSoon
   example
     given   Application(company "Osaka Gas", deadline "9/24 23:59", status draft)
     at      "9/21 21:00"
@@ -102,8 +102,8 @@ style DueSoon
 
 rule OnSubmitted
   when  Application moves to submitted
-  do    notify "提出しました"
+  do    notify owner "提出しました"
 
 rule OnPassed
   when  Application moves to passed
-  do    notify "通過しました"
+  do    notify owner "通過しました"

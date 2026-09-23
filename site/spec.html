@@ -324,7 +324,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
               many -&gt; missing</pre>
 <ul><li>書けるのは <code>名前 = 式</code> と、名前を付けた match だけ。</li><li><strong>答えは「他のどの行からも使われていない行」。</strong> ちょうど1つでなければエラー。答えの行に <code>[...]</code> は要らない（形は out に書いてある）。書いた場合は <code>answer[found monthday | missing]</code> のように out の形と同じにする。</li><li>一時的な状態は <code>名前[a | b] = match ...</code> で宣言して使う。</li><li>書き換え・ループ・再帰・true/false は無い。だから必ず止まる。</li><li>順番は名前の依存関係で決まる。上から順に実行されるわけではない。</li><li>使える道具は 10章。</li></ul>
 <p><strong>shape ― 文字の形（正規表現の代わり）</strong></p>
-<pre class="code">shape <span class="name">Deadline</span>
+<pre class="code"><span class="head">shape</span> <span class="name">Deadline</span>
   month  digits <span class="val">1</span>..<span class="val">2</span>
   <span class="val">"/"</span>
   day    digits <span class="val">1</span>..<span class="val">2</span>

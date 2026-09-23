@@ -7,6 +7,7 @@ thing Expense
   memo   text
   yen    number
   owner  User  gone[remove too]
+  kind[food | daily | fun | other]
 
 thing User
   name  text
@@ -21,6 +22,10 @@ list Mine
   of     Expense
   where  owner is me
   sort   memo
+
+list ByKind
+  of     Expense
+  where  owner is me
 
 rule ReadYen
   why   書いたメモから金額を拾う
@@ -68,6 +73,7 @@ scene Home
   top     Header
   main    stats Mine, sum yen of Mine
   main    Mine as list
+  side    ByKind as chart
   bottom  button add named add-expense icon plus
 
 part Header
@@ -75,9 +81,14 @@ part Header
 
 input AddExpense
   memo  required
+  kind
 
 flow scene
   Home -> AddExpense -> Home
+
+look ByKind as chart
+  group  by kind
+  sum    yen
 
 look Mine as list
   title   memo
@@ -97,6 +108,12 @@ words ja
   delete          消す
   delete-confirm  このメモを消しますか？
   mine-empty      まだメモがありません
+  kind            費目
+  food            食費
+  daily           日用品
+  fun             楽しみ
+  other           そのほか
+  ByKind          費目ごとの合計
 
 words en
   memo            Memo
@@ -110,3 +127,9 @@ words en
   delete          Delete
   delete-confirm  Delete this note?
   mine-empty      No notes yet
+  kind            Category
+  food            Food
+  daily           Daily goods
+  fun             Fun
+  other           Other
+  ByKind          Total by category

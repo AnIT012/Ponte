@@ -44,6 +44,7 @@ TOOLS = [
     ("数", "abs X", "マイナスを取る", 'abs number of t', "-7", 7),
     ("日時", "monthday of X", "月・日（・時・分）を取り出した当たりを \"10/15 12:00\" に", "monthday of first of find all M in t", "締切10/15まで", "10/15"),
     ("日時", "date of X", "年・月・日を取り出した当たりを \"2026/10/15\" に（年が要る）", "date of first of find all Y in t", "2026年10月15日", "2026/10/15"),
+    ("日時", "time of X", "時・分を \"12:00\" に（当たりか、時刻の入った文字から）", "time of t", "開始は 9:05 から", "9:05"),
     ("日時", "add 3 days to X", "年の入った日付に日を足す（年の無い日付は止まる。年は推測しない）", "add 3 days to t", "2026/12/30", "2027/1/2"),
     ("日時", "weekday of X", "年の入った日付の曜日（mon〜sun。match で分ける）", "weekday of t", "2026/9/23", "wed"),
     ("日時", "days until X", "今日から X まで何日（part の中で。今の時刻が要る）", None, None, None),
@@ -381,7 +382,7 @@ class Body:
             except ValueError as err:
                 raise BodyError(line, str(err))
             return (t.date() - now.date()).days
-        m = re.fullmatch(r"(count|length|first|last|monthday|date|number) of (.+)", e)
+        m = re.fullmatch(r"(count|length|first|last|monthday|date|time|number) of (.+)", e)
         if m:
             v = ev(m.group(2))
             op = m.group(1)
@@ -402,6 +403,13 @@ class Body:
                         return float(t)
                     except ValueError:
                         raise BodyError(line, f"number of: 数として読めません: {str(v)[:30]!r}（先に find all で数字だけ取り出す）")
+            if op == "time":
+                if isinstance(v, dict) and v.get("hour") is not None and v.get("minute") is not None:
+                    return f"{int(v['hour'])}:{int(v['minute']):02d}"
+                mt = re.search(r"(\d{1,2}):(\d{2})", str(v)) if isinstance(v, str) else None
+                if mt:
+                    return f"{int(mt.group(1))}:{mt.group(2)}"
+                raise BodyError(line, "time of: hour と minute を取り出した shape の結果か、時刻（12:00）の入った文字が要ります")
             if op == "date":
                 if not isinstance(v, dict) or not {"year", "month", "day"} <= set(v):
                     raise BodyError(line, "date of: year と month と day を取り出した shape の結果が要ります（年は推測しません）")

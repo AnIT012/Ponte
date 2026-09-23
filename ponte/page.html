@@ -117,7 +117,7 @@ td{padding:11px 14px;border-bottom:1px solid var(--line)}tr:last-child td{border
 /* グラフ */
 .chart{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow-1);display:grid;gap:12px}
 .chart-top{display:flex;justify-content:space-between;align-items:baseline}.chart-top b{font-size:28px;letter-spacing:-.02em}
-.bar{display:grid;grid-template-columns:72px 1fr 28px;align-items:center;gap:10px;font-size:13px}
+.bar{display:grid;grid-template-columns:72px 1fr minmax(28px,auto);align-items:center;gap:10px;font-size:13px}
 .bar .track{height:10px;background:var(--panel-2);border-radius:999px;overflow:hidden}
 .bar .fill{height:100%;border-radius:999px;background:var(--c);transition:width .5s cubic-bezier(.2,.8,.2,1)}
 .bar .n{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
@@ -133,6 +133,8 @@ td{padding:11px 14px;border-bottom:1px solid var(--line)}tr:last-child td{border
 .form h2{margin:0;font-size:20px}
 .form label{display:grid;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}.form label>span{display:flex;gap:4px}
 .form label span.req{color:var(--danger)}
+.form select{font:inherit;font-size:15px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text)}
+.form select:focus{outline:0;border-color:var(--main);box-shadow:0 0 0 3px var(--main-soft)}
 .form input{font:inherit;font-size:15px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text);transition:border-color .15s,box-shadow .15s}
 .form input:focus{outline:0;border-color:var(--main);box-shadow:0 0 0 3px var(--main-soft)}
 .form .err{color:var(--danger);font-size:13px;min-height:1em}.form .act{display:flex;gap:8px;justify-content:flex-end}
@@ -274,15 +276,17 @@ function block(b){
     case "calendar": return `<div class="block look-${esc(b.look)}">${calendar(b)}</div>`;
     case "chart": {
       const max = Math.max(1, ...b.bars.map(x => x.count));
-      return `<div class="block chart"><div class="chart-top"><span class="block-head" style="margin:0">${esc(b.title)}</span><b>${b.total}</b></div>
+      return `<div class="block chart"><div class="chart-top"><span class="block-head" style="margin:0">${esc(b.title)}</span><b>${esc(b.total_shown ?? b.total)}</b></div>
         <div class="stack">${b.bars.map(x => `<span style="--c:${esc(x.color)};flex-grow:${x.count}"></span>`).join("")}</div>
-        ${b.bars.map(x => `<div class="bar"><span>${esc(x.label)}</span><div class="track"><div class="fill" style="--c:${esc(x.color)};width:${x.count / max * 100}%"></div></div><span class="n">${x.count}</span></div>`).join("")}</div>`;
+        ${b.bars.map(x => `<div class="bar"><span>${esc(x.label)}</span><div class="track"><div class="fill" style="--c:${esc(x.color)};width:${x.count / max * 100}%"></div></div><span class="n">${esc(x.shown ?? x.count)}</span></div>`).join("")}</div>`;
     }
     case "detail": return `<div class="detail"><div class="head" style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start"><div class="who" style="display:flex;gap:14px;align-items:center">${lead(b.lead)}<div class="title">${esc(b.title)}</div></div>${badge(b.mark)}</div>${sub(b.sub)}
       <dl class="fields">${b.fields.map(f => `<dt>${esc(f.label)}</dt><dd>${esc(f.value)}</dd>`).join("")}</dl>
       ${b.buttons.length ? `<div class="btns">${b.buttons.map(x => btn(x, {on:b.on, id:b.id})).join("")}</div>` : ""}</div>`;
     case "input": return `<form class="form" data-input="${esc(b.name)}" data-this="${esc(b.this || "")}" novalidate><h2>${esc(b.title)}</h2>${b.fields.map(f =>
-      `<label><span>${esc(f.label)}${f.required ? `<span class="req">*</span>` : ""}</span>${f.kind === "textarea"
+      `<label><span>${esc(f.label)}${f.required ? `<span class="req">*</span>` : ""}</span>${f.kind === "select"
+        ? `<select name="${esc(f.name)}">${f.options.map(o => `<option value="${esc(o.value)}"${o.value === f.value ? " selected" : ""}>${esc(o.label)}</option>`).join("")}</select>`
+        : f.kind === "textarea"
         ? `<textarea name="${esc(f.name)}" ${f.required ? "required" : ""}>${esc(f.value)}</textarea>`
         : `<input name="${esc(f.name)}" type="${esc(f.kind)}" value="${esc(f.value)}" ${f.required ? "required" : ""}>`}</label>`).join("")}
       <div class="err" id="err"></div><div class="act"><button type="button" class="btn quiet" data-act="back">${esc(b.cancel)}</button><button type="submit" class="btn main">${icon("check")}${esc(b.submit)}</button></div></form>`;

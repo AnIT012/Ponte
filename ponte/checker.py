@@ -929,6 +929,12 @@ def check_undefined(spec: Spec, opt: Options) -> list[Finding]:
                 names = [c.text[3:].strip()]
             elif c.keyword == "sub" and re.fullmatch(r"\w+", c.text.strip()):
                 names = [c.text.strip()]
+            elif c.keyword == "sum":                  # as chart の高さ（数の項目だけ）
+                names = [c.text.strip()]
+                t = things(spec).get(thing_of(lk.name))
+                ty = next((f.type for f in thing_fields(t) if f.name == names[0]), None) if t is not None else None
+                if ty is not None and ty not in NUMERIC:
+                    out.append(Finding("E32", c.line, f"look {lk.name}: sum は数の項目だけです（{names[0]} は {ty}）"))
             for n in names:
                 if flds and n not in flds:
                     out.append(Finding("E28", c.line, f"look {lk.name}: 「{n}」という項目はありません（{', '.join(sorted(flds))}）"))

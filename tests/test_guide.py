@@ -37,7 +37,7 @@ def test_every_tool_example_really_works(tool):
     assert run(expr, inp) == want
 
 
-@pytest.mark.parametrize("expr", ["time of t", "each t", "group by t"])
+@pytest.mark.parametrize("expr", ["start of day t", "each t", "group by t"])
 def test_tools_listed_as_not_yet_are_errors(expr):
     with pytest.raises(BodyError):
         run(expr, "a")

@@ -278,7 +278,8 @@ def words_entries(words: Node) -> dict[str, str]:
     return out
 
 
-BUTTON_OPTS = ("named", "toggle", "set", "icon", "confirm")
+BUTTON_OPTS = ("named", "toggle", "set", "icon", "confirm", "tone")
+TONES = ("main", "quiet", "good", "danger")
 
 
 def parse_button(text: str) -> dict | None:
@@ -286,7 +287,7 @@ def parse_button(text: str) -> dict | None:
     toks = re.findall(r'"[^"]*"|\S+', text.strip())
     if not toks:
         return None
-    b = {"id": toks[0], "label": None, "act": None, "icon": None, "confirm": None}
+    b = {"id": toks[0], "label": None, "act": None, "icon": None, "confirm": None, "tone": None}
     i = 1
     while i < len(toks):
         t = toks[i]
@@ -301,6 +302,9 @@ def parse_button(text: str) -> dict | None:
             i += 3
         elif t == "icon" and i + 1 < len(toks):
             b["icon"] = toks[i + 1]
+            i += 2
+        elif t == "tone" and i + 1 < len(toks) and toks[i + 1] in TONES:
+            b["tone"] = toks[i + 1]
             i += 2
         elif t == "confirm" and i + 1 < len(toks):
             b["confirm"] = toks[i + 1].strip('"')

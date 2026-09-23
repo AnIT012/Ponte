@@ -56,12 +56,6 @@ class App:
             lines = list(do.children) if do is not None else []
             in_ = p.child("in")
             self.part_bodies[name] = Body(p, {}, [in_.text.split()[0]] if in_ else [], {}, single_result=False, lines=lines)
-        self.tones = {}
-        for st in spec.decls("style"):
-            for c in st.children:
-                m = re.search(r"\btone\s+(\w+)", c.text)
-                if m:
-                    self.tones[c.keyword] = m.group(1)
 
     # ------------------------------------------------------------------
     def tr(self, key, env: Env) -> str:
@@ -178,7 +172,7 @@ class App:
 
     # ------------------------------------------------------------------
     def button(self, pb: dict, env: Env, main: bool, on: str) -> dict:
-        tone = self.tones.get(pb["id"]) or ("main" if main else "quiet")
+        tone = pb["tone"] or ("main" if main else "quiet")      # 強さはボタンの行に書く（書かなければ最初のボタンだけ強い）
         b = {"type": "button", "id": pb["id"], "label": self.tr(pb["label"] or pb["id"], env), "tone": tone, "on": on,
              "icon": pb["icon"], "confirm": self.tr(pb["confirm"], env) if pb["confirm"] else None}
         if pb["act"]:

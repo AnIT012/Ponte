@@ -94,6 +94,8 @@ cases["E28_unknown_type"] = (rep("  owner     User   gone[remove too]\n", "  own
 cases["E29_two_dos"] = (rep("  do    move this to submitted\n", "  do    move this to submitted\n  do    notify me \"提出しました\"\n"), base)
 cases["E30_notify_recipient"] = (rep("notify owner each of DueSoon", "notify each of DueSoon"), base)
 cases["E30_notify_unknown_recipient"] = (rep("notify owner each of DueSoon", "notify boss each of DueSoon"), base)
+cases["E28_tone_in_style"] = (base + "\nstyle DueSoon\n  submitted-button  tone good\n",
+                              rep("  button  submitted-button named 提出した\n", "  button  submitted-button named 提出した tone good\n"))
 cases["E28_unknown_field"] = (rep("  title   company\n", "  title   compny\n"), base)
 cases["E28_bad_button"] = (rep("  button  submitted-button named 提出した\n", "  button  submitted-button named 提出した blink\n"), base)
 cases["E25_words_quoted"] = (base + '\nwords ja\n  "提出した"  提出した\n\nwords en\n  draft  Draft\n', base + '\nwords ja\n  "提出した"  提出した\n\nwords en\n  "提出した"  Submit\n')

@@ -58,9 +58,11 @@ class App:
             self.part_bodies[name] = Body(p, {}, [in_.text.split()[0]] if in_ else [], {}, single_result=False, lines=lines)
 
     # ------------------------------------------------------------------
+    BUILTIN = {"search": "さがす", "save": "保存", "cancel": "キャンセル", "none": "まだありません"}   # 言語が出す文字（words で訳せる）
+
     def tr(self, key, env: Env) -> str:
         key = "" if key is None else str(key)
-        return self.words.get(env.lang, {}).get(key, key)
+        return self.words.get(env.lang, {}).get(key, self.BUILTIN.get(key, key))
 
     def scene_states(self, scene: Node) -> dict:
         out = {}
@@ -322,7 +324,7 @@ class App:
                 out["heading"] = self.tr(h.text.strip().strip('"'), env)
             sr = look.child("search")
             if sr is not None:
-                out["search"] = {"fields": [x.strip() for x in sr.text.split(",")], "placeholder": self.tr("さがす", env)}
+                out["search"] = {"fields": [x.strip() for x in sr.text.split(",")], "placeholder": self.tr("search", env)}
             g = look.child("group")
             if g is not None and g.text.startswith("by "):
                 gf = g.text[3:].strip()
@@ -343,7 +345,7 @@ class App:
     def empty_text(self, look: Node | None, env: Env) -> dict:
         e = look.child("empty") if look is not None else None
         if e is None:
-            return {"text": self.tr("まだありません", env), "button": None}
+            return {"text": self.tr("none", env), "button": None}
         toks = re.findall(r'"[^"]*"|\S+', e.text)
         text = toks[0].strip('"') if toks else ""
         btn = None
@@ -372,8 +374,9 @@ class App:
             return {"type": "part", "name": part.name, "lines": [f"（{e.message}）"], "mark": None}
         lines, mark = [], None
         for c in part.children:
-            m = re.match(r'^text "(.*)"$', c.text.strip())
+            m = re.match(r'^text (?:"(.*)"|(\S+))$', c.text.strip())
             if c.keyword == "show" and m:
+                m = type("M", (), {"group": lambda self, i, _m=m: _m.group(1) if _m.group(1) is not None else _m.group(2)})()
                 t = self.tr(m.group(1), env)
                 for _ in range(3):      # 値の中の {名前} も埋める
                     t2 = re.sub(r"\{(\w+)\}", lambda mm: self.tr(str(vals.get(mm.group(1), mm.group(0))), env)
@@ -414,7 +417,7 @@ class App:
                         value = ""
             fields.append({"name": c.keyword, "label": self.tr(c.keyword, env), "kind": kind, "required": "required" in c.text, "value": value})
         return {"type": "input", "name": name, "title": self.tr(name, env), "fields": fields, "this": env.this.id if editing else None,
-                "submit": self.tr("保存", env), "cancel": self.tr("キャンセル", env)}
+                "submit": self.tr("save", env), "cancel": self.tr("cancel", env)}
 
     # ------------------------------------------------------------------
     def css(self) -> str:
@@ -492,11 +495,13 @@ class App:
         return ";".join(d for d in decl if d)
 
     def title(self) -> str:
+        first = next(iter(self.words.values()), {})
         for p in self.parts.values():
             for c in p.children:
-                m = re.match(r'^text "(.*)"$', c.text.strip())
+                m = re.match(r'^text (?:"(.*)"|(\S+))$', c.text.strip())
                 if c.keyword == "show" and m:
-                    return m.group(1)
+                    t = m.group(1) if m.group(1) is not None else m.group(2)
+                    return first.get(t, t)
         return self.home or "app"
 
 

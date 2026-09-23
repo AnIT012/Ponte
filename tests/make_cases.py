@@ -78,7 +78,16 @@ send = conn + '\nrule SendDigest\n  when  every day at 8:00\n  do    Gmail send 
 cases["E23_connect_fallback"] = (send, send + "\nrelate\n  SendDigest else Remind\n")
 det = base + "\nscene Detail\n  main  DueSoon as detail\n\nrule OpenDetail\n  when  user taps card on DueSoon\n  do    go Detail with this\n"
 cases["E24_scene_move"] = (det, det.replace("  Home -> AddApplication\n", "  Home -> AddApplication\n  Home -> Detail\n"))
-cases["E25_words"] = (base + "\nwords ja\n  add  追加\n  back 戻る\n\nwords en\n  add  Add\n", base + "\nwords ja\n  add  追加\n  back 戻る\n\nwords en\n  add  Add\n  back Back\n")
+from lang.checker import ui_texts  # noqa: E402
+_texts = sorted({t for t, _ in ui_texts(parse(base))})
+
+
+def words_block(lang, drop=None):
+    lines = [f'  "{t}"  {t if lang == "ja" else "EN:" + t}' for t in _texts if t != drop]
+    return f"\nwords {lang}\n" + "\n".join(lines) + "\n"
+
+
+cases["E25_words"] = (base + words_block("ja") + words_block("en", drop=_texts[0]), base + words_block("ja") + words_block("en"))
 nb = rep("  button  submitted-button named 提出した\n", "  button  submitted-button\n")
 cases["E26_a11y_publish"] = (nb, base)
 cases["W26_a11y_draft"] = (nb, base)
@@ -98,7 +107,7 @@ cases["E28_tone_in_style"] = (base + "\nstyle DueSoon\n  submitted-button  tone 
                               rep("  button  submitted-button named 提出した\n", "  button  submitted-button named 提出した tone good\n"))
 cases["E28_unknown_field"] = (rep("  title   company\n", "  title   compny\n"), base)
 cases["E28_bad_button"] = (rep("  button  submitted-button named 提出した\n", "  button  submitted-button named 提出した blink\n"), base)
-cases["E25_words_quoted"] = (base + '\nwords ja\n  "提出した"  提出した\n\nwords en\n  draft  Draft\n', base + '\nwords ja\n  "提出した"  提出した\n\nwords en\n  "提出した"  Submit\n')
+cases["E25_words_ui_text_missing"] = (base + "\nwords ja\n  draft  下書き\n\nwords en\n  draft  Draft\n", base + words_block("ja") + words_block("en"))
 
 if __name__ == "__main__":
     out = os.path.join(ROOT, "tests/cases")

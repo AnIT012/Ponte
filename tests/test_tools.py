@@ -28,3 +28,22 @@ def test_editor_grammar_is_valid():
     assert pkg["contributes"]["languages"][0]["extensions"] == [".ponte"]
     decl = next(p for p in g["patterns"] if p["name"] == "keyword.declaration.ponte")
     assert re.search(decl["match"], "thing Application") and not re.search(decl["match"], "  where x is y")
+
+
+def test_new_makes_an_app_that_passes(tmp_path):
+    from ponte.cli import main
+    from ponte.checker import check
+    from ponte.examples import holes, run_examples
+    from ponte.parser import parse_file
+    import os
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        assert main(["new", "myapp"]) == 0
+        assert main(["new", "myapp"]) == 1             # 上書きしない
+        s = parse_file("myapp.ponte")
+    finally:
+        os.chdir(cwd)
+    assert [f for f in check(s) if f.is_error] == []
+    res = run_examples(s)
+    assert all(r.ok for r in res) and holes(s, res) == []

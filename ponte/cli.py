@@ -6,6 +6,7 @@
   python -m ponte test  spec/hub_app.ponte           rule の example を全部流す（確かめていない所も出す。--strict で失敗に）
   python -m ponte fill  spec/hub_app.ponte           by ai の action の中身をAIに書かせる
   python -m ponte run   spec/hub_app.ponte           動かす（ブラウザで http://127.0.0.1:8000/）
+  python -m ponte new  myapp                       ひな形から新しいアプリを作る
   python -m ponte guide                            AIに渡す書き方の説明（実装から作る。--spec で仕様書の表も）
   python -m ponte role  spec/lend.ponte taro admin   最初の管理者を決める（2人目からは画面で）
 """
@@ -133,6 +134,21 @@ def cmd_role(args) -> int:
     return 0
 
 
+def cmd_new(args) -> int:
+    """ひな形から新しいアプリを作る（check も test も通る状態から始める）"""
+    from pathlib import Path
+    path = Path(args.name if args.name.endswith(".ponte") else args.name + ".ponte")
+    if path.exists():
+        print(f"もうあります: {path}（上書きしません）")
+        return 1
+    tpl = (Path(__file__).parent / "templates" / "start.ponte").read_text(encoding="utf-8")
+    path.write_text(tpl, encoding="utf-8")
+    print(f"作りました: {path}")
+    print(f"  ponte run {path}     # 動かす")
+    print(f"  ponte check {path}   # 書き換えたら確かめる")
+    return 0
+
+
 def cmd_guide(args) -> int:
     from .guide import do_guide, write_spec
     if args.spec:
@@ -257,6 +273,9 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--host", default="127.0.0.1")
     r.add_argument("--data", help="データを残すファイル（既定は <spec>.data.jsonl）")
     r.set_defaults(fn=cmd_run)
+    nw = sub.add_parser("new", help="ひな形から新しいアプリを作る")
+    nw.add_argument("name")
+    nw.set_defaults(fn=cmd_new)
     g = sub.add_parser("guide", help="AIに渡す書き方の説明を出す（実装から作る）")
     g.add_argument("--spec", action="store_true", help="仕様書 10章の道具の表を書き直す")
     g.add_argument("--rules", action="store_true", help="rule の書き方（when / do / 値）を出す")

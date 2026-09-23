@@ -1,0 +1,29 @@
+name: pages
+
+# site/ を GitHub Pages に出す（リポジトリを公開するか、Pages が使えるプランの時に動く）
+on:
+  push:
+    branches: [main]
+    paths: [site/**, docs/screenshots/**]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python site/build.py
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - uses: actions/deploy-pages@v4

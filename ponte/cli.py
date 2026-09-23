@@ -139,6 +139,9 @@ def cmd_run(args) -> int:
         print(f"{args.host} で開くと、URL の ?user= で誰にでもなれてしまいます。外に出すなら --login を付けてください")
         return 1
     httpd = serve(spec, Engine(spec, store=store), port=args.port, host=args.host, auth=auth)
+    if args.reload:
+        import threading
+        threading.Thread(target=watch, args=(args.spec, store, httpd.app), daemon=True).start()
     print(f"動いています: http://{args.host}:{args.port}/   （データ: {store}、止めるのは Ctrl+C）"
           + ("\n  ログインあり（" + ("画面から登録できる" if args.signup else "登録は ponte user add") + "）" if auth else ""))
     try:
@@ -146,6 +149,50 @@ def cmd_run(args) -> int:
     except KeyboardInterrupt:
         pass
     return 0
+
+
+def watched_files(spec_path: str, spec) -> dict[str, float]:
+    """読み直しの見張り: spec と use したファイル、AIが書いた中身（<spec>.ai/）"""
+    files = {f for _, f, _ in (spec.line_map or [])} | {spec_path}
+    ai = spec_path + ".ai"
+    if os.path.isdir(ai):
+        files |= {os.path.join(ai, n) for n in os.listdir(ai)}
+    return {f: os.path.getmtime(f) for f in files if os.path.exists(f)}
+
+
+def reload_once(spec_path: str, store: str, app) -> bool:
+    """書き直した spec を確かめて、通れば入れ替える。通らなければ前のまま動かし続ける"""
+    from .runtime import Engine
+    try:
+        spec = parse_file(spec_path)
+    except ParseError as e:
+        print(f"読み直せません（前のまま動いています）\n  {spec_path}:{e.line}  {e.message}")
+        return False
+    errors = [f for f in check(spec) if f.is_error]
+    if errors:
+        print(f"読み直せません（{len(errors)}件。前のまま動いています）")
+        for f in errors:
+            path, line = spec.where(f.line)
+            print(f"  {path}:{line}  {f.code}  {f.message}")
+        return False
+    app.reload(spec, Engine(spec, store=store))
+    print("読み直しました")
+    return True
+
+
+def watch(spec_path: str, store: str, app, interval: float = 0.5) -> None:
+    import time
+    seen = watched_files(spec_path, app.spec)
+    while True:
+        time.sleep(interval)
+        try:
+            now = watched_files(spec_path, app.spec)
+        except OSError:
+            continue
+        if now != seen:
+            seen = now
+            reload_once(spec_path, store, app)
+            seen = watched_files(spec_path, app.spec)
 
 
 def cmd_role(args) -> int:
@@ -348,6 +395,7 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--data", help="データを残すファイル（既定は <spec>.data.jsonl）")
     r.add_argument("--login", action="store_true", help="名前と合言葉でログインする（登録は ponte user add）")
     r.add_argument("--signup", action="store_true", help="--login に加えて、画面から誰でも登録できる")
+    r.add_argument("--reload", action="store_true", help="spec を書き直したら読み直して、画面も読み直す（作っている間に）")
     r.set_defaults(fn=cmd_run)
     us = sub.add_parser("user", help="ログインする人（例: user add spec/lend.ponte taro）")
     us.add_argument("action", choices=["add", "remove", "list"])

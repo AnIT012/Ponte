@@ -146,8 +146,10 @@ def commands_section() -> str:
     rows = []
     for c in sub._choices_actions:
         sp = sub.choices[c.dest]
-        pos = " ".join(a.dest if a.nargs not in ("?", "+") else (f"[{a.dest}]" if a.nargs == "?" else f"{a.dest}…")
-                       for a in sp._actions if not a.option_strings)
+        def arg(a):
+            name = "|".join(a.choices) if a.choices else a.dest
+            return f"[{name}]" if a.nargs == "?" else f"{name}…" if a.nargs == "+" else name
+        pos = " ".join(arg(a) for a in sp._actions if not a.option_strings)
         opts = "".join(f"<br>{_code(a.option_strings[-1])} {html.escape(a.help or '')}"
                        for a in sp._actions if a.option_strings and a.dest != "help" and a.help)
         rows.append((_code(f"ponte {c.dest} {pos}".strip()), html.escape(c.help) + opts))

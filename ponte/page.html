@@ -413,6 +413,6 @@ document.addEventListener("dragstart", e => { const c = e.target.closest("[data-
 document.addEventListener("dragend", e => { document.querySelectorAll(".dragging,.over").forEach(x => x.classList.remove("dragging", "over")); });
 document.addEventListener("dragover", e => { const col = e.target.closest("[data-drop]"); if(col && dragId){ e.preventDefault(); document.querySelectorAll(".over").forEach(x => x !== col && x.classList.remove("over")); col.classList.add("over"); } });
 document.addEventListener("drop", async e => { const col = e.target.closest("[data-drop]"); if(col && dragId){ e.preventDefault(); const id = dragId; dragId = null; await post("/api/drag", {id, to: col.dataset.drop, lang: LANG}); render(); } });
-new EventSource("/api/events").onmessage = () => render();
+new EventSource("/api/events").onmessage = e => e.data === "reload" ? location.reload() : render();
 render();
 </script></body></html>

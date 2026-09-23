@@ -16,3 +16,29 @@
 | 値（"..." / 21:00 / 3 days） | 黄 |
 | コメント | 薄グレー斜体 |
 | `##`（止めるコメント） | 赤の背景 |
+
+## ほかのエディタ（言語サーバー）
+
+`python -m ponte lsp` が言語サーバー（LSP）になっている。エラー（直し方つき）・E32 などに乗せた時の説明・名前の補いが出る。依存は無い。
+
+Neovim（0.11 から）:
+
+```lua
+vim.filetype.add({ extension = { ponte = "ponte" } })
+vim.lsp.config("ponte", { cmd = { "python", "-m", "ponte", "lsp" }, filetypes = { "ponte" }, root_markers = { ".git" } })
+vim.lsp.enable("ponte")
+```
+
+Helix（`languages.toml`）:
+
+```toml
+[language-server.ponte]
+command = "python"
+args = ["-m", "ponte", "lsp"]
+
+[[language]]
+name = "ponte"
+scope = "source.ponte"
+file-types = ["ponte"]
+language-servers = ["ponte"]
+```

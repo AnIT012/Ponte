@@ -13,6 +13,7 @@
 - `ponte check --json`（エディタや AI のループ向け。直し方も入る）
 - `ponte data export`（JSON / CSV）・`ponte data compact`（追記の記録を今の中身1枚に。前のものは .bak）
 - `ponte run --reload`: spec を書き直すと読み直して、開いている画面も読み直す。check が通らない書き直しは前のまま動かし続ける
+- `ponte lsp`: 言語サーバー（Neovim・Helix などでもエラー・E32 の説明・名前の補い）
 - VS Code: 保存するとエラーの行に波線（`editor/vscode/extension.js`。依存なし）
 - ホームページに「入門」と「道具とエラー」のページ（docs と実装から作る。ずれたらテストが落ちる）
 - 道具: `avg of` / `abs` / `date of`（年月日の当たりを "2026/10/15" に）

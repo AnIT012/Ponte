@@ -180,13 +180,16 @@ def parse(source: str, path: str = "<string>") -> Spec:
 STD_DIR = os.path.join(os.path.dirname(__file__), "std")   # use std/名前 で読む標準ライブラリ
 
 
-def parse_file(path: str, _seen: set | None = None) -> Spec:
+def parse_file(path: str, _seen: set | None = None, text: str | None = None) -> Spec:
     """ファイルを読む。`use "other.ponte"` があれば、その見出しも取り込む（同じ場所からの相対パス）。
-    取り込んだ行は元のファイルの後ろに続けた行番号になり、Spec.where(行) で元のファイルと行に戻せる。"""
+    取り込んだ行は元のファイルの後ろに続けた行番号になり、Spec.where(行) で元のファイルと行に戻せる。
+    text を渡すと、ファイルの代わりにそれを読む（エディタで書きかけの中身。use はファイルから）。"""
     seen = _seen if _seen is not None else set()
     seen.add(os.path.abspath(path))
-    with open(path, encoding="utf-8") as f:
-        spec = parse(f.read(), path)
+    if text is None:
+        with open(path, encoding="utf-8") as f:
+            text = f.read()
+    spec = parse(text, path)
     spec.line_map = [(1, path, 0)]
     for u in [d for d in spec.roots if d.keyword == "use"]:
         m = re.match(r'^"([^"]+)"$', u.text.strip())

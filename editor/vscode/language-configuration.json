@@ -1,0 +1,25 @@
+{
+  "comments": {
+    "lineComment": "#"
+  },
+  "brackets": [
+    [
+      "[",
+      "]"
+    ]
+  ],
+  "autoClosingPairs": [
+    {
+      "open": "\"",
+      "close": "\""
+    },
+    {
+      "open": "[",
+      "close": "]"
+    }
+  ],
+  "indentationRules": {
+    "increaseIndentPattern": "^\\s*(thing|flow|list|match|rule|relate|action|group|tbd|scene|look|part|style|input|words|who|change|connect|shape|example|do|how|given|taps|expect)\\b.*$",
+    "decreaseIndentPattern": "^$"
+  }
+}

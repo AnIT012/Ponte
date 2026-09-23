@@ -1,0 +1,93 @@
+{
+  "name": "nameless-lang",
+  "displayName": "人とAIの間の言語（仮）",
+  "version": "0.2.0",
+  "publisher": "nameless-lang",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "nameless-lang",
+        "aliases": [
+          "人とAIの間の言語"
+        ],
+        "extensions": [
+          ".lang"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "nameless-lang",
+        "scopeName": "source.lang",
+        "path": "./syntaxes/lang.tmLanguage.json"
+      }
+    ],
+    "configurationDefaults": {
+      "editor.tokenColorCustomizations": {
+        "textMateRules": [
+          {
+            "scope": "keyword.declaration.lang",
+            "settings": {
+              "foreground": "#8E4EC6",
+              "fontStyle": "bold"
+            }
+          },
+          {
+            "scope": "keyword.clause.lang",
+            "settings": {
+              "foreground": "#8B8D98"
+            }
+          },
+          {
+            "scope": "keyword.guard.lang",
+            "settings": {
+              "foreground": "#E5484D"
+            }
+          },
+          {
+            "scope": "storage.type.lang",
+            "settings": {
+              "foreground": "#30A46C"
+            }
+          },
+          {
+            "scope": "entity.name.lang",
+            "settings": {
+              "foreground": "#3E63DD"
+            }
+          },
+          {
+            "scope": [
+              "string.quoted.lang",
+              "constant.numeric.lang"
+            ],
+            "settings": {
+              "foreground": "#AD7F00"
+            }
+          },
+          {
+            "scope": "comment.line.lang",
+            "settings": {
+              "foreground": "#A0A4AB",
+              "fontStyle": "italic"
+            }
+          },
+          {
+            "scope": "invalid.blocking.lang",
+            "settings": {
+              "foreground": "#FFFFFF",
+              "background": "#E5484D"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -35,6 +35,7 @@ match Application.status to color
   submitted -> blue
   passed    -> green
   failed    -> gray
+  else      -> gray
 
 match Application.status to icon
   draft     -> draft

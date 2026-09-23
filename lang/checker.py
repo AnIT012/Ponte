@@ -347,7 +347,7 @@ def check_list_cycle(spec: Spec, opt: Options) -> list[Finding]:
 # ---------------------------------------------------------------------------
 
 LEAF = {"of", "where", "sort", "when", "why", "in", "out", "never", "else", "by", "ask",
-        "given", "at", "says", "taps", "gets", "expect"}
+        "at", "says", "gets"}
 _COMPOUND = re.compile(r"\band\b|\bor\b|[()]")
 
 
@@ -362,6 +362,12 @@ def check_nesting(spec: Spec, opt: Options) -> list[Finding]:
             leaf = n.keyword in LEAF or (n.keyword == "do" and n.parent is not None and n.parent.keyword == "rule")
             if leaf:
                 out.append(Finding("E12", n.children[0].line, f"入れ子: `{n.keyword}` の下にさらに行は書けません: '{n.children[0].raw}'"))
+        if n.keyword in ("given", "taps", "expect") and not n.is_decl:
+            if re.search(r"\w\(", n.text):
+                out.append(Finding("E12", n.line, f"example の箱の中身は、カッコではなく字下げして1行1つで書きます（`{n.keyword} {n.text.split('(')[0].strip()}` の下に `項目 値`）"))
+            for c in n.children:
+                if c.children:
+                    out.append(Finding("E12", c.children[0].line, "入れ子: example の箱の中身の下に、さらに行は書けません"))
         if n.is_decl and n.keyword == "group" and n.parent is not None:
             out.append(Finding("E12", n.line, "入れ子: group の中に group は書けません"))
     return out

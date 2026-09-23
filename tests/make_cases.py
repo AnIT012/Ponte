@@ -48,6 +48,9 @@ cases["W09_flow_coverage"] = (cov, cov + '\nrule OnFailed\n  when  Application m
 cases["E10_conflict"] = (rep("  failed > passed\n", ""), base)
 cases["E11_list_cycle"] = (base + "\nlist A\n  of    B\n  where status is draft\n\nlist B\n  of    A\n  where status is draft\n",
                            base + "\nlist A\n  of    Application\n  where status is draft\n\nlist B\n  of    A\n  where status is draft\n")
+old_given = base.replace("    given   Application\n      company   \"Osaka Gas\"\n      deadline  \"9/24 23:59\"\n      status    draft\n", "    given   Application(company \"Osaka Gas\", deadline \"9/24 23:59\", status draft)\n")
+assert old_given != base
+cases["E12_example_parentheses"] = (old_given, base)
 cases["E12_nesting_and"] = (rep("  where status is draft\n  where deadline within 3 days\n", "  where status is draft and deadline within 3 days\n"), base)
 cases["E12_nesting_do_where"] = (rep("  do    move this to submitted\n", "  do    move this to submitted\n    where company is \"x\"\n"), base)
 cases["E12_nesting_match_in_match"] = (rep("            else -> DueSoon as cards\n", "            else -> match count of Application\n"), base)

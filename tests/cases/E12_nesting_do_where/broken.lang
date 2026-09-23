@@ -55,7 +55,10 @@ rule Remind
   when  every day at 21:00
   do    notify owner each of DueSoon
   example
-    given   Application(company "Osaka Gas", deadline "9/24 23:59", status draft)
+    given   Application
+      company   "Osaka Gas"
+      deadline  "9/24 23:59"
+      status    draft
     at      "9/21 21:00"
     expect  notify "Osaka Gas"
 
@@ -64,9 +67,13 @@ rule MarkSubmitted
   do    move this to submitted
     where company is "x"
   example
-    given   Application(company "Osaka Gas", status draft)
-    taps    submitted-button on Application(company "Osaka Gas")
-    expect  Application(company "Osaka Gas") is submitted
+    given Application
+      company  "Osaka Gas"
+      status   draft
+    taps submitted-button on Application
+      company "Osaka Gas"
+    expect Application is submitted
+      company "Osaka Gas"
 
 relate
   MarkSubmitted > Remind

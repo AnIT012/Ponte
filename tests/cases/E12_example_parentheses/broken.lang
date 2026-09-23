@@ -55,10 +55,7 @@ rule Remind
   when  every day at 21:00
   do    notify owner each of DueSoon
   example
-    given   Application
-      company   "Osaka Gas"
-      deadline  "9/24 23:59"
-      status    draft
+    given   Application(company "Osaka Gas", deadline "9/24 23:59", status draft)
     at      "9/21 21:00"
     expect  notify "Osaka Gas"
 
@@ -106,13 +103,3 @@ input AddApplication
 style DueSoon
   card   round 12, shadow soft, pad 16
   title  size 18, bold
-
-action Classify
-  in      mail text
-  out     passed | failed | unknown
-  example "選考通過のお知らせ" -> passed
-  example "今回はご縁がなく" -> failed
-  else    skip
-  ask     ai
-  how
-    limit 5 seconds

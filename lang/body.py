@@ -31,6 +31,13 @@ TOOLS = [
     ("集まり", "first of X / last of X", "最初 / 最後（空なら止まる。先に count で分ける）", "last of split t by \",\"", "a,b,c", "c"),
     ("数", "number of X", "文字を数に", "number of t", "42", 42),
     ("数", "a + b / a - b", "足す / 引く（一番弱くつなぐ）", "count of split t by \",\" + 10", "a,b", 12),
+    ("文字", 'X contains "a"', "入っているか。答えは yes / no（match で分ける）", 't contains "締切"', "締切は明日", "yes"),
+    ("文字", 'X starts with "a"', "で始まるか。答えは yes / no", 't starts with "Re:"', "Fw: 件名", "no"),
+    ("集まり", "sort X / sort X desc", "並べる（数は数の順）/ 逆に", 'sort split t by ","', "b,a,c", ["a", "b", "c"]),
+    ("集まり", "take 3 of X", "先頭から3つ", 'take 2 of split t by ","', "a,b,c", ["a", "b"]),
+    ("集まり", "unique of X", "同じものを1つに（順番はそのまま）", 'unique of split t by ","', "a,b,a", ["a", "b"]),
+    ("数", "sum of X / min of X / max of X", "合計 / 一番小さい / 一番大きい（空の sum は 0）", 'sum of split t by ","', "1,2,3", 6),
+    ("数", "round X", "四捨五入して整数に", "round number of t", "7", 7),
     ("日時", "monthday of X", "月・日（・時・分）を取り出した当たりを \"10/15 12:00\" に", "monthday of first of find all M in t", "締切10/15まで", "10/15"),
     ("日時", "days until X", "今日から X まで何日（part の中で。今の時刻が要る）", None, None, None),
 ]
@@ -345,6 +352,46 @@ class Body:
             h, mi = v.get("hour"), v.get("minute")
             s = f"{int(v['month'])}/{int(v['day'])}"
             return s + (f" {int(h)}:{mi}" if h is not None and mi is not None else "")
+        m = re.fullmatch(r"(sum|min|max|unique) of (.+)", e)
+        if m:
+            v = ev(m.group(2))
+            if not isinstance(v, list):
+                raise BodyError(line, f"{m.group(1)} of: 集まりが要ります")
+            if m.group(1) == "unique":
+                return list(dict.fromkeys(v))
+            nums = []
+            for x in v:
+                try:
+                    nums.append(x if isinstance(x, (int, float)) else int(str(x)))
+                except ValueError:
+                    raise BodyError(line, f"{m.group(1)} of: 数でないものがあります: {x!r}")
+            if not nums and m.group(1) != "sum":
+                raise BodyError(line, f"{m.group(1)} of: 空の集まりです（先に count で分けてください）")
+            return {"sum": sum, "min": min, "max": max}[m.group(1)](nums) if nums else 0
+        m = re.fullmatch(r"take (\d+) of (.+)", e)
+        if m:
+            v = ev(m.group(2))
+            if not isinstance(v, list):
+                raise BodyError(line, "take: 集まりが要ります")
+            return v[:int(m.group(1))]
+        m = re.fullmatch(r"sort (.+?)( desc)?", e)
+        if m:
+            v = ev(m.group(1))
+            if not isinstance(v, list):
+                raise BodyError(line, "sort: 集まりが要ります")
+            return sorted(v, key=lambda x: (not isinstance(x, (int, float)), x if isinstance(x, (int, float)) else str(x)),
+                          reverse=bool(m.group(2)))
+        m = re.fullmatch(r"round (.+)", e)
+        if m:
+            v = ev(m.group(1))
+            if not isinstance(v, (int, float)):
+                raise BodyError(line, "round: 数が要ります")
+            return int(round(v))
+        m = re.fullmatch(r'(.+) (contains|starts with) "([^"]*)"', e)
+        if m:                                          # 答えは yes / no（状態の名前として match で分ける）
+            v = str(ev(m.group(1)))
+            hit = m.group(3) in v if m.group(2) == "contains" else v.startswith(m.group(3))
+            return "yes" if hit else "no"
         m = re.fullmatch(r"(\w+) of (.+)", e)          # shape で名前を付けた部分・当たった文字（text of X）
         if m:
             v = ev(m.group(2))

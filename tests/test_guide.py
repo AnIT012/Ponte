@@ -30,7 +30,7 @@ def test_every_tool_example_really_works(tool):
     assert run(expr, inp) == want
 
 
-@pytest.mark.parametrize("expr", ["sum of t", "round t", "weekday of t", "take 3 of t", "t contains \"a\""])
+@pytest.mark.parametrize("expr", ["avg of t", "abs t", "weekday of t", "each t", "group by t"])
 def test_tools_listed_as_not_yet_are_errors(expr):
     with pytest.raises(BodyError):
         run(expr, "a")
@@ -53,3 +53,54 @@ def test_fill_prompt_uses_the_generated_guide():
     from lang.parser import parse_file
     spec = parse_file("spec/hub_app.lang")
     assert do_guide() in build_prompt(spec, spec.find("action", "ExtractDeadline"))
+
+
+def test_contains_answer_is_split_with_match():
+    src = """action A
+  in t text
+  out found text | missing
+  example "x" -> missing
+  else skip
+  do
+    has[yes | no] = match t contains "締切"
+                      yes -> yes
+                      no  -> no
+    answer = match has
+               yes -> found t
+               no  -> missing
+"""
+    spec = parse(src)
+    a = spec.find("action", "A")
+    b = body_of(a, a.child("do"), {})
+    assert str(b.run({"t": "締切は明日"})) == "found 締切は明日" and str(b.run({"t": "こんにちは"})) == "missing"
+
+
+def test_rule_forms_examples_pass_the_checker():
+    import re
+    from lang.checker import DO_FORMS as CHECKED_DO, _VALUE, is_event
+    from lang.forms import DO_FORMS, VALUE_FORMS, WHEN_FORMS
+    for rx, form, _, ex, works in WHEN_FORMS:
+        assert re.fullmatch(rx, ex), form
+        assert is_event(ex) == works, form          # 起きないものは check が通さない
+    for rx, form, _, ex in DO_FORMS:
+        assert re.fullmatch(rx, ex), form
+        assert rx in CHECKED_DO or form.startswith("action名"), form
+    for rx, form, _ in VALUE_FORMS:
+        assert _VALUE.match(form.split(" / ")[0]) or form == "状態の名前・数" or form == '"文字"', form
+
+
+def test_when_the_engine_does_not_fire_is_stopped(tmp_path):
+    from lang.checker import check
+    from lang.parser import parse_file
+    src = open("spec/lend.lang", encoding="utf-8").read().replace("user taps return-button on Loan", "user swipes card left", 1)
+    p = tmp_path / "x.lang"
+    p.write_text(src, encoding="utf-8")
+    msgs = [f.message for f in check(parse_file(str(p))) if f.code == "E07"]
+    assert any("まだ実行エンジンが起こしません" in m for m in msgs), msgs
+
+
+def test_rules_guide_lists_everything():
+    from lang.forms import DO_FORMS, WHEN_FORMS
+    from lang.guide import rules_guide
+    g = rules_guide()
+    assert all(f[1] in g for f in DO_FORMS) and all(f[1] in g for f in WHEN_FORMS)

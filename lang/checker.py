@@ -1,4 +1,4 @@
-"""チェッカー（仕様 v0.2 13章「エラー一覧」30個）。1つ1関数。
+"""チェッカー（仕様 v0.3 13章「エラー一覧」32個）。1つ1関数。
 
 判定の細かい定義で仕様に書いてないものは QUESTIONS_v0.2.md に書いた（仮の扱い）。
 コードが W で始まるものは警告（渡せる判定には数えない）。
@@ -8,6 +8,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from .forms import DO_FORMS as _DO_DOC, VALUE_FORMS, WHEN_FORMS
 from .icons import ICONS
 from .parser import (
     Node, Spec, flow_parts, flow_states, match_arms, parse_button, relate_lines, states_of,
@@ -211,19 +212,8 @@ def check_blocking(spec: Spec, opt: Options) -> list[Finding]:
 # 7. when に状態を書いている
 # ---------------------------------------------------------------------------
 
-WHEN = [
-    r"every (day|monday|tuesday|wednesday|thursday|friday|saturday|sunday) at \d{1,2}:\d{2}",
-    r"at \S.*",
-    r'user says ".*"',
-    r"user (taps|holds) \S.*",
-    r"user swipes \S+ (left|right|up|down)",
-    r"user drags \S+ to \S+",
-    r"user types in \S+",
-    r"user (opens|leaves) \w+",
-    r"[A-Z][\w.]* is (created|removed)",
-    r"[A-Z][\w.]* moves to \w+",
-    r"[A-Z]\w* gives \S.*",
-]
+WHEN = [f[0] for f in WHEN_FORMS if f[4]]
+WHEN_LATER = [(re.compile(f"^{f[0]}$"), f[1]) for f in WHEN_FORMS if not f[4]]
 _WHEN = [re.compile(f"^{p}$") for p in WHEN]
 
 
@@ -235,7 +225,10 @@ def check_when_is_event(spec: Spec, opt: Options) -> list[Finding]:
     out = []
     for r in rules(spec).values():
         for w in r.children_of("when"):
-            if not is_event(w.text):
+            later = next((form for p, form in WHEN_LATER if p.match(w.text.strip())), None)
+            if later:
+                out.append(Finding("E07", w.line, f"rule {r.name}: `{later}` はまだ実行エンジンが起こしません（書いても動かないので止めます）"))
+            elif not is_event(w.text):
                 out.append(Finding("E07", w.line, f"rule {r.name}: when は出来事だけです。「{w.text}」は状態なので where に書いてください"))
     return out
 
@@ -967,12 +960,8 @@ def check_roles(spec: Spec, opt: Options) -> list[Finding]:
 # 31. do の書き方（動かす前に分かるように）
 # ---------------------------------------------------------------------------
 
-DO_FORMS = [
-    r'notify \w+ each of \w+', r'notify \w+ ".*"',
-    r'move this to \w+', r'move \w+ of this to \w+', r'move \w+ where .+ to \w+',
-    r'remove this', r'go \w+( with this)?', r'create \w+', r'set \w+ to .+',
-]
-_VALUE = re.compile(r'^(result|this|me|\w+ of this|".*"|\{\w+\}|\d+ (minutes?|hours?|days?|weeks?) from now|[\w/:. -]+)$')
+DO_FORMS = [f[0] for f in _DO_DOC if f[0] != r"(\w+) with (\w+)"]
+_VALUE = re.compile("^(" + "|".join(f[0] for f in VALUE_FORMS) + ")$")
 
 
 def check_do_form(spec: Spec, opt: Options) -> list[Finding]:

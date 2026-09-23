@@ -139,6 +139,10 @@ def cmd_guide(args) -> int:
         changed = write_spec(args.spec_path)
         print(f"{args.spec_path} の道具の表を{'書き直しました' if changed else '確かめました（変わりなし）'}")
         return 0
+    if args.rules:
+        from .guide import rules_guide
+        print(rules_guide())
+        return 0
     print(do_guide())
     return 0
 
@@ -255,6 +259,7 @@ def main(argv: list[str] | None = None) -> int:
     r.set_defaults(fn=cmd_run)
     g = sub.add_parser("guide", help="AIに渡す書き方の説明を出す（実装から作る）")
     g.add_argument("--spec", action="store_true", help="仕様書 10章の道具の表を書き直す")
+    g.add_argument("--rules", action="store_true", help="rule の書き方（when / do / 値）を出す")
     g.add_argument("--spec-path", default="docs/言語仕様_v0.3.md")
     g.set_defaults(fn=cmd_guide)
     ro = sub.add_parser("role", help="最初の管理者を決める（例: role spec/lend.lang taro admin）")

@@ -32,7 +32,7 @@ button{font:inherit;color:inherit}
 .bottom{position:fixed;left:0;right:0;bottom:0;z-index:6;pointer-events:none}
 .bottom-in{max-width:1180px;margin:0 auto;padding:16px 20px calc(16px + env(safe-area-inset-bottom));display:flex;justify-content:flex-end;gap:10px}
 .bottom .btn{pointer-events:auto;box-shadow:var(--shadow-2);padding:12px 20px;border-radius:999px}
-@media (max-width:599px){.bottom-in{justify-content:stretch}.bottom .btn{flex:1}}
+@media (max-width:599px){.toasts{bottom:84px}.bottom-in{justify-content:stretch}.bottom .btn{flex:1}}
 
 /* 文字と部品 */
 .part{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -139,10 +139,10 @@ td{padding:11px 14px;border-bottom:1px solid var(--line)}tr:last-child td{border
 .veil.sheet{place-items:end center}.veil.sheet .dialog{border-radius:18px 18px 0 0;width:min(100%,640px);max-width:none;animation:slide .2s both}
 
 /* 通知 */
-.toasts{position:fixed;right:16px;top:16px;z-index:30;display:grid;gap:8px;width:min(360px,calc(100vw - 32px))}
+.toasts{position:fixed;left:16px;bottom:16px;z-index:30;display:grid;gap:8px;width:min(360px,calc(100vw - 32px))}
 .toast{background:var(--text);color:var(--bg);padding:11px 14px;border-radius:12px;font-size:13px;box-shadow:var(--shadow-2);animation:slide .22s both;display:flex;gap:10px;align-items:flex-start}
 .toast b{font-weight:700}.toast.err{background:var(--danger);color:#fff}
-.toast.out{opacity:0;transform:translateY(-6px);transition:.25s}
+.toast.out{opacity:0;transform:translateY(6px);transition:.25s}
 /* アイコン・頭文字・見出し・検索・まとまり・確認・通知 */
 .ic{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .btn.sm .ic{width:14px;height:14px}.badge .ic{width:12px;height:12px}.tabs .ic{width:15px;height:15px;margin-right:5px;vertical-align:-3px}
@@ -190,9 +190,10 @@ async function post(path, body){
   const r = await fetch(path, {method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({user:USER, ...body})});
   const j = await r.json(); if(j.error) toast(j.error, true); return j;
 }
+function trimToasts(){ const box = document.getElementById("toasts"); while(box.children.length > 2) box.firstElementChild.remove(); }   // 積み上げない（古いものから消す）
 function toast(text, err){
   const t = document.createElement("div"); t.className = "toast" + (err ? " err" : "");
-  t.innerHTML = text; document.getElementById("toasts").appendChild(t);
+  t.innerHTML = text; document.getElementById("toasts").appendChild(t); trimToasts();
   setTimeout(() => { t.classList.add("out"); setTimeout(() => t.remove(), 300); }, err ? 4200 : 3600);
 }
 const badge = m => m ? `<span class="badge" style="--c:${esc(m.color)}">${m.icon ? icon(m.icon) : "<i></i>"}${esc(m.label)}</span>` : "";
@@ -340,7 +341,7 @@ function undoToast(id, label, what){
   const t = document.createElement("div"); t.className = "toast";
   t.innerHTML = `<span style="flex:1">${esc(what)}</span><button class="btn sm quiet" style="background:transparent;color:inherit;border-color:currentColor">${esc(label)}</button>`;
   t.querySelector("button").onclick = async () => { t.remove(); await post("/api/undo", {id}); render(); };
-  document.getElementById("toasts").appendChild(t);
+  document.getElementById("toasts").appendChild(t); trimToasts();
   setTimeout(() => { t.classList.add("out"); setTimeout(() => t.remove(), 300); }, 6000);
 }
 function ask(text){

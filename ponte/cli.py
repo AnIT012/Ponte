@@ -159,7 +159,13 @@ def cmd_run(args) -> int:
     elif args.host not in ("127.0.0.1", "localhost", "::1"):
         print(f"{args.host} で開くと、URL の ?user= で誰にでもなれてしまいます。外に出すなら --login を付けてください")
         return 1
-    httpd = serve(spec, Engine(spec, store=store), port=args.port, host=args.host, auth=auth)
+    from .runtime import RuleError
+    try:
+        eng = Engine(spec, store=store)
+    except RuleError as e:
+        print(e)
+        return 1
+    httpd = serve(spec, eng, port=args.port, host=args.host, auth=auth)
     if args.reload:
         import threading
         threading.Thread(target=watch, args=(args.spec, store, httpd.app), daemon=True).start()

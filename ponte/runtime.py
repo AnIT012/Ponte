@@ -16,6 +16,7 @@ import itertools
 import json
 import os
 import re
+import sys
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
@@ -154,21 +155,37 @@ class Engine:
             return
         with self._lock, open(self.store, "a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+            f.flush()
+            os.fsync(f.fileno())                 # 止まっても、書いたと返したものは残す
 
     def _replay(self):
         with open(self.store, encoding="utf-8") as f:
-            for line in f:
+            lines = f.read().split("\n")
+        for i, line in enumerate(lines):
+            if not line.strip():
+                continue
+            try:
                 rec = json.loads(line)
-                if rec["t"] == "create":
-                    self.boxes.setdefault(rec["thing"], {})[rec["id"]] = Box(rec["thing"], rec["id"], rec["values"])
-                    n = int(rec["id"].split("-")[-1])
-                    self._ids = itertools.count(max(n + 1, next(self._ids)))
-                elif rec["t"] == "set":
-                    b = self.boxes[rec["thing"]][rec["id"]]
-                    b.prev[rec["field"]] = b.values.get(rec["field"])
-                    b.values[rec["field"]] = rec["value"]
-                elif rec["t"] == "remove":
-                    self.boxes[rec["thing"]].pop(rec["id"], None)
+            except json.JSONDecodeError:
+                if all(not l.strip() for l in lines[i + 1:]):     # 最後の1行が書きかけ（書いている途中で止まった）→ 捨てて続ける
+                    with open(self.store, "r+", encoding="utf-8") as f:
+                        f.seek(0)
+                        keep = "\n".join(lines[:i]) + ("\n" if i else "")
+                        f.write(keep)
+                        f.truncate()
+                    print(f"データの最後の1行が書きかけだったので捨てました（{self.store}:{i + 1}）", file=sys.stderr)
+                    break
+                raise RuleError(f"データが壊れています: {self.store}:{i + 1}（途中の行が読めません）")
+            if rec["t"] == "create":
+                self.boxes.setdefault(rec["thing"], {})[rec["id"]] = Box(rec["thing"], rec["id"], rec["values"])
+                n = int(rec["id"].split("-")[-1])
+                self._ids = itertools.count(max(n + 1, next(self._ids)))
+            elif rec["t"] == "set":
+                b = self.boxes[rec["thing"]][rec["id"]]
+                b.prev[rec["field"]] = b.values.get(rec["field"])
+                b.values[rec["field"]] = rec["value"]
+            elif rec["t"] == "remove":
+                self.boxes[rec["thing"]].pop(rec["id"], None)
 
     def _migrate(self):
         """change の通りに、古い形のデータを今の形にする（足した項目の初期値・名前の変更・消した項目・消した状態の移し先）"""

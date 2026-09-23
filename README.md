@@ -1,81 +1,147 @@
-# nameless-lang（仮）— 人とAIの間の言語
+# nameless-lang（仮）
 
 **人は決めて、AIが書いて、言語が守る。**
 
-人は「何が欲しいか・何がダメか・何がまだ決まってないか」だけを書く。
-決まった部分は言語がそのまま動かし、AIは契約（例・禁止・逃げ道）の付いた小さな穴だけを埋める。
-決めてないことがあれば、動かす前にエラーで止まる。依存は Python の標準機能だけ。
+AIにアプリを作ってもらうとき、いちばん困るのは「決めてないことを、AIが勝手に決めてしまう」こと。
+この言語では、人は **何が欲しいか・何がダメか・何がまだ決まってないか** だけを書く。
+
+- 決まったこと（データの形・状態の流れ・誰が何をできるか・画面）は、言語がそのまま動かす。
+- AIが書くのは、契約（例・禁止・逃げ道）の付いた小さな穴だけ。
+- 決めてないことがあれば、**動かす前にエラーで止まる。**
+
+依存は Python 3.11 の標準機能だけ（ライブラリも Go も要らない）。
+
+![備品かしだし](docs/screenshots/lend_home.png)
+
+---
+
+## 30秒で
 
 ```
-thing Application
-  company   text
-  deadline  monthday
-  owner     User  gone[remove too]
-  status[draft | submitted | passed | failed]
+thing Item
+  name    text
+  status[free | lent | broken]
 
-flow Application.status
-  draft -> submitted -> passed | failed
-  failed > passed
-
-list DueSoon
-  of     Application
-  where  status is draft
-  where  deadline within 3 days
-  sort   deadline
-
-rule Remind
-  why   締切を落とさないため
-  when  every day at 21:00
-  do    notify owner each of DueSoon
+rule Borrow
+  why   空いている備品を借りる
+  when  user taps borrow-button on Item
+  where status is free
+  do    create Loan
+          item  this
+          due   7 days from now
+  example
+    given Item
+      name    "カメラ"
+      status  free
+    taps borrow-button on Item
+      name "カメラ"
+    expect Item is lent
+      name "カメラ"
 ```
 
-## 使い方
+打ち間違いも、決め忘れも、動かす前に止まる。
 
 ```
-python -m lang check spec/hub_app.lang     # 決めてないことを探す（エラー30種）
-python -m lang test  spec/hub_app.lang     # example と never を全部流す
-python -m lang fill  spec/hub_app.lang     # AIに action の中身を書かせる（要 ANTHROPIC_API_KEY）
-python -m lang fmt   spec/hub_app.lang     # 見た目を整える
-python -m lang run   spec/hub_app.lang     # 動かす → http://127.0.0.1:8000/
-python -m lang build spec/hub_app.lang     # 1つのファイル（hub_app.pyz）にまとめる → python hub_app.pyz
-python -m pytest                           # テスト
+$ python -m lang check todo.lang
+渡せません（1件）
+  todo.lang:20  E32  rule Finish: Task に「finished」という状態はありません（todo / done）
 ```
 
-## 読むもの
+example で確かめていない所も教えてくれる。
 
-| ファイル | 中身 |
+```
+$ python -m lang test todo.lang
+穴（example で確かめていない所 3件）
+  rule Finish: when があるのに example がありません
+  flow Task.status: todo -> done をどの example も通っていません
+```
+
+## 比べてみた
+
+同じアプリを「日本語で頼む」のと「この言語で頼む」ので、AIに16回ずつ書かせて、同じ14個の隠しテストを当てた（[EXPERIMENT.md](EXPERIMENT.md)）。
+
+| | 日本語で頼む | この言語で頼む |
+|---|---|---|
+| 全部通った（Sonnet・2回目の条件） | 3/5 | 5/5 |
+| 全部通った（Haiku） | 1/6 | 6/6 |
+| AIが推測で埋めた所 | 1回あたり約6個 | 0 |
+| AIが書いた行数 | 約170行 | 約20行 |
+
+この言語の方は、1回目で間違えても言語がエラーを返すので、AIが直せる（ループ後の数字）。
+弱い所も [EXPERIMENT.md](EXPERIMENT.md) に正直に書いてある。
+
+---
+
+## はじめる
+
+```
+git clone https://github.com/AnIT012/nameless-lang
+cd nameless-lang
+python -m lang run spec/todo.lang        # → http://127.0.0.1:8000/
+```
+
+1歩ずつ作るなら **[docs/入門.md](docs/入門.md)**（やることアプリを、エラーを見ながら作る）。
+
+## コマンド
+
+| コマンド | すること |
 |---|---|
-| `docs/言語仕様_v0.3.md` | 仕様書（最新） |
-| `REVIEW.md` | ダメだと思ったパーツ・欲しいもの・まだ動かないもの（判断待ち） |
-| `docs/DECISIONS.md` | 仮で決めたことの一覧（承認待ち、おすすめ付き） |
-| `EXPERIMENT.md` | 自然文で頼む vs この言語で頼む、の比較実験 |
-| `REPORT.md` | これまでの作業の記録 |
-| `docs/design/` | 相談のメモ、名前の候補、細かい疑問 |
+| `python -m lang check 仕様.lang` | 決めてないこと・間違いを探す（エラー32種） |
+| `python -m lang test 仕様.lang` | example と never を全部流す。確かめていない所（穴）も出す。`--strict` で穴も失敗に |
+| `python -m lang run 仕様.lang` | 動かす（ブラウザの画面つき） |
+| `python -m lang fill 仕様.lang` | AIに action の中身を書かせて、機械で確かめる（要 `ANTHROPIC_API_KEY`） |
+| `python -m lang guide` | AIに渡す書き方の説明を出す（実装から作るので、実装とずれない）。`--rules` で rule の書き方 |
+| `python -m lang fmt 仕様.lang` | 見た目を整える（意味が変わるなら書かない） |
+| `python -m lang build 仕様.lang` | 1つのファイル（.pyz）にまとめる → `python app.pyz` |
+| `python -m lang role 仕様.lang 名前 admin` | 最初の管理者を決める |
+| `python -m pytest` | 言語そのもののテスト |
 
-## 中身
+## 見本のアプリ
+
+| アプリ | 見どころ | |
+|---|---|---|
+| [spec/todo.lang](spec/todo.lang) やること | 入門のできあがり。一番小さい | ![](docs/screenshots/todo.png) |
+| [spec/lend.lang](spec/lend.lang) 備品かしだし | 役割（管理者）、2つの thing のつながり、rule の where、件数 | ![](docs/screenshots/lend_members.png) |
+| [spec/kakeibo.lang](spec/kakeibo.lang) 家計メモ | 標準ライブラリ（`use std/money`）で金額を拾って合計 | ![](docs/screenshots/kakeibo.png) |
+| [spec/hub_app.lang](spec/hub_app.lang) 就活Hub | メールから締切を拾う（AIが中身を書いた action）、ボード・カレンダー・英語 | ![](docs/screenshots/board.png) |
+
+## 言語の中身（ひとめで）
+
+| パーツ | 書くこと |
+|---|---|
+| `thing` | データの形。`status[draft \| submitted]` のような状態も |
+| `flow` | 状態の流れ（`draft -> submitted`）と、ぶつかった時の勝ち（`failed > passed`） |
+| `who` | 誰が何をできるか。書いてないことは誰もできない |
+| `list` | 条件で絞った一覧 |
+| `rule` | きっかけ → やること（1つだけ）。`example` で確かめる |
+| `relate` | rule 同士の関係（`then` / `then no` / `before` / `>` / `else`） |
+| `action` | AIが中身を書く穴。`example`・`never`・`else` の契約付き |
+| `scene` / `look` / `part` / `input` / `style` / `words` | 画面・見せ方・部品・入力・見た目・言葉（日本語と英語） |
+| `use std/...` | 標準ライブラリ（日付・金額・メール・電話） |
+| `tbd` / `##` | まだ決めてないこと。残っていると動かない |
+
+全部は **[仕様書 v0.3](docs/言語仕様_v0.3.md)**。
+
+## リポジトリの中
 
 | 場所 | 中身 |
 |---|---|
-| `lang/parser.py` | 見出し／節の木にする |
-| `lang/checker.py` | 決めてないことを探す（1つ1関数） |
-| `lang/runtime.py` | 実行エンジン（箱ごとに1つずつ、箱をまたぐと並列） |
-| `lang/body.py` | action の中身（do と shape）を動かす |
-| `lang/fill.py` | AIに中身を書かせて、機械で確かめて、ダメなら書き直させる |
-| `lang/server.py`、`lang/page.html` | 画面（素の HTML / CSS / JavaScript） |
-| `lang/fmt.py` | 整形 |
-| `spec/hub_app.lang` | 就活Hub。ブラウザで動く |
-| `spec/hub_app.lang.ai/` | AIが書いた action の中身 |
-| `experiment/v2/` | 比較実験（プロンプト・AIの返事・採点） |
-| `lang/build.py` | 1つのファイルにまとめる |
+| `lang/` | 言語の本体（パーサ・チェッカー・実行エンジン・画面・AIの穴埋め）→ [docs/仕組み.md](docs/仕組み.md) |
+| `lang/std/` | 標準ライブラリ（中身もこの言語） |
+| `spec/` | 見本のアプリ |
+| `tests/` | テスト（270件ほど） |
+| `docs/` | 仕様書・入門・仕組み・決めごと・画面の写真 |
+| `experiment/` | 比較実験（プロンプト・AIの返事・採点） |
 | `editor/vscode/` | エディタの色分け |
-| `archive/v01/` | v0.1 の時のもの（当時のまま） |
+| `archive/v01/` | 最初の版（当時のまま） |
 
-## 動いている画面
+記録: [CHANGELOG.md](CHANGELOG.md)（何が入ったか）/ [REPORT.md](REPORT.md)（作業の記録）/ [REVIEW.md](REVIEW.md)（ダメなパーツと欲しいもの）/ [docs/DECISIONS.md](docs/DECISIONS.md)（決めごと）
 
-| 締切が近い | すべて（検索・まとまり） | ボード |
-|---|---|---|
-| ![](docs/screenshots/home.png) | ![](docs/screenshots/all.png) | ![](docs/screenshots/board.png) |
+手を入れるなら: [CONTRIBUTING.md](CONTRIBUTING.md)
 
-| カレンダー | 詳しく | 確認 | 英語 |
-|---|---|---|---|
-| ![](docs/screenshots/calendar.png) | ![](docs/screenshots/detail.png) | ![](docs/screenshots/confirm.png) | ![](docs/screenshots/english.png) |
+## いまの限界
+
+- **ログインが仮。** 今は URL の `?user=名前` で誰にでもなれる。人に使ってもらう前に、本当のログインが要る。
+- **例と never に書いてないことは守れない。** 穴さがしで「書いていない所」は見えるが、書くのは人。
+- **道具はまだ少ない。** 曜日・日付の足し算・json などは「まだ無い道具」（書くとエラー）。
+- **名前がまだ無い。**（nameless）

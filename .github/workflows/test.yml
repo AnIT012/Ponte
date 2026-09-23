@@ -1,0 +1,27 @@
+name: test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: pytest を入れる（言語そのものは標準機能だけ）
+        run: pip install pytest
+      - name: テスト
+        run: python -m pytest -q
+      - name: 見本のアプリ（穴も失敗に）
+        run: |
+          for f in spec/todo.lang spec/lend.lang spec/kakeibo.lang spec/hub_app.lang; do
+            python -m lang check "$f" && python -m lang test "$f" --strict || exit 1
+          done
+      - name: 仕様書の道具の表が実装とずれていない
+        run: |
+          python -m lang guide --spec
+          git diff --exit-code docs/

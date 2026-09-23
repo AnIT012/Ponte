@@ -4,18 +4,18 @@ do
   clean = normalize text
   hits  = find all MonthDay in clean
   kind[one | none | many] = match count of hits
-                              1    -> one
-                              0    -> none
-                              else -> many
+    1    -> one
+    0    -> none
+    else -> many
   answer = match kind
-             one  -> found monthday of first of hits
-             none -> missing
-             many -> missing
+    one  -> found monthday of first of hits
+    none -> missing
+    many -> missing
 
 shape MonthDay
-  month   digits 1..2
+  month  digits 1..2
   "/"
-  day     digits 1..2
-  maybe   "(" any 1 ")"
-  maybe   space
-  maybe   hour digits 1..2 ":" minute digits 2
+  day    digits 1..2
+  maybe  "(" any 1 ")"
+  maybe  space
+  maybe  hour digits 1..2 ":" minute digits 2

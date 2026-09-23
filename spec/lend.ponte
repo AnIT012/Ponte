@@ -13,7 +13,7 @@ thing Loan
   status[active | returned | late]
 
 thing User
-  name text
+  name  text
   role[member | admin]
 
 flow Item.status
@@ -32,13 +32,13 @@ flow Loan.status
 
 who
   user   can see     Item
-  user   can see     Loan where borrower is me
+  user   can see     Loan  where borrower is me
   user   can create  Loan
-  user   can change  Loan where borrower is me
+  user   can change  Loan  where borrower is me
   user   can move    Item
   admin  can create  Item
   admin  can see     Loan
-  user   can see     User where it is me
+  user   can see     User  where it is me
   admin  can see     User
   admin  can change  User
 
@@ -74,20 +74,20 @@ rule Borrow
     item  this
     due   7 days from now
   example
-    given Item
+    given   Item
       name    "カメラ"
       status  free
-    taps borrow-button on Item
-      name "カメラ"
-    expect Item is lent
-      name "カメラ"
+    taps    borrow-button on Item
+      name    "カメラ"
+    expect  Item is lent
+      name    "カメラ"
   example
-    given Item
+    given   Item
       name    "カメラ"
       status  lent
-    taps borrow-button on Item
-      name "カメラ"
-    expect no Loan
+    taps    borrow-button on Item
+      name    "カメラ"
+    expect  no Loan
 
 rule MarkLent
   when  Loan is created
@@ -97,29 +97,29 @@ rule Return
   when  user taps return-button on Loan
   do    move this to returned
   example
-    given Item
+    given   Item
       name    "カメラ"
       status  lent
-    given Loan
+    given   Loan
       item    "カメラ"
       due     "9/28 18:00"
       status  active
-    taps return-button on Loan
-      item "カメラ"
-    expect Item is free
-      name "カメラ"
+    taps    return-button on Loan
+      item    "カメラ"
+    expect  Item is free
+      name    "カメラ"
   example
-    given Item
+    given   Item
       name    "三脚"
       status  lent
-    given Loan
+    given   Loan
       item    "三脚"
       due     "9/20 18:00"
       status  late
-    taps return-button on Loan
-      item "三脚"
-    expect Loan is returned
-      item "三脚"
+    taps    return-button on Loan
+      item    "三脚"
+    expect  Loan is returned
+      item    "三脚"
 
 rule FreeItem
   when  Loan moves to returned
@@ -130,21 +130,21 @@ rule ReportBroken
   when  user taps broken-button on Item
   do    move this to broken
   example
-    given Item
+    given   Item
       name    "ライト"
       status  lent
-    taps broken-button on Item
-      name "ライト"
-    expect Item is broken
-      name "ライト"
+    taps    broken-button on Item
+      name    "ライト"
+    expect  Item is broken
+      name    "ライト"
   example
-    given Item
+    given   Item
       name    "ライト"
       status  free
-    taps broken-button on Item
-      name "ライト"
-    expect Item is broken
-      name "ライト"
+    taps    broken-button on Item
+      name    "ライト"
+    expect  Item is broken
+      name    "ライト"
 
 rule Fixed
   why    直ったらまた貸せる
@@ -152,13 +152,13 @@ rule Fixed
   where  status is broken
   do     move this to free
   example
-    given Item
+    given   Item
       name    "ライト"
       status  broken
-    taps fixed-button on Item
-      name "ライト"
-    expect Item is free
-      name "ライト"
+    taps    fixed-button on Item
+      name    "ライト"
+    expect  Item is free
+      name    "ライト"
 
 rule OpenAdd
   when  user taps add on Home
@@ -173,24 +173,24 @@ rule MakeAdmin
   where  role is member
   do     move this to admin
   example
-    given User
+    given   User
       name  "me"
       role  admin
-    given User
+    given   User
       name  "hanako"
       role  member
-    taps admin-button on User
-      name "hanako"
-    expect User is admin
-      name "hanako"
+    taps    admin-button on User
+      name  "hanako"
+    expect  User is admin
+      name  "hanako"
   example
-    given User
+    given   User
       name  "hanako"
       role  member
-    taps admin-button on User
-      name "hanako"
-    expect User is member
-      name "hanako"
+    taps    admin-button on User
+      name  "hanako"
+    expect  User is member
+      name  "hanako"
 
 rule StepDown
   why    管理者をやめられる
@@ -199,24 +199,24 @@ rule StepDown
   where  it is not me
   do     move this to member
   example
-    given User
+    given   User
       name  "me"
       role  admin
-    given User
+    given   User
       name  "jiro"
       role  admin
-    taps member-button on User
-      name "jiro"
-    expect User is member
-      name "jiro"
+    taps    member-button on User
+      name  "jiro"
+    expect  User is member
+      name  "jiro"
   example
-    given User
+    given   User
       name  "me"
       role  admin
-    taps member-button on User
-      name "me"
-    expect User is admin
-      name "me"
+    taps    member-button on User
+      name  "me"
+    expect  User is admin
+      name  "me"
 
 rule MarkLate
   why   返し忘れを見つける
@@ -251,7 +251,7 @@ scene Home
   bottom  button add named add-item icon plus
 
 input AddItem
-  name required
+  name  required
   place
 
 flow scene

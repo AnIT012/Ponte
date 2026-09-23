@@ -2,16 +2,16 @@
 # 書いたもの: 用意した返事（experiment/ai_replies/ExtractDeadline）   試した回数: 1   日時: 2026-09-22T23:32
 
 do
-  text  = normalize mail
-  hits  = find all Deadline in text
+  text = normalize mail
+  hits = find all Deadline in text
   kind[one | none | many] = match count of hits
-                              1    -> one
-                              0    -> none
-                              else -> many
+    1    -> one
+    0    -> none
+    else -> many
   deadline = match kind
-               one  -> found monthday of first of hits
-               none -> missing
-               many -> missing
+    one  -> found monthday of first of hits
+    none -> missing
+    many -> missing
 
 shape Deadline
   month   digits 1..2

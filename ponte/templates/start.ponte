@@ -7,16 +7,16 @@ thing Task
   status[todo | done]
 
 thing User
-  name text
+  name  text
 
 flow Task.status
   todo -> done -> todo
 
 who
-  user  can see     Task where owner is me
-  user  can change  Task where owner is me
-  user  can remove  Task where owner is me
-  user  can see     User where it is me
+  user  can see     Task  where owner is me
+  user  can change  Task  where owner is me
+  user  can remove  Task  where owner is me
+  user  can see     User  where it is me
 
 list Todo
   of     Task
@@ -36,42 +36,42 @@ list Soon
   where  due within 1 days
 
 rule Finish
-  why   終わったら消えてほしい
-  when  user taps done-button on Task
-  where status is todo
-  do    move this to done
+  why    終わったら消えてほしい
+  when   user taps done-button on Task
+  where  status is todo
+  do     move this to done
   example
-    given Task
-      title  "牛乳を買う"
-      status todo
-    taps done-button on Task
-      title "牛乳を買う"
-    expect Task is done
-      title "牛乳を買う"
+    given   Task
+      title   "牛乳を買う"
+      status  todo
+    taps    done-button on Task
+      title   "牛乳を買う"
+    expect  Task is done
+      title   "牛乳を買う"
 
 rule Reopen
-  why   間違えて終わらせても戻せる
-  when  user taps reopen-button on Task
-  where status is done
-  do    move this to todo
+  why    間違えて終わらせても戻せる
+  when   user taps reopen-button on Task
+  where  status is done
+  do     move this to todo
   example
-    given Task
-      title  "牛乳を買う"
-      status done
-    taps reopen-button on Task
-      title "牛乳を買う"
-    expect Task is todo
-      title "牛乳を買う"
+    given   Task
+      title   "牛乳を買う"
+      status  done
+    taps    reopen-button on Task
+      title   "牛乳を買う"
+    expect  Task is todo
+      title   "牛乳を買う"
 
 rule Remind
   why   明日までのものを忘れない
   when  every day at 8:00
   do    notify owner each of Soon
   example
-    given Task
-      title  "レポート"
-      due    "9/24 17:00"
-      status todo
+    given   Task
+      title   "レポート"
+      due     "9/24 17:00"
+      status  todo
     at      "9/23 8:00"
     expect  notify "レポート"
 
@@ -105,12 +105,12 @@ flow scene
   Home -> AddTask -> Home
 
 match Task.status to color
-  todo  -> blue
-  done  -> gray
+  todo -> blue
+  done -> gray
 
 match tab to icon
-  todo  -> list
-  done  -> check
+  todo -> list
+  done -> check
 
 look Todo as list
   title   title

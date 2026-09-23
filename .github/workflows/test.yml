@@ -21,6 +21,11 @@ jobs:
           for f in spec/todo.ponte spec/lend.ponte spec/kakeibo.ponte spec/hub_app.ponte; do
             python -m ponte check "$f" && python -m ponte test "$f" --strict || exit 1
           done
+      - name: .ponte が全部整形されている
+        run: |
+          for f in spec/*.ponte spec/*.ponte.ai/*.ponte ponte/std/*.ponte ponte/std/body/*.ponte ponte/templates/*.ponte site/samples/*.ponte; do
+            python -m ponte fmt "$f" --check || exit 1
+          done
       - name: 仕様書の道具の表が実装とずれていない
         run: |
           python -m ponte guide --spec

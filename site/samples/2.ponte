@@ -3,6 +3,6 @@ flow Task.status
   todo -> done -> todo
 
 who
-  user  can see     Task where owner is me
-  user  can change  Task where owner is me
-  user  can see     User where it is me
+  user  can see     Task  where owner is me
+  user  can change  Task  where owner is me
+  user  can see     User  where it is me

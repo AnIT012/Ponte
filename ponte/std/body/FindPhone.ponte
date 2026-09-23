@@ -1,22 +1,22 @@
 # std/contact FindPhone の中身。区切り（- ( ) 空白）を外して数字だけで返す
 
 do
-  clean  = replace ")" with "-" in replace "(" with "-" in normalize text
-  hits   = find all Phone in clean
+  clean = replace ")" with "-" in replace "(" with "-" in normalize text
+  hits  = find all Phone in clean
   kind[one | none | many] = match count of hits
-                              1    -> one
-                              0    -> none
-                              else -> many
+    1    -> one
+    0    -> none
+    else -> many
   digits = replace "-" with "" in text of first of hits
   answer = match kind
-             one  -> found digits
-             none -> missing
-             many -> missing
+    one  -> found digits
+    none -> missing
+    many -> missing
 
 shape Phone
   "0"
-  digits 1..4
+  digits  1..4
   "-"
-  digits 1..4
+  digits  1..4
   "-"
-  digits 3..4
+  digits  3..4

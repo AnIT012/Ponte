@@ -372,11 +372,29 @@ class App:
                              "rows": [self.row(b, look, env, name) for b in boxes if b.values.get(sf) == st]})
             return {**base, "type": "board", "columns": cols, "draggable": (thing, sf) in self.eng.flows}
         if kind == "chart":
-            states = fields[sf].states if sf else []
-            mt = self.eng.match_for(thing, sf) if sf else None
-            bars = [{"label": self.tr(st, env), "count": sum(1 for b in boxes if b.values.get(sf) == st),
-                     "color": color_of(self.eng.match(mt.text, st) if mt else None, i)} for i, st in enumerate(states)]
-            return {**base, "type": "chart", "bars": bars, "total": len(boxes), "title": self.tr(name, env)}
+            # 分け方は `group by 項目`（無ければ状態）。高さは件数か、`sum 項目` の合計
+            gb = look.child("group") if look is not None else None
+            gf = gb.text[3:].strip() if gb is not None and gb.text.startswith("by ") else sf
+            sm = look.child("sum") if look is not None else None
+            sum_f = sm.text.strip() if sm is not None else None
+            states = (fields[gf].states or []) if gf in fields else []
+            keys = states or list(dict.fromkeys(str(self.show_value(b, gf, env)) for b in boxes if gf and b.values.get(gf) not in (None, "")))
+
+            def amount(b):
+                if not sum_f:
+                    return 1
+                n = re.match(r"-?\d+(?:\.\d+)?", str(b.values.get(sum_f, "")).replace(",", ""))
+                return float(n.group(0)) if n else 0
+            key_of = (lambda b: b.values.get(gf)) if states else (lambda b: str(self.show_value(b, gf, env)))
+            mt = self.eng.match_for(thing, gf) if states else None
+            fmt = lambda x: f"{int(x):,}" if x == int(x) else f"{x:,.2f}"
+            bars = []
+            for i, k in enumerate(keys):
+                v = sum(amount(b) for b in boxes if key_of(b) == k)
+                bars.append({"label": self.tr(k, env), "count": v, "shown": fmt(v),
+                             "color": color_of(self.eng.match(mt.text, k) if mt else None, i)})
+            total = sum(amount(b) for b in boxes)
+            return {**base, "type": "chart", "bars": bars, "total": total, "total_shown": fmt(total), "title": self.tr(name, env)}
         if kind == "calendar":
             df = next((k for k, f in fields.items() if f.type in ("monthday", "date")), None)
             now = self.eng.clock()
@@ -497,7 +515,12 @@ class App:
                         value = t.strftime("%Y-%m-%dT%H:%M")
                     except ValueError:
                         value = ""
-            fields.append({"name": c.keyword, "label": self.tr(c.keyword, env), "kind": kind, "required": "required" in c.text, "value": value})
+            row = {"name": c.keyword, "label": self.tr(c.keyword, env), "kind": kind, "required": "required" in c.text, "value": value}
+            if f.states:                                   # 状態は選ぶ（書いた状態のどれか）
+                row["kind"] = "select"
+                row["options"] = [{"value": st, "label": self.tr(st, env)} for st in f.states]
+                row["value"] = value or f.states[0]
+            fields.append(row)
         return {"type": "input", "name": name, "title": self.tr(name, env), "fields": fields, "this": env.this.id if editing else None,
                 "submit": self.tr("save", env), "cancel": self.tr("cancel", env)}
 
@@ -815,6 +838,11 @@ def make_handler(app: App):
                     for k, v in data.get("values", {}).items():
                         if v in ("", None):
                             continue
+                        fl = app.eng.fields[thing].get(k)
+                        if fl is not None and fl.states and v not in fl.states:
+                            raise ValueError(f"{k} は {' / '.join(fl.states)} のどれかです")
+                        if fl is not None and fl.states and (thing, k) in app.eng.flows:
+                            raise ValueError(f"{k} は flow の通りに動く状態なので、入力では選べません（ボタンの rule で move する）")
                         if app.eng.fields[thing][k].type in ("monthday", "date"):
                             m = re.match(r"^\d{4}-(\d{2})-(\d{2})T(\d{2}):(\d{2})$", v)
                             if m:   # 日付の部品から来た形。monthday は年を持たない

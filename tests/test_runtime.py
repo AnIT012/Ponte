@@ -326,3 +326,26 @@ def test_data_import_all_or_nothing(tmp_path, capsys):
     assert main(["data", "import", str(src), "Item", str(good)]) == 0
     eng = Engine(parse_file(str(src)), store=str(src) + ".data.jsonl")
     assert sorted(b.values["name"] for b in eng.boxes["Item"].values()) == ["カメラ", "三脚"]
+
+
+def test_chart_group_and_sum_and_state_select(tmp_path):
+    from ponte.server import App
+    spec = parse_file("spec/kakeibo.ponte")
+    eng = Engine(spec)
+    u = eng.login("me")
+    for memo, kind in [("ランチ 1,200円", "food"), ("スーパー 3,480円", "food"), ("映画 1,900円", "fun")]:
+        eng.submit(u, "AddExpense", {"memo": memo, "kind": kind})
+    app = App(spec, eng)
+    from ponte.server import Env
+    env = Env(u, "Home", {}, None, None, "ja")
+    c = app.collection("ByKind", "chart", env)
+    assert [(b["label"], b["shown"]) for b in c["bars"]] == [("食費", "4,680"), ("日用品", "0"), ("楽しみ", "1,900"), ("そのほか", "0")]
+    assert c["total_shown"] == "6,580"
+    f = next(x for x in app.input_block("AddExpense", env)["fields"] if x["name"] == "kind")
+    assert f["kind"] == "select" and [o["label"] for o in f["options"]] == ["食費", "日用品", "楽しみ", "そのほか"]
+
+
+def test_sum_on_a_text_field_is_an_error():
+    from ponte.checker import check
+    src = open("spec/kakeibo.ponte", encoding="utf-8").read().replace("  sum    yen", "  sum    memo")
+    assert any(f.code == "E32" and "sum" in f.message for f in check(parse(src)))

@@ -29,7 +29,7 @@ TOOLS = [
     ("形", "text of X", "当たった文字そのもの", "text of last of find all D in t", "1 と 22", "22"),
     ("集まり", "count of X", "数（length of X も同じ）", "count of split t by \",\"", "a,b,c", 3),
     ("集まり", "first of X / last of X", "最初 / 最後（空なら止まる。先に count で分ける）", "last of split t by \",\"", "a,b,c", "c"),
-    ("数", "number of X", "文字を数に", "number of t", "42", 42),
+    ("数", "number of X", "文字を数に（1,980 や 1.5 も読める。読めなければ止まる）", "number of t", "1,980", 1980),
     ("数", "a + b / a - b", "足す / 引く（一番弱くつなぐ）", "count of split t by \",\" + 10", "a,b", 12),
     ("文字", 'X contains "a"', "入っているか。答えは yes / no（match で分ける）", 't contains "締切"', "締切は明日", "yes"),
     ("文字", 'X starts with "a"', "で始まるか。答えは yes / no", 't starts with "Re:"', "Fw: 件名", "no"),

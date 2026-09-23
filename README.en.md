@@ -1,5 +1,7 @@
 # Ponte
 
+<img src="docs/logo/ponte.svg" alt="Ponte" width="96">
+
 > *Ponte* is Italian for "bridge" — between people and AI, and between the rules you write and the Python that runs them.
 
 **People decide. AI writes. The language guards.**

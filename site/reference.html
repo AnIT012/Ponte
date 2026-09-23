@@ -7,6 +7,7 @@
 </head>
 <body>
 <title>道具とエラー — Ponte</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Cdefs%3E%3ClinearGradient id="pi" x1="0" x2="1"%3E%3Cstop offset=".15" stop-color="#FF7355"/%3E%3Cstop offset=".85" stop-color="#83C3FF"/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="100" height="100" rx="24" fill="#1F2340"/%3E%3Cpath d="M24 62 C 38 28, 62 28, 76 62" stroke="url%28#pi%29" stroke-width="9" fill="none" stroke-linecap="round"/%3E%3Ccircle cx="24" cy="62" r="13" fill="#FF7355"/%3E%3Ccircle cx="76" cy="62" r="13" fill="#83C3FF"/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap">
@@ -44,7 +45,7 @@ section{padding-block:56px}
 /* ---- top bar ---- */
 .bar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-block:18px}
 .logo{display:flex;align-items:center;gap:10px;text-decoration:none}
-.logo svg{width:52px;height:auto}
+.logo svg{width:44px;height:auto}
 .logo .word{font-size:28px}
 .nav{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--pop);font-size:14px}
 .nav a{text-decoration:none;padding:4px 2px;border-bottom:3px solid transparent}
@@ -171,12 +172,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 <div class="wrap">
 <header class="bar">
   <a class="logo" href="index.html" aria-label="Ponte">
-    <svg viewBox="0 0 120 70" aria-hidden="true">
-      <path d="M6 60 L114 60" stroke="var(--ink)" stroke-width="5" stroke-linecap="round"/>
-      <path d="M20 58 C 40 8, 80 8, 100 58" stroke="var(--sky)" stroke-width="7" stroke-linecap="round" fill="none"/>
-      <circle cx="12" cy="50" r="9" fill="var(--sky)"/>
-      <circle cx="108" cy="50" r="9" fill="var(--sky)"/>
-    </svg>
+    <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="pg" x1="0" x2="1"><stop offset=".15" stop-color="#FF5A36"/><stop offset=".85" stop-color="#2F6FD6"/></linearGradient></defs><rect x="2" y="2" width="96" height="96" rx="24" fill="#fff" stroke="#DADCE8" stroke-width="2"/><path d="M24 62 C 38 28, 62 28, 76 62" stroke="url(#pg)" stroke-width="11" fill="none" stroke-linecap="round"/><circle cx="24" cy="62" r="13" fill="#FF5A36"/><circle cx="76" cy="62" r="13" fill="#2F6FD6"/></svg>
     <span class="word">Ponte</span>
   </a>
   <nav class="nav">

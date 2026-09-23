@@ -133,6 +133,7 @@ td{padding:11px 14px;border-bottom:1px solid var(--line)}tr:last-child td{border
 .form h2{margin:0;font-size:20px}
 .form label{display:grid;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}.form label>span{display:flex;gap:4px}
 .form label span.req{color:var(--danger)}
+[data-card]:focus-visible{outline:3px solid var(--main);outline-offset:2px}
 .thumb{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:calc(var(--radius) - 4px);margin-bottom:10px;background:var(--line)}
 .thumb.sm{width:44px;height:44px;aspect-ratio:auto;margin:0;flex:none;border-radius:10px}
 .photo{display:block;max-width:100%;max-height:320px;border-radius:10px;margin:4px 0}
@@ -320,6 +321,7 @@ async function render(){
   document.getElementById("root").innerHTML = `<div class="app scene-${esc(v.scene)} ${hasSide ? "has-side" : ""}"><section class="slot-main">${slot("main").map(block).join("")}</section>${hasSide ? `<aside class="slot-side">${slot("side").map(block).join("")}</aside>` : ""}</div>`;
   document.getElementById("over").innerHTML = slot("over").map(block).join("");   // 小窓はページの一番上の層に出す
   document.getElementById("bottom").innerHTML = slot("bottom").map(block).join("");
+  document.querySelectorAll("[data-card]").forEach(el => { el.tabIndex = 0; el.setAttribute("role", "button"); });   // キーボードでも開ける
   // 新しく出たものはふわっと、動いたものはするっと
   document.querySelectorAll("[data-key]").forEach(el => {
     const k = el.dataset.key, a = before[k];
@@ -404,6 +406,10 @@ document.addEventListener("click", async e => {
     const r = await post("/api/tap", {button:"card", on:c.dataset.on, id:c.dataset.card});
     if(r.nav) go(r.nav, r.this || c.dataset.card, c.dataset.on);
   }
+});
+document.addEventListener("keydown", e => {          // カードは Enter / Space で押せる（中のボタンで押した時は除く）
+  const c = e.target.closest && e.target.closest("[data-card]");
+  if (c && e.target === c && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); c.click(); }
 });
 document.addEventListener("submit", async e => {
   e.preventDefault(); const f = e.target, err = f.querySelector("#err");

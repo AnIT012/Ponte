@@ -15,6 +15,7 @@
 - `ponte --version`（0.3.1）
 - `ponte check --json`（エディタや AI のループ向け。直し方も入る）・`ponte test --json`
 - `ponte data export`（JSON / CSV）・`ponte data import`（CSV から。全部の行を先に確かめ、1行でもダメなら何も入れない）・`ponte data compact`（追記の記録を今の中身1枚に。前のものは .bak）
+- 画面: 押せるカードはキーボードでも（Tab で選んで Enter / Space）
 - **画像**: `photo image` の項目を input で選べる（種類は中身で確かめる・5MB まで・名前はランダム）。look の `image photo about name` で一覧に写真。画像は who で見られる人にだけ出る。備品かしだしに写真
 - chart に `group by 項目` と `sum 項目`（家計メモに「費目ごとの合計」）。input の状態の項目は選ぶ形に（flow のある状態は選べない）
 - 道具 `time of`

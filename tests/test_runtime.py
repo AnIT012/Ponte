@@ -1,5 +1,6 @@
 """実行エンジンと画面のテスト（仕様 v0.2）。"""
 import json
+import os
 import threading
 import urllib.error
 import urllib.parse
@@ -308,3 +309,20 @@ def test_viewer_is_per_thread():
     t.start()
     t.join()
     assert seen == ["me"] and app._viewer == "taro"
+
+
+def test_data_import_all_or_nothing(tmp_path, capsys):
+    import shutil
+    from ponte.cli import main
+    src = tmp_path / "lend.ponte"
+    shutil.copy("spec/lend.ponte", src)
+    good = tmp_path / "items.csv"
+    good.write_text("name,status\nカメラ,free\n三脚,broken\n", encoding="utf-8")
+    bad = tmp_path / "bad.csv"
+    bad.write_text("name,status\nマイク,free\nライト,lost\n", encoding="utf-8")
+    assert main(["data", "import", str(src), "Item", str(bad)]) == 1
+    assert "lost" in capsys.readouterr().out
+    assert not os.path.exists(str(src) + ".data.jsonl") or "マイク" not in open(str(src) + ".data.jsonl", encoding="utf-8").read()
+    assert main(["data", "import", str(src), "Item", str(good)]) == 0
+    eng = Engine(parse_file(str(src)), store=str(src) + ".data.jsonl")
+    assert sorted(b.values["name"] for b in eng.boxes["Item"].values()) == ["カメラ", "三脚"]

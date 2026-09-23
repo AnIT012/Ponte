@@ -12,7 +12,7 @@
 - ホームページに仕様書・しくみのページ（リポジトリが非公開でも読める）
 - `ponte --version`（0.3.1）
 - `ponte check --json`（エディタや AI のループ向け。直し方も入る）・`ponte test --json`
-- `ponte data export`（JSON / CSV）・`ponte data compact`（追記の記録を今の中身1枚に。前のものは .bak）
+- `ponte data export`（JSON / CSV）・`ponte data import`（CSV から。全部の行を先に確かめ、1行でもダメなら何も入れない）・`ponte data compact`（追記の記録を今の中身1枚に。前のものは .bak）
 - `ponte run --reload`: spec を書き直すと読み直して、開いている画面も読み直す。check が通らない書き直しは前のまま動かし続ける
 - `ponte lsp`: 言語サーバー（Neovim・Helix などでもエラー・E32 の説明・名前の補い）
 - VS Code: 保存するとエラーの行に波線（`editor/vscode/extension.js`。依存なし）

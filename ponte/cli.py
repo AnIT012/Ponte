@@ -372,7 +372,7 @@ def cmd_data(args) -> int:
     if spec is None:
         return 1
     store = args.data or (args.spec + ".data.jsonl")
-    if not os.path.exists(store):
+    if not os.path.exists(store) and args.action != "import":
         print(f"データがありません: {store}")
         return 1
     eng = Engine(spec, store=store)
@@ -392,6 +392,8 @@ def cmd_data(args) -> int:
         else:
             print(json.dumps(things, ensure_ascii=False, indent=2))
         return 0
+    if args.action == "import":
+        return data_import(eng, args)
     # compact: 今の中身だけを、作った順に書き直す（古い記録は .bak に残す）
     before = sum(1 for _ in open(store, encoding="utf-8"))
     boxes = sorted((b for t in eng.boxes.values() for b in t.values()), key=order)
@@ -402,6 +404,52 @@ def cmd_data(args) -> int:
     os.replace(store, store + ".bak")
     os.replace(tmp, store)
     print(f"{before}行 → {len(boxes)}行に詰めました（前のものは {store}.bak。動かしている間はしないでください）")
+    return 0
+
+
+def data_import(eng, args) -> int:
+    """CSV（1行目が項目の名前）を thing の箱にする。全部の行を先に確かめて、1つでもダメなら何も入れない"""
+    import csv
+    from .examples import _refs
+    from .values import parse_time
+    if not args.thing or not args.file:
+        print("使い方: ponte data import 仕様.ponte Thing ファイル.csv [--as 名前]")
+        return 1
+    fields = eng.fields.get(args.thing)
+    if fields is None:
+        print(f"{args.thing} という thing はありません（{', '.join(eng.fields)}）")
+        return 1
+    with open(args.file, encoding="utf-8-sig", newline="") as f:
+        rows = list(csv.DictReader(f))
+    who = eng.login(args.as_user) if args.as_user else None
+    unknown = [k for k in (rows[0].keys() if rows else []) if k not in fields and k != "id"]
+    if unknown:
+        print(f"{args.thing} に無い項目の列があります: {', '.join(unknown)}（あるのは {', '.join(fields)}）")
+        return 1
+    ready, bad = [], []
+    for i, row in enumerate(rows, start=2):                      # 2行目から（1行目は見出し）
+        vals = {k: v.strip() for k, v in row.items() if k != "id" and v is not None and v.strip() != ""}
+        try:
+            for k, v in vals.items():
+                fl = fields[k]
+                if fl.states and v not in fl.states:
+                    raise ValueError(f"{k} は {' / '.join(fl.states)} のどれかです: {v!r}")
+                if fl.type in ("monthday", "date"):
+                    parse_time(v, 2000)
+                if fl.type in ("number", "count"):
+                    float(v.replace(",", ""))
+            vals = _refs(eng, args.thing, vals)
+        except ValueError as e:
+            bad.append(f"  {args.file}:{i}  {e}")
+            continue
+        ready.append(vals)
+    if bad:
+        print(f"入れられません（{len(bad)}行。何も入れていません）")
+        print("\n".join(bad))
+        return 1
+    for vals in ready:
+        eng.create(args.thing, vals, who, fire=False, check=False)
+    print(f"{args.thing} を {len(ready)}件入れました（{eng.store}）")
     return 0
 
 
@@ -480,9 +528,12 @@ def build_parser() -> argparse.ArgumentParser:
     ro.add_argument("role")
     ro.add_argument("--data", help="データのファイル（既定は <spec>.data.jsonl）")
     ro.set_defaults(fn=cmd_role)
-    da = sub.add_parser("data", help="保存したデータを書き出す（export）・詰める（compact）")
-    da.add_argument("action", choices=["export", "compact"])
+    da = sub.add_parser("data", help="保存したデータを書き出す（export）・CSV から入れる（import）・詰める（compact）")
+    da.add_argument("action", choices=["export", "import", "compact"])
     da.add_argument("spec")
+    da.add_argument("thing", nargs="?", help="import: 入れる thing")
+    da.add_argument("file", nargs="?", help="import: CSV（1行目が項目の名前）")
+    da.add_argument("--as", dest="as_user", help="import: 作った人（User を指す項目の既定）")
     da.add_argument("--data", help="データのファイル（既定は <spec>.data.jsonl）")
     da.add_argument("--csv", metavar="DIR", help="export を thing ごとの CSV にする")
     da.set_defaults(fn=cmd_data)

@@ -1433,6 +1433,24 @@ def _check_line_values(spec: Spec, ths_all: dict, all_fields: dict) -> list[Find
                 head = content.split()[0]
                 if head not in ("match", "tabs", "button", "stats", "notices"):
                     out.append(Finding("E28", c.line, f"scene {sc.name}: 「{content}」の書き方が分かりません（部品の名前 / 一覧 as 見せ方 / tabs 状態 / stats … / match 状態 / button …）{did_you_mean(head, ['match', 'tabs', 'button', 'stats'])}"))
+    # 画面に1語だけ置いた物（words のあるアプリでは、部品・words の言葉・notices のどれか）と、toggle / set の状態
+    word_keys = set().union(*[set(words_entries(w)) for w in spec.decls("words")]) if spec.decls("words") else None
+    part_names = {p.name for p in spec.decls("part")}
+    scene_states = {c.keyword for sc in spec.decls("scene") for c in sc.children if c.text.startswith("[")}
+    for sc in spec.decls("scene"):
+        for c in sc.walk():
+            if c is sc or c.text.startswith("["):
+                continue
+            content = c.raw.split("->", 1)[1].strip() if "->" in c.raw else c.text.strip()
+            if word_keys is not None and re.fullmatch(r"[a-z][\w-]*", content) and content not in word_keys | part_names | {"notices", "nothing"}:
+                out.append(Finding("E28", c.line, f"scene {sc.name}: 「{content}」は部品の名前でも words の言葉でもありません{did_you_mean(content, sorted(word_keys | part_names | {'notices'}))}"))
+    for d in spec.decls():
+        if d.keyword not in ("look", "scene"):
+            continue
+        for c in d.walk():
+            m = re.search(r"\b(toggle|set) ([a-z]\w*)\b", c.raw) if "button" in c.raw else None
+            if m and scene_states and m.group(2) not in scene_states:
+                out.append(Finding("E28", c.line, f"{d.keyword} {d.name}: 「{m.group(2)}」という画面の状態はありません（{' / '.join(sorted(scene_states))}）{did_you_mean(m.group(2), sorted(scene_states))}"))
     # input の決まり
     for inp in spec.decls("input"):
         for c in inp.children:

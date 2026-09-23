@@ -5,7 +5,7 @@ thing Application
   deadline  monthday
   memo      text
   owner     User   gone[remove too]
-  status[draft | submitted | passed | failed]
+  status    [draft | submitted | passed | failed]
 
 thing User
   name  text

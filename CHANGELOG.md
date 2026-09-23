@@ -12,6 +12,7 @@
 - 道具: `avg of` / `abs` / `date of` / `time of`。`round` を本当の四捨五入に（2.5 → 3。前は Python の round で 2）
 - 標準ライブラリに `FindDate`（年の入った日付）と `FindPostal`（郵便番号）
 
+- 状態は `status  [todo | done]` と、名前と [ の間を空けて書く（型の列にそろう）。`ponte fmt` もそう整える。詰めて書いても読める
 ### 動かす前に止める（チェッカー）
 - **打ち間違いが黙って通らない**: 見本の行の言葉を1つずつ打ち間違えて流すテストで、黙って無視されていた所を全部塞いだ。条件の無い rule になる（`wher`）、一覧が黙って空になる（`where status is otdo`）、who の権利が黙って効かない（`cna`・`chnage`・`where woner`）、flow に黙って新しい状態ができる（`otdo -> done`）、画面を開くと止まる（input の項目）、ほか sort・example・expect・画面の置き物と見せ方・input の決まり・色・mark・ボタン・gives・create の値と期間・else・out の型
 - **壊れた仕様で落ちない**: でたらめに壊した仕様を何万通りも流して、Python のエラーで落ちる所と「check は通るのに動かすと止まる」所を塞いだ（example の手順の打ち間違い `expekt` が黙って無視され、確かめていないのに通っていた、など）

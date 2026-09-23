@@ -7,7 +7,7 @@ thing Expense
   memo   text
   yen    number
   owner  User  gone[remove too]
-  kind[food | daily | fun | other]
+  kind   [food | daily | fun | other]
 
 thing User
   name  text

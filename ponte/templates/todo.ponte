@@ -1,10 +1,10 @@
 # やること — 入門（docs/入門.md）で1歩ずつ作るアプリの、できあがり
 
 thing Task
-  title  text
-  due    monthday
-  owner  User  gone[remove too]
-  status[todo | done]
+  title   text
+  due     monthday
+  owner   User  gone[remove too]
+  status  [todo | done]
 
 thing User
   name  text

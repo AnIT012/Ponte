@@ -2,20 +2,20 @@
 # チームの備品（カメラ・マイクなど）を借りて、返す。返し忘れたら知らせる。
 
 thing Item
-  name   text
-  place  text
-  photo  image
-  status[free | lent | broken]
+  name    text
+  place   text
+  photo   image
+  status  [free | lent | broken]
 
 thing Loan
   item      Item   gone[block]
   borrower  User   gone[remove too]
   due       monthday
-  status[active | returned | late]
+  status    [active | returned | late]
 
 thing User
   name  text
-  role[member | admin]
+  role  [member | admin]
 
 flow Item.status
   free -> lent -> free

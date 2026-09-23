@@ -22,7 +22,7 @@ An excerpt of [spec/todo.ponte](spec/todo.ponte):
 thing Task
   title   text
   owner   User  gone[remove too]
-  status[todo | done]
+  status  [todo | done]
 
 flow Task.status
   todo -> done -> todo

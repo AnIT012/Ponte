@@ -194,17 +194,17 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 <hr>
 <h2 id="1-データの形を書く">1. データの形を書く</h2>
 <pre class="code"><span class="head">thing</span> <span class="name">Task</span>
-  <span class="field">title</span>  <span class="type">text</span>
-  <span class="field">due</span>    <span class="type">monthday</span>
-  <span class="field">owner</span>  <span class="name">User</span>  <span class="guard">gone</span><span class="guard">[</span><span class="guard">remove</span> <span class="guard">too</span><span class="guard">]</span>
-  <span class="field">status</span><span class="op">[</span><span class="val">todo</span> <span class="op">|</span> <span class="val">done</span><span class="op">]</span>
+  <span class="field">title</span>   <span class="type">text</span>
+  <span class="field">due</span>     <span class="type">monthday</span>
+  <span class="field">owner</span>   <span class="name">User</span>  <span class="guard">gone</span><span class="guard">[</span><span class="guard">remove</span> <span class="guard">too</span><span class="guard">]</span>
+  <span class="field">status</span>  <span class="op">[</span><span class="val">todo</span> <span class="op">|</span> <span class="val">done</span><span class="op">]</span>
 
 <span class="head">thing</span> <span class="name">User</span>
   <span class="field">name</span> <span class="type">text</span>
 
 <span class="head">flow</span> <span class="name">Task</span>.<span class="val">status</span>
-  <span class="val">todo</span> <span class="op">-&gt;</span> <span class="val">done</span> <span class="op">-&gt;</span> <span class="val">todo</span></pre><p class="try"><a href="play.html#code=dGhpbmcgVGFzawogIHRpdGxlICB0ZXh0CiAgZHVlICAgIG1vbnRoZGF5CiAgb3duZXIgIFVzZXIgIGdvbmVbcmVtb3ZlIHRvb10KICBzdGF0dXNbdG9kbyB8IGRvbmVdCgp0aGluZyBVc2VyCiAgbmFtZSB0ZXh0CgpmbG93IFRhc2suc3RhdHVzCiAgdG9kbyAtPiBkb25lIC0-IHRvZG8">このコードを試す ›</a></p>
-<ul><li><code>thing</code> はデータの形です。<code>status[todo | done]</code> は「この2つのどれか」という状態です。</li><li><code>owner User</code> は別の thing（User）を指す項目です。<code>gone[remove too]</code> は「User が消えたら、この Task も消す」という意味です。</li><li><code>flow</code> は状態の流れです。矢印のとおりにしか動きません。</li></ul>
+  <span class="val">todo</span> <span class="op">-&gt;</span> <span class="val">done</span> <span class="op">-&gt;</span> <span class="val">todo</span></pre><p class="try"><a href="play.html#code=dGhpbmcgVGFzawogIHRpdGxlICAgdGV4dAogIGR1ZSAgICAgbW9udGhkYXkKICBvd25lciAgIFVzZXIgIGdvbmVbcmVtb3ZlIHRvb10KICBzdGF0dXMgIFt0b2RvIHwgZG9uZV0KCnRoaW5nIFVzZXIKICBuYW1lIHRleHQKCmZsb3cgVGFzay5zdGF0dXMKICB0b2RvIC0-IGRvbmUgLT4gdG9kbw">このコードを試す ›</a></p>
+<ul><li><code>thing</code> はデータの形です。<code>status [todo | done]</code> は「この2つのどれか」という状態です。</li><li><code>owner User</code> は別の thing（User）を指す項目です。<code>gone[remove too]</code> は「User が消えたら、この Task も消す」という意味です。</li><li><code>flow</code> は状態の流れです。矢印のとおりにしか動きません。</li></ul>
 <p>チェックしてみます。</p>
 <pre class="term"><span class="prompt">$</span> python -m ponte check todo.ponte
 渡せません（2件）

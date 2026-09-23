@@ -1,10 +1,10 @@
 # 新しいアプリ（ponte new で作った）。やることアプリがひな形。好きに書き換えてね
 
 thing Task
-  title  text
-  due    monthday
-  owner  User  gone[remove too]
-  status[todo | done]
+  title   text
+  due     monthday
+  owner   User  gone[remove too]
+  status  [todo | done]
 
 thing User
   name  text

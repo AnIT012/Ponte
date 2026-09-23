@@ -308,7 +308,7 @@ def cmd_explain(args) -> int:
     return 0
 
 
-def main(argv: list[str] | None = None) -> int:
+def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="ponte", description="Ponte — 人は決めて、AIが書いて、言語が守る（v0.3）")
     sub = p.add_subparsers(dest="cmd", required=True)
     c = sub.add_parser("check", help="決めてないことを探す")
@@ -368,7 +368,11 @@ def main(argv: list[str] | None = None) -> int:
     ex = sub.add_parser("explain", help="エラーの意味と直し方（例: explain E32。無しなら一覧）")
     ex.add_argument("code", nargs="?")
     ex.set_defaults(fn=cmd_explain)
-    args = p.parse_args(argv)
+    return p
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
     return args.fn(args)
 
 

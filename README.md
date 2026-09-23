@@ -26,17 +26,18 @@ list DueSoon
 rule Remind
   why   締切を落とさないため
   when  every day at 21:00
-  do    notify each of DueSoon
+  do    notify owner each of DueSoon
 ```
 
 ## 使い方
 
 ```
-python -m lang check spec/hub_app.lang     # 決めてないことを探す（エラー28種）
+python -m lang check spec/hub_app.lang     # 決めてないことを探す（エラー30種）
 python -m lang test  spec/hub_app.lang     # example と never を全部流す
 python -m lang fill  spec/hub_app.lang     # AIに action の中身を書かせる（要 ANTHROPIC_API_KEY）
 python -m lang fmt   spec/hub_app.lang     # 見た目を整える
 python -m lang run   spec/hub_app.lang     # 動かす → http://127.0.0.1:8000/
+python -m lang build spec/hub_app.lang     # 1つのファイル（hub_app.pyz）にまとめる → python hub_app.pyz
 python -m pytest                           # テスト
 ```
 
@@ -65,6 +66,8 @@ python -m pytest                           # テスト
 | `spec/hub_app.lang` | 就活Hub。ブラウザで動く |
 | `spec/hub_app.lang.ai/` | AIが書いた action の中身 |
 | `experiment/v2/` | 比較実験（プロンプト・AIの返事・採点） |
+| `lang/build.py` | 1つのファイルにまとめる |
+| `editor/vscode/` | エディタの色分け |
 | `archive/v01/` | v0.1 の時のもの（当時のまま） |
 
 ## 動いている画面

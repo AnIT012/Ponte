@@ -28,7 +28,7 @@
 - 標準ライブラリに `FindDate`（年の入った日付）と `FindPostal`（郵便番号）
 - `ponte run --reload`: spec を書き直すと読み直して、開いている画面も読み直す。check が通らない書き直しは前のまま動かし続ける
 - `ponte new myapp --from lend`: 見本のアプリ（todo / lend / kakeibo）から始める
-- `ponte doc`: 決めごとを、コードを読まない人にも読める1枚の HTML に（書いた人以外が確かめるため）
+- `ponte doc`: 決めごとを、コードを読まない人にも読める1枚の HTML に（書いた人以外が確かめるため）。画面・入力・ボタンも画面に出る名前で
 - `ponte lsp`: 言語サーバー（Neovim・Helix などでもエラー・E32 の説明・名前の補い）
 - VS Code: 保存するとエラーの行に波線（`editor/vscode/extension.js`。依存なし）
 - ホームページに「入門」と「道具とエラー」のページ（docs と実装から作る。ずれたらテストが落ちる）

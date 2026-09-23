@@ -8,6 +8,7 @@ def test_doc_shows_decisions_and_open_items(tmp_path):
     lend = build(parse_file("spec/lend.ponte"))
     assert "備品かしだし" in lend and "誰が何をできるか" in lend and "空いている備品を借りる" in lend
     assert "ここに無いことは、誰にもできません" in lend
+    assert "借りる <code>borrow-button</code>" in lend and "入力 備品を足す" in lend
     hub = build(parse_file("spec/hub.ponte"))
     assert "timezone" in hub and "AIに任せた所" in hub and "まだ数えていません" in hub
     out = tmp_path / "x.html"

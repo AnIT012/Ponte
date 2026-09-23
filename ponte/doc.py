@@ -10,7 +10,7 @@ import re
 
 from .checker import actions, check, rules, things
 from .examples import holes, run_examples
-from .parser import Spec, flow_parts, relate_lines, thing_fields
+from .parser import Spec, flow_parts, parse_button, relate_lines, thing_fields
 
 VERBS = {"see": "見る", "change": "変える", "create": "作る", "remove": "消す", "move": "動かす"}
 RELS = {"then": "{a} の後に {b} が動く", "then no": "{a} の後は {b} が動かない", "before": "{a} が {b} より先",
@@ -109,6 +109,41 @@ def build(spec: Spec, title: str | None = None) -> str:
                     + "</dl></div>")
     if acts:
         sections.append(("ai", "AIに任せた所と、その約束", "<p>AIが書いた中身は、下の例と「してはいけないこと」で機械が確かめます。</p>" + "".join(acts)))
+
+    # 画面
+    def label(text: str) -> str:                   # ボタンは画面に出る名前で（無ければ名前そのもの）
+        pb = parse_button(text.strip())
+        if not pb:
+            return f"<code>{_e(text.strip())}</code>"
+        shown = words.get(pb["label"], pb["label"]) if pb["label"] else None
+        return f"{_e(shown)} <code>{_e(pb['id'])}</code>" if shown else f"<code>{_e(pb['id'])}</code>"
+    scr = []
+    for sc in spec.decls("scene"):
+        items = []
+        for c in sc.children:
+            if c.text.startswith("["):
+                continue
+            t = c.text.strip()
+            if t.startswith("button "):
+                items.append(f"<li>ボタン {label(t[7:])}</li>")
+            else:
+                items.append(f"<li><code>{_e(t)}</code></li>")
+        scr.append(f"<h3>{name(sc.name)}</h3><ul>{''.join(items)}</ul>")
+    for inp in spec.decls("input"):
+        fs = []
+        for c in inp.children:
+            note = " （必須）" if "required" in c.text else ""
+            note += " （今より後）" if "from now" in c.text else ""
+            fs.append(f"<li>{name(c.keyword)}{_e(note)}</li>")
+        scr.append(f"<h3>入力 {name(inp.name)}</h3><ul>{''.join(fs)}</ul>")
+    btns = {}
+    for lk in spec.decls("look"):
+        for c in lk.children_of("button"):
+            btns.setdefault(lk.name, []).append(label(c.text))
+    if btns:
+        scr.append("<h3>一覧のボタン</h3><ul>" + "".join(f"<li>{name(k)}: {' / '.join(v)}</li>" for k, v in btns.items()) + "</ul>")
+    if scr:
+        sections.append(("screens", "画面", "".join(scr)))
 
     # まだ決めていないこと・確かめていない所
     open_items = []

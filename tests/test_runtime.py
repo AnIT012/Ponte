@@ -349,3 +349,20 @@ def test_sum_on_a_text_field_is_an_error():
     from ponte.checker import check
     src = open("spec/kakeibo.ponte", encoding="utf-8").read().replace("  sum    yen", "  sum    memo")
     assert any(f.code == "E32" and "sum" in f.message for f in check(parse(src)))
+
+
+def test_other_peoples_boxes_cannot_be_viewed_or_tapped():
+    """id を知っていても、who で見られない箱は画面に出せないし、ボタンも押せない"""
+    import pytest
+    from ponte.runtime import NotAllowed, RuleError
+    from ponte.server import App
+    spec = parse_file("spec/hub_app.ponte")
+    eng = Engine(spec)
+    taro, hana = eng.login("taro"), eng.login("hanako")
+    b = eng.create("Application", {"company": "ひみつ商事", "deadline": "10/15 12:00"}, taro)
+    app = App(spec, eng)
+    with pytest.raises(RuleError):
+        app.view("Detail", hana, {}, b.id, None, "ja")
+    assert "ひみつ商事" in str(app.view("Detail", taro, {}, b.id, None, "ja"))
+    with pytest.raises(NotAllowed):
+        eng.tap(hana, "card", "Application", b.id)

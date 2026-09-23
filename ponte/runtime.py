@@ -836,6 +836,8 @@ class Engine:
             for t in self.boxes.values():
                 if box_id in t:
                     box = t[box_id]
+            if box is None or (user is not None and not any(self.can(user, a, box.thing, box) for a in ("see", "change", "move", "remove"))):
+                raise NotAllowed("見つかりません")          # 何の権利も無い箱のボタンは押せない（あるかどうかも言わない）
         ctx = self.fire(f"user taps {button} on {on}", Ctx(user, this=box))
         if box is not None and box.thing != on:        # thing の名前で書いた rule も動く（QUESTIONS_v0.2 U2）
             c2 = self.fire(f"user taps {button} on {box.thing}", Ctx(user, this=box))

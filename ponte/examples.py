@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from .parser import Node, Spec
-from .runtime import Ctx, Engine
+from .runtime import Ctx, Engine, NotAllowed
 from .values import parse_time, unquote
 
 
@@ -76,7 +76,10 @@ def run_example(spec: Spec, rule: Node, ex: Node) -> Result:
                     return Result(rule.name, c.line, False, f"taps の対象が見つかりません: {m.group(2)} {vals}")
                 when = rule.child("when")               # when の無い rule（relate の then で動くもの）でも押せる
                 on = re.search(r"\bon (\w+)$", when.text) if when is not None else None
-                ctx = eng.tap(me, m.group(1), on.group(1) if on else thing, boxes[0].id)
+                try:
+                    ctx = eng.tap(me, m.group(1), on.group(1) if on else thing, boxes[0].id)
+                except NotAllowed:                      # 見られない箱のボタン → 何も起きない（画面にもボタンが出ない）
+                    pass
             elif k == "gets":
                 m = re.match(r'^(\w+) (.+?) "(.*)"$', t)
                 ctx = eng.gives(m.group(1), m.group(2), m.group(3))

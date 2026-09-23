@@ -413,6 +413,7 @@ document.addEventListener("keydown", e => {          // カードは Enter / Spa
   if (c && e.target === c && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); c.click(); }
 });
 document.addEventListener("submit", async e => {
+  if(!e.target.dataset.input) return;             // 入力以外のフォーム（ログアウト）は、そのまま送る
   e.preventDefault(); const f = e.target, err = f.querySelector("#err");
   const missing = [...f.querySelectorAll("[required]")].filter(i => !i.value);
   if(missing.length){ err.textContent = "必須の項目が空です: " + missing.map(i => i.closest("label").firstChild.firstChild.textContent.trim()).join("、"); missing[0].focus(); return; }

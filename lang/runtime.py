@@ -308,8 +308,9 @@ class Engine:
             items = [b for b in items if self.can(ctx.user, "see", b.thing, b)]
         s = lst.child("sort")
         if s is not None:
-            key = s.text.strip()
-            items.sort(key=lambda b: (self._time_of(b.values.get(key, "")) or datetime.max, str(b.values.get(key))))
+            words = s.text.split()
+            key, desc = words[0], len(words) > 1 and words[1] == "desc"      # sort deadline desc で新しい順
+            items.sort(key=lambda b: (self._time_of(b.values.get(key, "")) or datetime.max, str(b.values.get(key))), reverse=desc)
         return items
 
     def match(self, key: str, value: str) -> str:

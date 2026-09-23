@@ -58,7 +58,7 @@ class App:
             self.part_bodies[name] = Body(p, {}, [in_.text.split()[0]] if in_ else [], {}, single_result=False, lines=lines)
 
     # ------------------------------------------------------------------
-    BUILTIN = {"search": "さがす", "save": "保存", "cancel": "キャンセル", "none": "まだありません"}   # 言語が出す文字（words で訳せる）
+    BUILTIN = {"search": "さがす", "save": "保存", "cancel": "キャンセル", "none": "まだありません", "more": "もっと見る"}   # 言語が出す文字（words で訳せる）
 
     def tr(self, key, env: Env) -> str:
         key = "" if key is None else str(key)
@@ -317,7 +317,8 @@ class App:
             return {**base, "type": "table", "columns": [{"key": c, "label": self.tr(c, env)} for c in cols],
                     "rows": [self.row(b, look, env, name) for b in boxes]}
         rows = [self.row(b, look, env, name) for b in boxes]
-        out = {**base, "type": "items", "rows": rows, "empty": self.empty_text(look, env), "heading": None, "search": None, "groups": None}
+        out = {**base, "type": "items", "rows": rows, "empty": self.empty_text(look, env), "heading": None, "search": None, "groups": None, "take": None,
+               "more": self.tr("more", env)}
         if look is not None:
             h = look.child("heading")
             if h is not None:
@@ -325,6 +326,9 @@ class App:
             sr = look.child("search")
             if sr is not None:
                 out["search"] = {"fields": [x.strip() for x in sr.text.split(",")], "placeholder": self.tr("search", env)}
+            tk = look.child("take")
+            if tk is not None and tk.text.strip().isdigit():
+                out["take"] = int(tk.text.strip())          # 最初に見せる件数。残りは「もっと見る」
             g = look.child("group")
             if g is not None and g.text.startswith("by "):
                 gf = g.text[3:].strip()

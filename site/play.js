@@ -1,6 +1,6 @@
 const $ = id => document.getElementById(id);
 const SAMPLES = JSON.parse($("samples").textContent);
-const src = $("src"), hl = $("hl"), out = $("out"), state = $("state"), testBtn = $("test");
+const src = $("src"), hl = $("hl"), out = $("out"), state = $("state"), testBtn = $("test"), docBtn = $("doc");
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
 const md = s => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>");
 let py = null, timer = null, seq = 0;
@@ -47,6 +47,12 @@ testBtn.addEventListener("click", () => {
     r.results.map(x => `<button type="button" class="finding ${x[2] ? "pass" : "err"}" data-line="${x[1]}"><span class="where">${x[2] ? "通過" : "失敗"} ・ ${esc(x[0])}</span>${x[3] ? `<span class="msg">${esc(x[3])}</span>` : ""}</button>`).join("") +
     (r.holes.length ? `<p class="holes">確かめていない所（${r.holes.length}件）</p>` + r.holes.map(h => `<button type="button" class="finding warn" data-line="${h[0]}"><span class="where">${h[0]}行目</span><span class="msg">${esc(h[1])}</span></button>`).join("") : "");
 });
+docBtn.addEventListener("click", () => {
+  const page = py.globals.get("run_doc")(src.value);
+  if (!page) { out.innerHTML = '<p class="bad">読めないので、決めごとの1枚を作れません。</p>'; return; }
+  const url = URL.createObjectURL(new Blob([page], { type: "text/html" }));
+  window.open(url, "_blank", "noopener");
+});
 paintPlain();
 try {
   const base = new URLSearchParams(location.search).get("pyodide") || "__PYODIDE__";
@@ -55,7 +61,7 @@ try {
   const zip = await (await fetch("ponte.zip")).arrayBuffer();
   py.unpackArchive(zip, "zip");
   py.runPython($("playpy").textContent);
-  testBtn.disabled = false;
+  testBtn.disabled = false; docBtn.disabled = false;
   run();
 } catch (e) {
   state.className = "state bad"; state.textContent = "読み込めませんでした";

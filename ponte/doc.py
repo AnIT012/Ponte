@@ -124,7 +124,8 @@ def build(spec: Spec, title: str | None = None) -> str:
         todo += f"<h3>例で確かめていない所（{len(hole_items)}）</h3>" + (f"<ul>{''.join(hole_items)}</ul>" if hole_items else "<p>ありません。</p>")
     sections.append(("open", "残っていること", todo))
 
-    title = title or words.get("app-name") or spec.path or "Ponte"
+    import os
+    title = title or words.get("app-name") or (os.path.splitext(os.path.basename(spec.path))[0] if spec.path else "Ponte")
     nav = "".join(f'<a href="#{i}">{_e(t)}</a>' for i, t, _ in sections)
     body = "".join(f'<section id="{i}"><h2>{_e(t)}</h2>{inner}</section>' for i, t, inner in sections)
     return f"""<!doctype html>

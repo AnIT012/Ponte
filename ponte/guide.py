@@ -83,11 +83,11 @@ SPEC_END = "<!-- 自動（ここまで） -->"
 
 def spec_block() -> str:
     return f"""{SPEC_BEGIN}
-今ある道具（実装から作った表。例は全部テストで動かしている）:
+現在使える道具の一覧です。この表は実装から生成しており、すべての例をテストで実行しています。
 
 {tools_table()}
 
-shape の部品:
+shape の部品は次のとおりです。
 
 {shape_table()}
 {SPEC_END}"""

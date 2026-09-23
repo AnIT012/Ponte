@@ -119,7 +119,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 </header>
 
 
-<p class="tagline">Ponte は、アプリの決まりを書いて、そのまま動かすためのプログラミング言語です。決まっていないことがあれば、動かす前に教えてくれます。 <a href="spec.html">詳しく ›</a> <a href="play.html">ブラウザで試す ›</a></p>
+<p class="tagline">Ponte は、アプリの仕様を書き、それをそのまま動かすためのプログラミング言語です。決まっていないことがあれば、動かす前にエラーとして示します。 <a href="spec.html">詳しく ›</a> <a href="play.html">ブラウザで試す ›</a></p>
 
 <section class="show sticker" aria-label="書き方の見本">
     <div class="slide">
@@ -132,7 +132,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 
 <span class="head">thing</span> <span class="name">User</span>
   <span class="field">name</span>  <span class="type">text</span></pre>
-      <div class="explain"><h2>データの形を書く</h2><p>thing には、アプリが持つデータの形を書きます。項目の名前と型を並べておけば、保存や読み書きは Ponte が引き受けます。状態は <code>[todo | done]</code> のように、取りうる値を全部書いておきます。</p></div>
+      <div class="explain"><h2>データの形を書く</h2><p>thing には、アプリが持つデータの形を書きます。項目の名前と型を並べておけば、保存や読み書きは Ponte が引き受けます。状態は <code>[todo | done]</code> のように、取りうる値をすべて書いておきます。</p></div>
     </div>
     <div class="slide" hidden>
       <pre class="code"><span class="c"># 状態の流れと、誰が何をできるか</span>
@@ -143,7 +143,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
   user  can see     <span class="name">Task</span>  where owner is me
   user  can change  <span class="name">Task</span>  where owner is me
   user  can see     <span class="name">User</span>  where it is me</pre>
-      <div class="explain"><h2>流れと、誰が何をできるか</h2><p>flow には状態がどう移れるかを、who には誰が何をしてよいかを書きます。who に書いていない操作は誰にもできないので、権限の書き忘れはエラーとして見つかります。</p></div>
+      <div class="explain"><h2>状態の流れと権限</h2><p>flow には状態がどう移れるかを、who には誰が何をしてよいかを書きます。who に書いていない操作は誰にもできません。そのため、権限の書き忘れはエラーとして見つかります。</p></div>
     </div>
     <div class="slide" hidden>
       <pre class="code"><span class="c"># 毎朝8時に、明日までのやることを知らせる</span>
@@ -156,7 +156,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
   <span class="clause">why</span>   明日までのものを忘れない
   <span class="clause">when</span>  every day at <span class="val">8:00</span>
   <span class="clause">do</span>    notify owner each of <span class="name">Soon</span></pre>
-      <div class="explain"><h2>きっかけと、やること</h2><p>rule には、きっかけとやることを一組で書きます。when に書けるのは時刻やボタンのような出来事だけで、「明日まで」のような条件は list の where で絞ります。</p></div>
+      <div class="explain"><h2>きっかけとすること</h2><p>rule には、きっかけとそのときにすることを一組で書きます。when に書けるのは時刻やボタンのような出来事だけで、「明日まで」のような条件は list の where で絞ります。</p></div>
     </div>
     <div class="slide" hidden>
       <pre class="code"><span class="c"># ボタンを押したら終わりにする。例を書くとテストになる</span>
@@ -172,7 +172,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
       <span class="field">title</span>   <span class="val">"牛乳を買う"</span>
     <span class="clause">expect</span>  <span class="name">Task</span> is <span class="val">done</span>
       <span class="field">title</span>   <span class="val">"牛乳を買う"</span></pre>
-      <div class="explain"><h2>例がそのままテストになる</h2><p>rule の下に example を書くと、それがテストになります。<code>ponte test</code> は例が通るかを確かめるだけでなく、まだ例で確かめていないルールや状態の変化も教えてくれます。</p></div>
+      <div class="explain"><h2>例がテストになる</h2><p>rule の下に example を書くと、それがテストになります。<code>ponte test</code> は例が通るかを確かめるだけでなく、まだ例で確かめていないルールや状態の変化も一覧で示します。</p></div>
     </div>
     <div class="slide" hidden>
       <pre class="code"><span class="c"># AIに任せる処理には、例と禁止事項を先に書く</span>
@@ -185,13 +185,13 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
   <span class="guard">never</span>    fail
   <span class="guard">else</span>     ask user
   <span class="clause">by</span>       ai</pre>
-      <div class="explain"><h2>AIに任せる部分には約束を</h2><p>処理の中身をAIに書いてもらうときは、action に入力と答えの例、してはいけないことを先に書きます。AIが書いた中身はこの約束に照らして機械で確かめられ、守れていなければ書き直しになります。</p></div>
+      <div class="explain"><h2>AI に任せる部分には約束を書く</h2><p>処理の中身を AI に書いてもらうときは、action に入力と答えの例、してはいけないことを先に書きます。AI が書いた中身はこの約束に照らして機械で確かめ、守れていなければ書き直させます。</p></div>
     </div>
     <div class="slide" hidden>
       <pre class="code"><span class="c"># まだ決めていないことは tbd に書く。残っているうちは動かない</span>
 <span class="guard">tbd</span>
   締切を過ぎたやることは、一覧に残すか消すか</pre>
-      <div class="explain"><h2>決めていないことは tbd に</h2><p>まだ決めていないことは tbd に書いておけます。tbd が残っているあいだは <code>ponte check</code> が通らないので、決め忘れたまま動き出すことはありません。</p></div>
+      <div class="explain"><h2>決めていないことは tbd に</h2><p>まだ決めていないことは tbd に書いておけます。tbd が残っているあいだは <code>ponte check</code> が通りません。このため、決め忘れたまま動き出すことはありません。</p></div>
     </div>
   <div class="ctrl">
     <button type="button" id="prev" aria-label="前の見本">‹</button>
@@ -202,15 +202,15 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 
 
 <section class="cols">
-  <div class="col sticker"><h3>はじめる</h3><p>入門では、やることアプリをエラーを見ながら少しずつ作っていきます。はじめての方はここからどうぞ。</p><a class="more" href="learn.html">入門を読む ›</a></div>
+  <div class="col sticker"><h3>はじめる</h3><p>入門では、やることアプリをエラーを見ながら少しずつ作ります。はじめての方は、ここから読んでください。</p><a class="more" href="learn.html">入門を読む ›</a></div>
   <div class="col sticker"><h3>入れる</h3><p>Python 3.11 があれば動きます。ほかに入れるものはありません。</p><pre>pip install -e .
 ponte new myapp</pre><a class="more" href="https://github.com/AnIT012/nameless-lang">GitHub から入手 ›</a></div>
-  <div class="col sticker"><h3>ドキュメント</h3><p>書き方の決まりは仕様書にまとまっています。使える道具とエラーの一覧もまとめてあります。</p><a class="more" href="reference.html">道具とエラーを見る ›</a></div>
+  <div class="col sticker"><h3>ドキュメント</h3><p>書き方の決まりは仕様書にまとめています。使える道具とエラーの一覧も用意しています。</p><a class="more" href="reference.html">道具とエラーを見る ›</a></div>
   <div class="col sticker"><h3>試す</h3><p>インストールしなくても、ブラウザの中で書いて確かめられます。書いたものはどこにも送りません。</p><a class="more" href="play.html">試してみる ›</a></div>
 </section>
 
 <footer>
-  <p>Ponte（ポンテ）はイタリア語で「橋」という意味です。人とAIのあいだにかける橋になればと思って名前をつけました。</p>
+  <p>Ponte（ポンテ）はイタリア語で「橋」という意味です。人と AI のあいだにかける橋という意味を込めて名付けました。</p>
   <p>v0.3 ・ Python 3.11 ・ <a href="how.html">しくみ</a></p>
 </footer>
 </div>

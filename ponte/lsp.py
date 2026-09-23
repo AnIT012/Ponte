@@ -20,18 +20,18 @@ from .errors import BY_CODE
 from .parser import ParseError, parse, parse_file
 
 HEADS = {
-    "thing": "データの形。項目の名前と型を並べる",
-    "flow": "状態の流れ（`a -> b`）と、ぶつかった時の勝ち（`a > b`）",
-    "who": "誰が何をできるか。書いていないことは誰にもできない",
+    "thing": "データの形（項目の名前と型の一覧）",
+    "flow": "状態の流れ（`a -> b`）と、競合したときの優先順位（`a > b`）",
+    "who": "誰が何をできるか（書いていない操作は誰にもできない）",
     "list": "条件で絞った一覧（of / where / sort）",
-    "rule": "きっかけ（when）とやること（do）。example で確かめる",
+    "rule": "きっかけ（when）と処理（do）の組み合わせ（example で確認）",
     "relate": "rule 同士の関係（then / then no / before / > / else）",
-    "action": "AIが中身を書く穴。example・never・else の約束つき",
+    "action": "AI の担当部分（example、never、else による約束付き）",
     "match": "値ごとの結果",
     "scene": "画面", "look": "一覧の見せ方", "part": "自分で作る部品", "input": "入力",
     "style": "見た目", "words": "画面の文字（言語ごと）", "shape": "正規表現の代わり",
-    "tbd": "まだ決めていないこと。残っていると動かない", "use": "別のファイルか標準ライブラリを読む",
-    "change": "thing の形を変えた時の移し方", "connect": "外とつながる", "group": "まとまり",
+    "tbd": "まだ決めていないこと（残っていると実行できない）", "use": "別のファイルか標準ライブラリの読み込み",
+    "change": "thing の形を変えたときのデータの移行方法", "connect": "外部サービスとの接続", "group": "まとまり",
 }
 
 
@@ -106,11 +106,11 @@ def hover(text: str, line: int, ch: int) -> str | None:
         c, title, why, fix = BY_CODE[w]
         return f"**{c} {title}**\n\nなぜ止めるか: {why}\n\nどう直すか: {fix}"
     if w in HEADS:
-        return f"**{w}** — {HEADS[w]}"
+        return f"**{w}**: {HEADS[w]}"
     from .body import TOOLS
     for kind, form, meaning, *_ in TOOLS:
         if form.split()[0] == w:
-            return f"`{form}`（{kind}）— {meaning}"
+            return f"`{form}`（{kind}）: {meaning}"
     return None
 
 

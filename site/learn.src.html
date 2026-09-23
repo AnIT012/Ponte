@@ -177,12 +177,12 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 </header>
 
 <div class="doc">
-  <aside class="toc" aria-label="目次"><p class="toc-h">目次</p><ol><li class="d2"><a href="#1-データの形を書く">1. データの形を書く</a></li><li class="d2"><a href="#2-誰が何をできるか">2. 誰が何をできるか</a></li><li class="d2"><a href="#3-ボタンを押したら終わりにする">3. ボタンを押したら終わりにする</a></li><li class="d2"><a href="#4-確かめる-example">4. 確かめる（example）</a></li><li class="d2"><a href="#5-きっかけは出来事だけ">5. きっかけは出来事だけ</a></li><li class="d2"><a href="#6-画面">6. 画面</a></li><li class="d2"><a href="#7-人に使ってもらう">7. 人に使ってもらう</a></li><li class="d2"><a href="#次に読むもの">次に読むもの</a></li></ol></aside>
+  <aside class="toc" aria-label="目次"><p class="toc-h">目次</p><ol><li class="d2"><a href="#1-データの形を書く">1. データの形を書く</a></li><li class="d2"><a href="#2-誰が何をできるかを書く">2. 誰が何をできるかを書く</a></li><li class="d2"><a href="#3-ボタンを押したら終わりにする">3. ボタンを押したら終わりにする</a></li><li class="d2"><a href="#4-確かめる-example">4. 確かめる（example）</a></li><li class="d2"><a href="#5-きっかけには出来事だけを書く">5. きっかけには出来事だけを書く</a></li><li class="d2"><a href="#6-画面を作る">6. 画面を作る</a></li><li class="d2"><a href="#7-人に使ってもらう">7. 人に使ってもらう</a></li><li class="d2"><a href="#次に読むもの">次に読むもの</a></li></ol></aside>
   <article class="prose">
     <p class="eyebrow">LEARN</p>
     <h1>入門 — やることアプリを作る</h1>
-<p class="lead">やることアプリを、エラーを見ながら1歩ずつ作ります。できあがりは <a href="https://github.com/AnIT012/nameless-lang/blob/main/spec/todo.ponte">spec/todo.ponte</a> です。ここに出てくるエラーは、実際に <code>python -m ponte check</code> / <code>test</code> を流したときの出力そのままです。</p>
-<p>用意するものは Python 3.11 だけです。入れる前に試したいときは、ホームページの「試す」でブラウザの中で書いて確かめられます。</p>
+<p class="lead">やることアプリを、エラーを見ながら1歩ずつ作ります。できあがりは <a href="https://github.com/AnIT012/nameless-lang/blob/main/spec/todo.ponte">spec/todo.ponte</a> です。ここに載せたエラーは、<code>python -m ponte check</code> / <code>test</code> を実際に流したときの出力です。</p>
+<p>必要なのは Python 3.11 だけです。インストールする前に試したいときは、ホームページの「試す」を使うと、ブラウザの中で書いて確かめられます。</p>
 <hr>
 <h2 id="1-データの形を書く">1. データの形を書く</h2>
 <pre class="code"><span class="head">thing</span> <span class="name">Task</span>
@@ -196,20 +196,20 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 
 <span class="head">flow</span> <span class="name">Task</span>.<span class="val">status</span>
   <span class="val">todo</span> <span class="op">-&gt;</span> <span class="val">done</span> <span class="op">-&gt;</span> <span class="val">todo</span></pre><p class="try"><a href="play.html#code=dGhpbmcgVGFzawogIHRpdGxlICAgdGV4dAogIGR1ZSAgICAgbW9udGhkYXkKICBvd25lciAgIFVzZXIgIGdvbmVbcmVtb3ZlIHRvb10KICBzdGF0dXMgIFt0b2RvIHwgZG9uZV0KCnRoaW5nIFVzZXIKICBuYW1lIHRleHQKCmZsb3cgVGFzay5zdGF0dXMKICB0b2RvIC0-IGRvbmUgLT4gdG9kbw">このコードを試す ›</a></p>
-<ul><li><code>thing</code> はデータの形です。<code>status [todo | done]</code> は「この2つのどれか」という状態です。</li><li><code>owner User</code> は別の thing（User）を指す項目です。<code>gone[remove too]</code> は「User が消えたら、この Task も消す」という意味です。</li><li><code>flow</code> は状態の流れです。矢印のとおりにしか動きません。</li></ul>
+<ul><li><code>thing</code> はデータの形です。<code>status [todo | done]</code> は「この2つのどれか」という状態です。</li><li><code>owner User</code> は、別の thing である User を指す項目です。<code>gone[remove too]</code> は「User が消えたら、この Task も消す」という意味です。</li><li><code>flow</code> は状態の流れです。状態は矢印のとおりにしか移りません。</li></ul>
 <p>チェックしてみます。</p>
 <pre class="term"><span class="prompt">$</span> python -m ponte check todo.ponte
 渡せません（2件）
   todo.ponte:1  <span class="ecode">E19</span>  thing Task: 誰が何をできるか（who）が1行もありません。書いてないことは誰もできません
   todo.ponte:7  <span class="ecode">E19</span>  thing User: 誰が何をできるか（who）が1行もありません。書いてないことは誰もできません
   （直し方: ponte explain <span class="ecode">E19</span>）</pre>
-<p><strong>書いていないことは、誰にもできません。</strong> なので「誰が何をできるか」を決めないと先へ進めません。</p>
-<h2 id="2-誰が何をできるか">2. 誰が何をできるか</h2>
+<p><strong>書いていないことは、誰にもできません。</strong> そのため「誰が何をできるか」を決めないと、先へ進めません。</p>
+<h2 id="2-誰が何をできるかを書く">2. 誰が何をできるかを書く</h2>
 <pre class="code"><span class="head">who</span>
   user  can see     <span class="name">Task</span> where owner is me
   user  can change  <span class="name">Task</span> where owner is me
   user  can see     <span class="name">User</span> where it is me</pre><p class="try"><a href="play.html#code=d2hvCiAgdXNlciAgY2FuIHNlZSAgICAgVGFzayB3aGVyZSBvd25lciBpcyBtZQogIHVzZXIgIGNhbiBjaGFuZ2UgIFRhc2sgd2hlcmUgb3duZXIgaXMgbWUKICB1c2VyICBjYW4gc2VlICAgICBVc2VyIHdoZXJlIGl0IGlzIG1l">このコードを試す ›</a></p>
-<p>自分のやることだけが見えて、自分のものだけを変えられます（消せるようにするなら <code>user can remove Task where owner is me</code> も足します）。</p>
+<p>これで、自分のやることだけが見え、自分のものだけを変えられます。消せるようにするなら <code>user can remove Task where owner is me</code> も足します。</p>
 <h2 id="3-ボタンを押したら終わりにする">3. ボタンを押したら終わりにする</h2>
 <pre class="code"><span class="head">rule</span> <span class="name">Finish</span>
   <span class="clause">when</span>  user taps done-button on <span class="name">Task</span>
@@ -218,18 +218,18 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 渡せません（1件）
   todo.ponte:20  <span class="ecode">E32</span>  rule Finish: Task に「finished」という状態はありません（todo / done）
   （直し方: ponte explain <span class="ecode">E32</span>）</pre>
-<p>打ち間違いは、動かす前に止まります。<code>done</code> に直すと通ります。エラーの意味が分からないときは <code>python -m ponte explain E32</code> で、なぜ止めたのかと直し方が出ます。</p>
+<p>打ち間違いは、動かす前にエラーになります。<code>done</code> に直すと通ります。エラーの意味がわからないときは、<code>python -m ponte explain E32</code> を実行すると、止めた理由と直し方が表示されます。</p>
 <pre class="term"><span class="prompt">$</span> python -m ponte check todo.ponte
 決めてないことなし。AIに渡せます</pre>
 <h2 id="4-確かめる-example">4. 確かめる（example）</h2>
-<p>check が通っても、<strong>本当にそう動くか</strong>はまだ確かめていません。test を流すと、確かめていないところ（穴）が出ます。</p>
+<p>check が通っても、<strong>本当にそう動くか</strong>はまだ確かめていません。test を流すと、確かめていない部分（穴）が表示されます。</p>
 <pre class="term"><span class="prompt">$</span> python -m ponte test todo.ponte
 example 0件中 0件通過
 穴（example で確かめていない所 3件）
   todo.ponte:18  rule Finish: when があるのに example がありません
   todo.ponte:10  flow Task.status: todo -&gt; done をどの example も通っていません
   todo.ponte:10  flow Task.status: done -&gt; todo をどの example も通っていません</pre>
-<p>example を書きます。「前の状態 → 出来事 → こうなるはず」の順です。</p>
+<p>example を書きます。「前の状態」「出来事」「期待する結果」の順に書きます。</p>
 <pre class="code"><span class="head">rule</span> <span class="name">Finish</span>
   <span class="clause">why</span>   終わったら消えてほしい
   <span class="clause">when</span>  user taps done-button on <span class="name">Task</span>
@@ -243,10 +243,10 @@ example 0件中 0件通過
       <span class="field">title</span> <span class="val">"牛乳を買う"</span>
     <span class="clause">expect</span> <span class="name">Task</span> is <span class="val">done</span>
       <span class="field">title</span> <span class="val">"牛乳を買う"</span></pre><p class="try"><a href="play.html#code=cnVsZSBGaW5pc2gKICB3aHkgICDntYLjgo_jgaPjgZ_jgonmtojjgYjjgabjgbvjgZfjgYQKICB3aGVuICB1c2VyIHRhcHMgZG9uZS1idXR0b24gb24gVGFzawogIHdoZXJlIHN0YXR1cyBpcyB0b2RvCiAgZG8gICAgbW92ZSB0aGlzIHRvIGRvbmUKICBleGFtcGxlCiAgICBnaXZlbiBUYXNrCiAgICAgIHRpdGxlICAi54mb5Lmz44KS6LK344GGIgogICAgICBzdGF0dXMgdG9kbwogICAgdGFwcyBkb25lLWJ1dHRvbiBvbiBUYXNrCiAgICAgIHRpdGxlICLniZvkubPjgpLosrfjgYYiCiAgICBleHBlY3QgVGFzayBpcyBkb25lCiAgICAgIHRpdGxlICLniZvkubPjgpLosrfjgYYi">このコードを試す ›</a></p>
-<p><code>where status is todo</code> は「まだのときだけ」という意味です。合わないとき、この rule は静かに起きません（ボタンも押せなくなります）。</p>
-<p><code>done -&gt; todo</code> の穴は、「戻す」ボタンの rule（Reopen）と、その example で埋まります。できあがりのファイルで確かめてみてください。</p>
-<h2 id="5-きっかけは出来事だけ">5. きっかけは出来事だけ</h2>
-<p>「期限が明日なら知らせる」をこう書くと、止まります。</p>
+<p><code>where status is todo</code> は「まだのときだけ」という意味です。条件に合わないとき、この rule は何もせずに終わり、ボタンも押せなくなります。</p>
+<p><code>done -&gt; todo</code> の穴は、「戻す」ボタンの rule（Reopen）とその example で埋まります。できあがりのファイルで確かめてください。</p>
+<h2 id="5-きっかけには出来事だけを書く">5. きっかけには出来事だけを書く</h2>
+<p>「期限が明日なら知らせる」を次のように書くと、エラーになります。</p>
 <pre class="code"><span class="head">rule</span> <span class="name">Remind</span>
   <span class="clause">when</span>  due within <span class="val">1 days</span>
   <span class="clause">do</span>    notify owner <span class="val">"{title} の期限です"</span></pre><p class="try"><a href="play.html#code=cnVsZSBSZW1pbmQKICB3aGVuICBkdWUgd2l0aGluIDEgZGF5cwogIGRvICAgIG5vdGlmeSBvd25lciAie3RpdGxlfSDjga7mnJ_pmZDjgafjgZki">このコードを試す ›</a></p>
@@ -254,7 +254,7 @@ example 0件中 0件通過
 渡せません（1件）
   todo.ponte:23  <span class="ecode">E07</span>  rule Remind: when は出来事だけです。「due within 1 days」は状態なので where に書いてください
   （直し方: ponte explain <span class="ecode">E07</span>）</pre>
-<p>「期限が近い」は<strong>状態</strong>なので、いつ起きるかが決まっていません。きっかけ（出来事）は「毎朝8時」にして、状態は一覧（list）で絞ります。</p>
+<p>「期限が近い」は<strong>状態</strong>であり、いつ起きるかが決まっていません。そこで、きっかけ（出来事）は「毎朝8時」にし、状態は一覧（list）で絞ります。</p>
 <pre class="code"><span class="head">list</span> <span class="name">Soon</span>
   <span class="clause">of</span>     <span class="name">Task</span>
   <span class="clause">where</span>  <span class="val">status</span> is <span class="val">todo</span>
@@ -265,7 +265,7 @@ example 0件中 0件通過
   <span class="clause">when</span>  every day at <span class="val">8:00</span>
   <span class="clause">do</span>    notify owner each of <span class="name">Soon</span></pre><p class="try"><a href="play.html#code=bGlzdCBTb29uCiAgb2YgICAgIFRhc2sKICB3aGVyZSAgc3RhdHVzIGlzIHRvZG8KICB3aGVyZSAgZHVlIHdpdGhpbiAxIGRheXMKCnJ1bGUgUmVtaW5kCiAgd2h5ICAg5piO5pel44G-44Gn44Gu44KC44Gu44KS5b-Y44KM44Gq44GECiAgd2hlbiAgZXZlcnkgZGF5IGF0IDg6MDAKICBkbyAgICBub3RpZnkgb3duZXIgZWFjaCBvZiBTb29u">このコードを試す ›</a></p>
 <p><code>notify owner each of Soon</code> は「Soon のそれぞれを、その Task の owner に知らせる」という意味です。</p>
-<h2 id="6-画面">6. 画面</h2>
+<h2 id="6-画面を作る">6. 画面を作る</h2>
 <pre class="code"><span class="head">scene</span> <span class="name">Home</span>
   tab<span class="op">[</span><span class="val">todo</span> <span class="op">|</span> <span class="val">done</span><span class="op">]</span> = <span class="val">todo</span>
   <span class="clause">top</span>     <span class="name">Header</span>
@@ -285,27 +285,27 @@ example 0件中 0件通過
   <span class="clause">sub</span>     due
   <span class="clause">button</span>  done-button  named finish  icon check  tone good
   <span class="clause">empty</span>   todo-empty</pre><p class="try"><a href="play.html#code=c2NlbmUgSG9tZQogIHRhYlt0b2RvIHwgZG9uZV0gPSB0b2RvCiAgdG9wICAgICBIZWFkZXIKICB0b3AgICAgIHRhYnMgdGFiCiAgbWFpbiAgICBzdGF0cyBUb2RvLCBEb25lCiAgbWFpbiAgICBtYXRjaCB0YWIKICAgIHRvZG8gLT4gVG9kbyBhcyBsaXN0CiAgICBkb25lIC0-IERvbmUgYXMgbGlzdAogIGJvdHRvbSAgYnV0dG9uIGFkZCBuYW1lZCBhZGQtdGFzayBpY29uIHBsdXMKCmlucHV0IEFkZFRhc2sKICB0aXRsZSAgcmVxdWlyZWQKICBkdWUgICAgZnJvbSBub3cKCmxvb2sgVG9kbyBhcyBsaXN0CiAgdGl0bGUgICB0aXRsZQogIHN1YiAgICAgZHVlCiAgYnV0dG9uICBkb25lLWJ1dHRvbiAgbmFtZWQgZmluaXNoICBpY29uIGNoZWNrICB0b25lIGdvb2QKICBlbXB0eSAgIHRvZG8tZW1wdHk">このコードを試す ›</a></p>
-<ul><li><code>scene</code> は画面、<code>look</code> は一覧の見せ方、<code>input</code> は入力です。</li><li>画面に出る文字は <code>words ja</code> / <code>words en</code> に書きます（書き忘れもエラーになります）。日本語だけのアプリなら words は書かずに、<code>named &quot;終わった&quot;</code> のように直接書いてもかまいません。</li></ul>
+<ul><li><code>scene</code> は画面、<code>look</code> は一覧の見せ方、<code>input</code> は入力です。</li><li>画面に出る文字は <code>words ja</code> / <code>words en</code> に書きます。書き忘れもエラーになります。日本語だけのアプリなら、words を書かずに <code>named &quot;終わった&quot;</code> のように直接書いてもかまいません。</li></ul>
 <p>動かしてみます。</p>
 <pre class="term"><span class="prompt">$</span> python -m ponte run todo.ponte
 動いています: http://127.0.0.1:8000/</pre>
 <p><img src="{{IMG:todo}}" alt="やること" loading="lazy"></p>
 <h2 id="7-人に使ってもらう">7. 人に使ってもらう</h2>
-<p>公開する前に、3つ確かめます。</p>
+<p>公開する前に、次の3つを確かめます。</p>
 <pre class="term"><span class="prompt">$</span> python -m ponte check todo.ponte --publish    # 公開する時の検査（読み上げ対応も）
 <span class="prompt">$</span> python -m ponte test todo.ponte --strict      # 穴が1つでもあれば失敗
 <span class="prompt">$</span> python -m ponte build todo.ponte              # 1つのファイルに → python todo.pyz</pre>
-<p>決めたことを、コードを読まない人に見てもらうこともできます。データ・流れ・誰が何をできるか・きまりとその理由・残っていることを、1枚のページにまとめます。</p>
+<p>仕様を、コードを読まない人に見てもらうこともできます。<code>ponte doc</code> は、データ、流れ、権限、ルールとその理由、残っていることを1枚のページにまとめます。</p>
 <pre class="term"><span class="prompt">$</span> python -m ponte doc todo.ponte                # → todo.html</pre>
-<p>ほかの人にも使ってもらうときは、ログインを付けて動かします。<code>--login</code> を付けないまま外に開こうとすると、Ponte が止めます。</p>
+<p>ほかの人にも使ってもらうときは、ログインを付けて動かします。<code>--login</code> を付けずに外に開こうとすると、Ponte はエラーを出して起動しません。</p>
 <pre class="term"><span class="prompt">$</span> python -m ponte user add todo.ponte taro      # 合言葉を聞かれます
 <span class="prompt">$</span> python -m ponte run todo.ponte --login --host 0.0.0.0</pre>
 <hr>
 <h2 id="次に読むもの">次に読むもの</h2>
-<ul><li><strong>AIに中身を書かせる</strong>（action）: 仕様書 5章の action と、<a href="https://github.com/AnIT012/nameless-lang/blob/main/spec/hub_app.ponte">spec/hub_app.ponte</a> の ExtractDeadline</li><li><strong>標準ライブラリ</strong>: <a href="https://github.com/AnIT012/nameless-lang/blob/main/spec/kakeibo.ponte">spec/kakeibo.ponte</a>（<code>use std/money</code> で金額を拾います）</li><li><strong>役割と2つの thing</strong>: <a href="https://github.com/AnIT012/nameless-lang/blob/main/spec/lend.ponte">spec/lend.ponte</a></li><li><strong>全部</strong>: <a href="spec.html">仕様書 v0.3</a></li><li><strong>書き方の一覧</strong>: <code>python -m ponte guide --rules</code>（rule）/ <code>python -m ponte guide</code>（action の中身）</li></ul>
+<ul><li>AI に中身を書かせる（action）: 仕様書 5章の action と、<a href="https://github.com/AnIT012/nameless-lang/blob/main/spec/hub_app.ponte">spec/hub_app.ponte</a> の ExtractDeadline</li><li>標準ライブラリ: <a href="https://github.com/AnIT012/nameless-lang/blob/main/spec/kakeibo.ponte">spec/kakeibo.ponte</a>（<code>use std/money</code> で金額を拾います）</li><li>役割と2つの thing: <a href="https://github.com/AnIT012/nameless-lang/blob/main/spec/lend.ponte">spec/lend.ponte</a></li><li>言語のすべて: <a href="spec.html">仕様書 v0.3</a></li><li>書き方の一覧: <code>python -m ponte guide --rules</code>（rule）/ <code>python -m ponte guide</code>（action の中身）</li></ul>
   </article>
 </div>
-<footer><p>この入門の出力は、実際にコマンドを流したものです（テストで確かめています）。</p></footer>
+<footer><p>この入門に載せた出力は、実際にコマンドを流した結果です。テストで一致を確かめています。</p></footer>
 </div>
 <script>
 (() => {   // 目次の、いま読んでいる所に印を付ける

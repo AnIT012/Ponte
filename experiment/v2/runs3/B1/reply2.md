@@ -14,10 +14,8 @@ shape Deadline
   month     digits 1..2
   "/"
   day       digits 1..2
+  maybe     "(" any 1 ")"
   maybe     space
-  maybe     "("
-  maybe     any 1
-  maybe     ")"
   hour      digits 1..2
   ":"
   minute    digits 1..2

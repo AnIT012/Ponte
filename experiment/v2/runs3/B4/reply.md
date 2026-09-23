@@ -8,14 +8,14 @@ do
                               else -> many
   result = match kind
              one -> found monthday of first of hits
-             none -> missing
-             many -> missing
+             else -> missing
 
 shape Deadline
   month digits 1..2
   "/"
   day digits 1..2
-  maybe "(" any 1..2 ")"
+  maybe space
+  maybe any 1..5
   maybe space
   hour digits 1..2
   ":"

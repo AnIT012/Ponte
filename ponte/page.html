@@ -24,6 +24,8 @@ button{font:inherit;color:inherit}
 
 /* 骨組み */
 .top{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:saturate(1.4) blur(12px);border-bottom:1px solid var(--line)}
+.acct{max-width:1180px;margin:0 auto;padding:6px 20px 0;text-align:right;font-size:12px;color:var(--muted)}
+.acct a{color:inherit}
 .top-in{max-width:1180px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 .app{max-width:1180px;margin:0 auto;padding:20px 20px 96px;display:grid;gap:20px;grid-template-columns:1fr;grid-template-areas:"main" "side"}
 @media (min-width:960px){.app.has-side{grid-template-columns:minmax(0,1fr) 340px;grid-template-areas:"main side"}}
@@ -174,7 +176,7 @@ main#root{animation:fade .18s both}
 .empty .btn{margin-top:6px}.btn.more{margin:12px auto 0;display:flex}
 /*__CSS__*/
 </style></head><body>
-<header class="top"><div class="top-in" id="top"></div></header>
+<header class="top"><!--__ACCOUNT__--><div class="top-in" id="top"></div></header>
 <main id="root"><div class="app"><section class="slot-main"><div class="sk"></div><div class="sk"></div></section></div></main>
 <div class="bottom"><div class="bottom-in" id="bottom"></div></div>
 <div id="over"></div>

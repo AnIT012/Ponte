@@ -97,3 +97,11 @@ def test_user_command(tmp_path, monkeypatch, capsys):
     assert main(["user", "add", str(spec), "taro"]) == 0
     assert Users(str(spec) + ".users.json").verify("taro", "twelve-chars")
     assert main(["user", "remove", str(spec), "taro"]) == 0
+
+
+def test_page_shows_who_is_logged_in(site):
+    port, _ = site
+    _, h, _ = login(port, "taro", "correct-horse")
+    cookie = h["set-cookie"].split(";")[0]
+    st, _, body = req(port, "GET", "/", headers={"cookie": cookie})
+    assert st == 200 and 'taro ・ <a href="/logout">' in body

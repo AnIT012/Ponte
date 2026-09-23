@@ -1,8 +1,8 @@
 """rule の example を実行エンジンで流す（仕様 v0.2 9章）。
 
   given   箱の名前（下に「項目 値」を1行1つ）  … 前の状態（出来事は起こさない）
-  at "..." / says "..." / taps X on 箱(...) / gets Conn 出来事 "..."   … 出来事
-  expect notify "..." / expect 箱の名前 is 状態（下に中身）/ expect scene X / expect 画面 shows N cards / expect no 箱 / expect 2 箱 / expect nothing
+  at "..." / says "..." / taps X on 箱(...) / gets Conn 出来事 "..." / adds 箱（下に中身）   … 出来事
+  expect notify "..." / expect 箱の名前 is 状態（下に中身）/ expect scene X / expect 画面 shows N cards / expect no 箱 / expect 2 箱 / expect 箱（下に中身）/ expect nothing
 """
 from __future__ import annotations
 
@@ -55,6 +55,9 @@ def run_example(spec: Spec, rule: Node, ex: Node) -> Result:
                     ctx = Ctx(me)
                 else:
                     eng.create(thing, vals, me, fire=False, check=False)
+            elif k == "adds":                       # 人が作った（出来事も起きる）: adds Expense の下に中身
+                thing, vals = record(c, t.split()[0])
+                eng.create(thing, _refs(eng, thing, vals), me)
             elif k == "at":
                 eng.run_rule(rule, Ctx(None))
             elif k == "says":
@@ -126,6 +129,11 @@ def _expect(eng: Engine, t: str, ctx: Ctx, node: Node | None = None) -> str | No
         v = app.view(m.group(1), me, {}, None, None, "ja")
         rows = sum(len(b.get("rows", [])) for s in v["slots"] for b in s["blocks"])
         return None if rows == int(m.group(2)) else f"{m.group(1)} に {m.group(2)} 件のはずが {rows} 件"
+    if re.fullmatch(r"[A-Z]\w*", t) and t in eng.fields:      # expect Expense の下に中身 → その中身の箱がある
+        thing, vals = record(node, t) if node is not None else (t, {})
+        if eng.find(thing, _refs(eng, thing, vals)):
+            return None
+        return f"{thing} {vals} が見つかりません（あるのは {[b.values for b in eng.all(thing)][:3]}）"
     m = re.match(r"^(no|\d+) ([A-Z]\w*)$", t)
     if m and m.group(2) in eng.fields:                # expect no Loan / expect 2 Loan
         want = 0 if m.group(1) == "no" else int(m.group(1))

@@ -28,6 +28,10 @@ class RuleError(Exception):
     """rule がやり遂げられなかった（relate の else に進む）"""
 
 
+class NoResult(Exception):
+    """result を使う rule の前で、action が答えを出さなかった"""
+
+
 class NotAllowed(RuleError):
     """who で許されていない"""
 
@@ -542,6 +546,8 @@ class Engine:
         try:
             for d in rule.children_of("do"):
                 self._do(rule, d.text.strip(), ctx, d)
+        except NoResult:            # 前の action が答えを出さなかった（skip など）→ この rule は静かに起きない
+            return
         except RuleError as e:
             fallbacks = [b for a, rel, b, _ in self.relates if rel == "else" and a == rule.name]
             if not fallbacks:
@@ -611,6 +617,11 @@ class Engine:
             return f"{t.year}/{t.month}/{t.day} {t.hour}:{t.minute:02d}"   # 年まで書く（推測しない）
         if e.startswith("{") and e.endswith("}"):
             return str(ctx.vars.get(e[1:-1], ""))
+        if e == "result":                              # 直前の action の答え（relate の then で次の rule へ渡る）
+            r = ctx.vars.get("__result")
+            if r is None:
+                raise NoResult()
+            return str(getattr(r, "value", None) if getattr(r, "value", None) is not None else r)
         return unquote(e)
 
     def _do(self, rule: Node, text: str, ctx: Ctx, node: Node | None = None):
@@ -650,6 +661,19 @@ class Engine:
             if ctx.this is None:
                 raise RuleError("this（押された1件）がありません")
             self.remove(ctx.this, ctx.user)
+            return
+        m = re.match(r"^set (\w+) to (.+)$", text)
+        if m:
+            if ctx.this is None:
+                raise RuleError("this（押された1件）がありません")
+            self.update(ctx.this, {m.group(1): self.value_of(m.group(2), ctx)}, ctx.user)
+            return
+        m = re.match(r"^(\w+) with (\w+)$", text)
+        if m and m.group(1) in self.actions:           # action の入力を、this の項目から
+            if ctx.this is None:
+                raise RuleError("this（押された1件）がありません")
+            c2 = Ctx(ctx.user, ctx.this, ctx.vars, payload=str(ctx.this.values.get(m.group(2), "")))
+            ctx.vars["__result"] = self.run_action(m.group(1), c2)
             return
         m = re.match(r"^go (\w+)(?: with this)?$", text)
         if m:

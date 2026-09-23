@@ -82,6 +82,20 @@ def _elements(tokens: list[str], line: int) -> str:
         elif t == "space":
             out += r"\s+"
             i += 1
+        elif t == "word" and i + 2 < len(tokens) and tokens[i + 1] == "with" and tokens[i + 2].startswith('"'):
+            extra = re.escape(tokens[i + 2][1:-1]).replace("]", "\\]")     # word with "._-" 1..64 … 英数字（ASCII）と、書いた記号
+            try:
+                out += f"[A-Za-z0-9_{extra}]" + _range(tokens[i + 3])
+            except (IndexError, ValueError):
+                raise BodyError(line, "shape: word with \"記号\" の後ろに数か範囲（1..64）が要ります")
+            i += 4
+        elif re.fullmatch(r"[a-z_]\w*", t) and i + 3 < len(tokens) and tokens[i + 1] == "word" and tokens[i + 2] == "with":
+            extra = re.escape(tokens[i + 3][1:-1]).replace("]", "\\]")
+            try:
+                out += f"(?P<{t}>[A-Za-z0-9_{extra}]{_range(tokens[i + 4])})"
+            except (IndexError, ValueError):
+                raise BodyError(line, f"shape: {t} word with \"記号\" の後ろに数か範囲（1..64）が要ります")
+            i += 5
         elif t in classes:
             try:
                 out += classes[t] + _range(tokens[i + 1])
@@ -96,7 +110,7 @@ def _elements(tokens: list[str], line: int) -> str:
                 raise BodyError(line, f"shape: {name} {cls} の後ろに数か範囲（1..2）が要ります")
             i += 3
         else:
-            raise BodyError(line, f"shape の書き方が分かりません: '{t}'（使えるのは \"文字\" / space / digits / letters / any / word / maybe）")
+            raise BodyError(line, f"shape の書き方が分かりません: '{t}'（使えるのは \"文字\" / space / digits / letters / any / word / word with \"記号\" / maybe）")
     return out
 
 
@@ -156,6 +170,10 @@ class Body:
             if declared:     # `answer[found monthday | missing]` のように out の形で書いたら、状態の名前（found / missing）として読む
                 declared = [d.split()[0] if d.split()[0] in out_states else d for d in declared]
             self.steps[name] = Step(name, m.group(3).strip(), c, declared)
+        for st in self.steps.values():             # 状態の名前と行の名前が同じだと、どちらか分からない
+            for x in st.states or []:
+                if x in self.steps or x in inputs:
+                    raise BodyError(st.node.line, f"状態の名前「{x}」が、行の名前と同じです。どちらかの名前を変えてください")
         if not self.steps and single_result:
             raise BodyError(do.line, "do が空です")
         self.result = None
@@ -250,6 +268,16 @@ class Body:
                 return self._get(e, memo, path)
             except KeyError:
                 raise BodyError(line, f"「{e}」がどこにもありません")
+        # 足し算・引き算は一番弱くつなぐ（`count of a + count of b` は (count of a) + (count of b)）。左から順に
+        parts = re.split(r' (\+|-) (?=(?:[^"]*"[^"]*")*[^"]*$)', e)
+        if len(parts) > 1:
+            total = ev(parts[0])
+            for op, x in zip(parts[1::2], parts[2::2]):
+                v = ev(x)
+                if not isinstance(total, (int, float)) or not isinstance(v, (int, float)):
+                    raise BodyError(line, f"{op} は数どうしだけです: '{e}'")
+                total = total + v if op == "+" else total - v
+            return total
         # 道具
         m = re.fullmatch(r"find all (\w+) in (.+)", e)
         if m:
@@ -285,6 +313,13 @@ class Body:
             h, mi = v.get("hour"), v.get("minute")
             s = f"{int(v['month'])}/{int(v['day'])}"
             return s + (f" {int(h)}:{mi}" if h is not None and mi is not None else "")
+        m = re.fullmatch(r"(\w+) of (.+)", e)          # shape で名前を付けた部分・当たった文字（text of X）
+        if m:
+            v = ev(m.group(2))
+            if isinstance(v, dict):
+                if m.group(1) not in v or v[m.group(1)] is None:
+                    raise BodyError(line, f"{m.group(1)} of: この当たりに {m.group(1)} はありません（あるのは {', '.join(k for k in v if v[k] is not None)}）")
+                return v[m.group(1)]
         m = re.fullmatch(r"(normalize|trim|lower|upper) (.+)", e)
         if m:
             v = str(ev(m.group(2)))
@@ -299,10 +334,6 @@ class Body:
         m = re.fullmatch(r'replace "([^"]*)" with "([^"]*)" in (.+)', e)
         if m:
             return str(ev(m.group(3))).replace(m.group(1), m.group(2))
-        m = re.fullmatch(r"(\w+) (\+|-) (\w+)", e)
-        if m:
-            a, b = ev(m.group(1)), ev(m.group(3))
-            return a + b if m.group(2) == "+" else a - b
         raise BodyError(line, f"式が分かりません: '{e}'" + (habit_hint(e) or TOOLS_HINT))
 
 

@@ -366,7 +366,7 @@ def check_nesting(spec: Spec, opt: Options) -> list[Finding]:
                         out.append(Finding("E12", c.children[0].line, "入れ子: create の中身の下に、さらに行は書けません"))
             elif leaf:
                 out.append(Finding("E12", n.children[0].line, f"入れ子: `{n.keyword}` の下にさらに行は書けません: '{n.children[0].raw}'"))
-        if n.keyword in ("given", "taps", "expect") and not n.is_decl:
+        if n.keyword in ("given", "taps", "expect", "adds") and not n.is_decl:
             if re.search(r"\w\(", n.text):
                 out.append(Finding("E12", n.line, f"example の箱の中身は、カッコではなく字下げして1行1つで書きます（`{n.keyword} {n.text.split('(')[0].strip()}` の下に `項目 値`）"))
             for c in n.children:
@@ -727,6 +727,10 @@ def ui_texts(spec: Spec) -> list[tuple[str, int]]:
                 t = re.findall(r'"[^"]*"|\S+', c.text)
                 if t:
                     out.append((t[0].strip('"'), c.line))
+            st = re.search(r"(?:^|\s)stats\s+(.+)$", c.raw)
+            if st:                                 # stats の見出し（一覧の名前・合計する項目）
+                for x in st.group(1).split(","):
+                    out += [(w, c.line) for w in re.findall(r"\w+", x) if w not in ("sum", "of")]
             if c.keyword == "show" and c.text.startswith("text "):
                 out.append((c.text[5:].strip().strip('"'), c.line))
             if d.keyword == "part" and "->" in c.raw:
@@ -813,6 +817,14 @@ def check_undefined(spec: Spec, opt: Options) -> list[Finding]:
         if not text or text == "nothing" or text.startswith(("button ", "match ")):
             return
         if text.startswith("tabs "):
+            return
+        if text.startswith("stats "):
+            for x in text[6:].split(","):
+                m = re.fullmatch(r"(?:sum \w+ of )?(\w+)", x.strip())
+                if not m:
+                    out.append(Finding("E28", line, f"{where}: stats の書き方が分かりません: '{x.strip()}'（一覧の名前 / sum 項目 of 一覧）"))
+                else:
+                    need(m.group(1), lists, line, where)
             return
         m = re.match(r"^(\w+) as \w+$", text)
         if m:
@@ -958,9 +970,9 @@ def check_roles(spec: Spec, opt: Options) -> list[Finding]:
 DO_FORMS = [
     r'notify \w+ each of \w+', r'notify \w+ ".*"',
     r'move this to \w+', r'move \w+ of this to \w+', r'move \w+ where .+ to \w+',
-    r'remove this', r'go \w+( with this)?', r'create \w+',
+    r'remove this', r'go \w+( with this)?', r'create \w+', r'set \w+ to .+',
 ]
-_VALUE = re.compile(r'^(this|me|\w+ of this|".*"|\{\w+\}|\d+ (minutes?|hours?|days?|weeks?) from now|[\w/:. -]+)$')
+_VALUE = re.compile(r'^(result|this|me|\w+ of this|".*"|\{\w+\}|\d+ (minutes?|hours?|days?|weeks?) from now|[\w/:. -]+)$')
 
 
 def check_do_form(spec: Spec, opt: Options) -> list[Finding]:
@@ -970,13 +982,17 @@ def check_do_form(spec: Spec, opt: Options) -> list[Finding]:
     for r in rules(spec).values():
         for d in r.children_of("do"):
             t = d.text.strip()
-            if t in actions(spec) or any(re.fullmatch(f, t) for f in DO_FORMS):
+            aw = re.fullmatch(r"(\w+) with (\w+)", t)
+            if t in actions(spec) or (aw and aw.group(1) in actions(spec)) or any(re.fullmatch(f, t) for f in DO_FORMS):
                 pass
             elif t.split() and (t.split()[0], " ".join(t.split()[1:3])) in verbs:
                 pass
             else:
-                out.append(Finding("E31", d.line, f"rule {r.name}: do の書き方が分かりません: '{t}'（使えるのは notify / move / remove this / go / create / action の名前 / connect の does）"))
+                out.append(Finding("E31", d.line, f"rule {r.name}: do の書き方が分かりません: '{t}'（使えるのは notify / move / remove this / go / create / set 項目 to 値 / action の名前 [with 項目] / connect の does）"))
                 continue
+            sm = re.fullmatch(r"set \w+ to (.+)", t)
+            if sm and not _VALUE.match(sm.group(1).strip()):
+                out.append(Finding("E31", d.line, f"rule {r.name}: set の値の書き方が分かりません: '{sm.group(1)}'（result / this / me / \"文字\" / 7 days from now / {{名前}} / 項目 of this）"))
             m = re.fullmatch(r"create (\w+)", t)
             if m:
                 if m.group(1) not in ths:

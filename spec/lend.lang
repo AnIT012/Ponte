@@ -243,6 +243,7 @@ scene Home
   tab[items | mine | members] = items
   top     Header
   top     tabs tab
+  main    stats FreeItems, MyLoans, Late
   main    match tab
     items   -> Items as cards
     mine    -> MyLoans as list
@@ -338,6 +339,8 @@ words ja
   make-admin-confirm  この人を管理者にしますか？
   step-down           メンバーに戻す
   Members             メンバー
+  FreeItems           空いてる備品
+  Late                返却日すぎ
   AddItem             備品を足す
   Items               備品
   MyLoans             借りてる物
@@ -375,6 +378,8 @@ words en
   make-admin-confirm  Make this person an admin?
   step-down           Make member
   Members             Members
+  FreeItems           Available
+  Late                Overdue
   AddItem             Add item
   Items               Items
   MyLoans             My loans

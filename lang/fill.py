@@ -110,8 +110,31 @@ def action_source(spec: Spec, action: Node) -> str:
     return "\n".join(kept).rstrip() + "\n"
 
 
+def normalize_reply(code: str) -> str:
+    """返事の形のゆれを揃える。契約（action の行）まで書き写して、do と shape を字下げの中に入れてきた返事も読めるようにする。
+    中身は変えない。行頭に do / shape を出して、字下げを戻すだけ。"""
+    lines = code.splitlines()
+    if not any(l.startswith("action ") for l in lines):
+        return code
+    out, i = [], 0
+    while i < len(lines):
+        l = lines[i]
+        head = l.strip()
+        ind = len(l) - len(l.lstrip())
+        if head == "do" or head.startswith("shape "):
+            out.append(head)
+            i += 1
+            while i < len(lines) and (not lines[i].strip() or len(lines[i]) - len(lines[i].lstrip()) > ind):
+                out.append(lines[i][ind:] if lines[i].strip() else "")
+                i += 1
+            continue
+        i += 1          # 契約の行（action / in / out / example ...）は捨てる。契約は spec の方を使う
+    return "\n".join(out) + "\n"
+
+
 def combine(action_src: str, code: str) -> str:
     """action の契約 + AIの do + shape → 1つの小さな spec"""
+    code = normalize_reply(code)
     do_lines, rest, in_do = [], [], False
     for l in code.splitlines():
         if l.strip() == "do" and not l.startswith(" "):

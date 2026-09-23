@@ -138,3 +138,9 @@ def test_never_depend_on_width_catches_missing_normalize(spec):
     v = F.verify(spec, spec.find("action", "ExtractDeadline"), code)
     assert not v.ok and all(p.startswith("never depend on width") for p in v.problems)
     assert F.to_fullwidth("9/24 23:59") == "９／２４\u3000２３：５９".replace("\u3000", " ")
+
+
+def test_reply_that_repeats_the_contract_is_read(spec):
+    """実験2回目の B4: 契約まで書き写して、do と shape を中に字下げした返事も読める（中身は変えない）"""
+    code = F.extract_code(open("experiment/v2/runs2/B4/reply.md", encoding="utf-8").read())
+    assert F.verify(spec, spec.find("action", "ExtractDeadline"), code).ok

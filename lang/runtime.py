@@ -76,6 +76,7 @@ class Engine:
         self.listeners: list = []
         self.connectors: dict = {}        # (connect 名, 動詞) → 関数
         self.action_impls: dict = {}      # action 名 → 関数（by code の代わりに Python から入れる口）
+        self.ask_client = None            # ask ai で使う AI（テストでは差し替える。None なら API キーで呼ぶ）
         self._pending: list[tuple[Node, Ctx]] = []   # before 待ちの rule
         self._fired_today: set = set()
         self._read_spec()
@@ -92,6 +93,7 @@ class Engine:
             self.boxes[t] = {}
         if store and os.path.exists(store):
             self._replay()
+            self._migrate()
 
     # ------------------------------------------------------------------
     # spec を読む
@@ -140,6 +142,33 @@ class Engine:
                     b.values[rec["field"]] = rec["value"]
                 elif rec["t"] == "remove":
                     self.boxes[rec["thing"]].pop(rec["id"], None)
+
+    def _migrate(self):
+        """change の通りに、古い形のデータを今の形にする（足した項目の初期値・名前の変更・消した項目・消した状態の移し先）"""
+        for ch in self.spec.decls("change"):
+            thing = ch.name
+            for b in self.all(thing):
+                for c in ch.children:
+                    t = c.text.strip()
+                    if c.keyword == "add":
+                        m = re.match(r"^(\w+)\s+.+?=\s*(.*)$", t)
+                        if m and m.group(1) not in b.values:
+                            b.values[m.group(1)] = unquote(m.group(2))
+                    elif c.keyword == "rename":
+                        m = re.match(r"^(\w+)\s+to\s+(\w+)$", t)
+                        if m and m.group(1) in b.values:
+                            b.values[m.group(2)] = b.values.pop(m.group(1))
+                    elif c.keyword == "remove":
+                        m = re.match(r"^state\s+(\w+)\s*->\s*(\w+)$", t)
+                        if m:
+                            for k, v in b.values.items():
+                                if v == m.group(1):
+                                    b.values[k] = m.group(2)
+                        elif re.fullmatch(r"\w+", t):
+                            b.values.pop(t, None)
+            for b in self.all(thing):          # 残りの足りない項目は空に
+                for k in self.fields.get(thing, {}):
+                    b.values.setdefault(k, "")
 
     def _changed(self):
         for fn in list(self.listeners):
@@ -236,6 +265,41 @@ class Engine:
         self._changed()
         if fire:
             self.fire(f"{box.thing} moves to {to}", Ctx(user, this=box))
+
+    def remove(self, box: Box, user: User | None, fire: bool = True, _seen: set | None = None) -> None:
+        """箱を消す。この箱を指している項目は gone[...] の通りにする（remove too / leave empty / block）"""
+        seen = _seen if _seen is not None else set()
+        if box.id in seen:
+            return
+        seen.add(box.id)
+        if user is not None and not self.can(user, "remove", box.thing, box):
+            raise NotAllowed(f"{user.name} はこの {box.thing} を消せません")
+        pointing = []
+        for t, fs in self.fields.items():
+            for name, f in fs.items():
+                target = f.type[len("list of "):] if f.type.startswith("list of ") else f.type
+                if target != box.thing:
+                    continue
+                for b in self.all(t):
+                    if b.values.get(name) == box.id:
+                        pointing.append((b, name, f.gone or "block"))
+        blocked = [(b, n) for b, n, g in pointing if g == "block"]
+        if blocked:
+            b, n = blocked[0]
+            raise RuleError(f"{b.thing}.{n} がこの {box.thing} を指しているので消せません（gone[block]）")
+        with self._lock:
+            self.boxes[box.thing].pop(box.id, None)
+        self._log({"t": "remove", "thing": box.thing, "id": box.id})
+        for b, n, g in pointing:
+            if g == "remove too":
+                self.remove(b, None, fire=fire, _seen=seen)
+            elif g == "leave empty":
+                with b.lock:
+                    b.values[n] = ""
+                self._log({"t": "set", "thing": b.thing, "id": b.id, "field": n, "value": ""})
+        self._changed()
+        if fire:
+            self.fire(f"{box.thing} is removed", Ctx(user, this=box))
 
     def update(self, box: Box, values: dict, user: User | None) -> None:
         """状態ではない項目を書き換える。flow で管理する状態は move でしか変えられない（set 禁止）"""
@@ -440,7 +504,9 @@ class Engine:
             if a != rule.name:
                 continue
             if rel == "then" and b in self.rules:
-                self.run_rule(self.rules[b], Ctx(ctx.user, ctx.this, dict(ctx.vars), payload=ctx.payload))
+                c2 = Ctx(ctx.user, ctx.this, dict(ctx.vars), payload=ctx.payload)
+                self.run_rule(self.rules[b], c2)
+                ctx.nav = c2.nav or ctx.nav
             elif rel == "then no":
                 blocked.add(b)
         # before 待ちだったものを動かす
@@ -493,6 +559,11 @@ class Engine:
             if errors:
                 raise errors[0]
             return
+        if text == "remove this":
+            if ctx.this is None:
+                raise RuleError("this（押された1件）がありません")
+            self.remove(ctx.this, ctx.user)
+            return
         m = re.match(r"^go (\w+)(?: with this)?$", text)
         if m:
             ctx.nav = m.group(1)
@@ -518,8 +589,38 @@ class Engine:
     # action
     # ------------------------------------------------------------------
     def run_action(self, name: str, ctx: Ctx):
+        """how の limit（時間）と on failure retry（やり直す回数）を守って、中身を呼ぶ"""
+        a = self.actions[name]
+        how = a.child("how")
+        limit, retry = None, 0
+        for h in (how.children if how else []):
+            m = re.match(r"^limit\s+(\d+(?:\.\d+)?)\s+seconds?$", h.raw)
+            if m:
+                limit = float(m.group(1))
+            m = re.match(r"^on failure retry (\d+) times?$", h.raw)
+            if m:
+                retry = int(m.group(1))
+        last = None
+        for _ in range(retry + 1):
+            try:
+                if limit is None:
+                    return self._run_action_once(name, ctx)
+                with ThreadPoolExecutor(max_workers=1) as ex:
+                    return ex.submit(self._run_action_once, name, ctx).result(timeout=limit)
+            except ActionEmpty:
+                raise
+            except Exception as e:      # noqa: BLE001  時間切れ・中身の失敗 → やり直す
+                last = e
+        raise RuleError(f"action {name} が{retry + 1}回とも失敗しました: {last}")
+
+    def _run_action_once(self, name: str, ctx: Ctx):
         a = self.actions[name]
         inp = ctx.payload if ctx.payload is not None else ""
+        ask = a.child("ask")
+        if ask is not None and ask.text.strip() == "ai" and name not in self.action_impls:
+            result = self.ask_ai(a, inp)
+            if result is not None:
+                return result
         impl = self.action_impls.get(name)
         if impl is not None:
             return impl(inp)
@@ -544,6 +645,27 @@ class Engine:
         if m:
             return unquote(m.group(1))
         raise ActionEmpty(f"action {name} の中身がまだありません")
+
+    def ask_ai(self, a: Node, inp: str):
+        """ask ai: 実行の度にAIに聞く。答えが out の形でなければ使わない（else へ）。キーが無ければ else へ"""
+        from .body import Tagged, out_states_of, parse_expected
+        from .fill import AnthropicHTTP, action_source
+        try:
+            ai = self.ask_client or AnthropicHTTP()
+        except RuntimeError:
+            return None
+        prompt = ("次の契約の action の答えを1行だけ返してください。形は out の通り（例と同じ形）。説明は要りません。\n\n"
+                  + action_source(self.spec, a) + f"\n入力: {inp}\n")
+        reply = ai([{"role": "user", "content": prompt}]).strip().splitlines()
+        if not reply:
+            return None
+        outs = out_states_of(a)
+        got = parse_expected(reply[0].strip().strip("`"), outs)
+        if outs and not (isinstance(got, Tagged) and got.state in outs):
+            return None
+        if isinstance(got, Tagged) and not outs.get(got.state):
+            return got
+        return got
 
     # ------------------------------------------------------------------
     # 外からの入口

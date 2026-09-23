@@ -112,6 +112,7 @@ cases["E32_unknown_state"] = (rep("  do    move this to submitted\n", "  do    m
 cases["E32_example_date"] = (rep('      deadline  "9/24 23:59"\n', '      deadline  "9/24 23時"\n'), base)
 cases["E31_example_step"] = (rep("    expect  Application is submitted\n", "    expekt  Application is submitted\n"), base)
 cases["E32_list_duration"] = (rep("  where  deadline within 3 days\n", "  where  deadline within 3 dys\n"), base)
+cases["E28_unknown_clause"] = (rep("  where  status is draft\n", "  wher   status is draft\n"), base)
 cases["E28_user_name"] = (rep("thing User\n  name text\n", "thing User\n  nick text\n"), base)
 cases["E28_tone_in_style"] = (base + "\nstyle DueSoon\n  submitted-button  tone good\n",
                               rep("  button  submitted-button named 提出した\n", "  button  submitted-button named 提出した tone good\n"))

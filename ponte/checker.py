@@ -1246,6 +1246,10 @@ def check_notify_recipient(spec: Spec, opt: Options) -> list[Finding]:
 # ---------------------------------------------------------------------------
 
 STEPS = ("given", "adds", "at", "says", "taps", "gets", "expect")
+CLAUSES = {"rule": ("why", "when", "where", "do", "example"),
+           "list": ("of", "where", "sort"),
+           "action": ("in", "out", "example", "never", "else", "by", "ask", "how", "do"),
+           "look": ("title", "sub", "mark", "lead", "image", "button", "empty", "heading", "search", "group", "take", "sum")}
 
 
 def check_example_values(spec: Spec, opt: Options) -> list[Finding]:
@@ -1253,6 +1257,12 @@ def check_example_values(spec: Spec, opt: Options) -> list[Finding]:
     from .values import _DUR, parse_time, unquote
     out = []
     ths_all, list_names = things(spec), {l.name for l in spec.decls("list")}
+    # 節の打ち間違い（`wher status is todo` が黙って無視されると、条件の無い rule になってしまう）
+    for kind, allowed in CLAUSES.items():
+        for d in spec.decls(kind):
+            for c in d.children:
+                if c.keyword not in allowed:
+                    out.append(Finding("E28", c.line, f"{kind} {d.name}: 「{c.keyword}」という節はありません（{' / '.join(allowed)}）{did_you_mean(c.keyword, allowed)}"))
     for f in spec.decls("flow"):
         if f.name == "scene":
             continue

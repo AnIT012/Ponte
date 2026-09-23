@@ -9,23 +9,23 @@
 <title>Ponte</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=Kiwi+Maru:wght@400;500&family=JetBrains+Mono:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kiwi+Maru:wght@400;500&family=JetBrains+Mono:wght@400;700&display=swap">
 <style>
 :root{
-  --ground:#EEF4FF; --panel:#FFFFFF; --ink:#1B1F3B; --muted:#5B6190;
-  --tomato:#FF5A36; --mint:#17B3A3; --lemon:#FFC93C; --sky:#6BB6FF;
-  --err:#E0412A; --ok:#12997F; --line:#1B1F3B; --code:#1B1F3B; --codeink:#F3F5FF;
-  --pop:"Mochiy Pop One","Kiwi Maru","Hiragino Maru Gothic ProN",sans-serif;
+  --ground:#F6F7FB; --panel:#FFFFFF; --ink:#1F2340; --muted:#5E6385;
+  --tomato:#FF5A36; --mint:#17B3A3; --lemon:#FFC93C; --sky:#2F6FD6;
+  --err:#E0412A; --ok:#12997F; --line:#DADCE8; --code:#1E2238; --codeink:#F3F5FF;
+  --pop:"Kiwi Maru","Hiragino Mincho ProN","Yu Mincho",serif;
   --body:"Kiwi Maru","Hiragino Mincho ProN","Yu Mincho",serif;
   --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --ground:#141830; --panel:#1E2342; --ink:#EEF0FF; --muted:#A7ADDA; --line:#EEF0FF;
+  --ground:#14172A; --panel:#1C2036; --ink:#E8EAF6; --muted:#A3A8C8; --line:#2E3350;
   --tomato:#FF7355; --mint:#2FD1BF; --lemon:#FFD35C; --sky:#83C3FF; --err:#FF6B55; --ok:#3FE0B8;
   --code:#0C0F22; --codeink:#E9ECFF; color-scheme:dark;}}
 :root[data-theme="dark"]{
-  --ground:#141830; --panel:#1E2342; --ink:#EEF0FF; --muted:#A7ADDA; --line:#EEF0FF;
+  --ground:#14172A; --panel:#1C2036; --ink:#E8EAF6; --muted:#A3A8C8; --line:#2E3350;
   --tomato:#FF7355; --mint:#2FD1BF; --lemon:#FFD35C; --sky:#83C3FF; --err:#FF6B55; --ok:#3FE0B8;
   --code:#0C0F22; --codeink:#E9ECFF; color-scheme:dark;}
 
@@ -33,11 +33,11 @@
 body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.8;padding-inline:16px}
 .wrap{max-width:1040px;margin:0 auto}
 a{color:inherit}
-h1,h2,h3{font-family:var(--pop);font-weight:400;line-height:1.3;text-wrap:balance;margin:0}
+h1,h2,h3{font-family:var(--pop);font-weight:500;line-height:1.3;text-wrap:balance;margin:0}
 h2{font-size:clamp(24px,4vw,34px)}
 p{margin:0}
 code,pre{font-family:var(--mono)}
-.sticker{background:var(--panel);border:3px solid var(--line);border-radius:22px;box-shadow:6px 6px 0 var(--line)}
+.sticker{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 3px rgba(20,24,50,.06)}
 section{padding-block:56px}
 .eyebrow{font-family:var(--pop);font-size:13px;letter-spacing:.08em;color:var(--tomato)}
 
@@ -45,19 +45,18 @@ section{padding-block:56px}
 .bar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-block:18px}
 .logo{display:flex;align-items:center;gap:10px;text-decoration:none}
 .logo svg{width:52px;height:auto}
-.logo .word{font-size:34px}
+.logo .word{font-size:28px}
 .nav{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--pop);font-size:14px}
 .nav a{text-decoration:none;padding:4px 2px;border-bottom:3px solid transparent}
-.nav a:hover{border-bottom-color:var(--tomato)}
+.nav a:hover{border-bottom-color:var(--ink)}
 .word{font-family:var(--pop);letter-spacing:.02em;line-height:1}
-.word span:nth-child(1){color:var(--tomato)}.word span:nth-child(2){color:var(--lemon);-webkit-text-stroke:1.5px var(--line)}
-.word span:nth-child(3){color:var(--mint)}.word span:nth-child(4){color:var(--sky)}.word span:nth-child(5){color:var(--tomato)}
+.word{color:var(--ink);font-weight:500}
 
 /* ---- slides ---- */
 .show{padding:22px;margin-top:8px}
 .slide[hidden]{display:none}
 .slide{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:26px;align-items:center;min-height:310px}
-.code{background:var(--code);color:var(--codeink);border-radius:18px;border:3px solid var(--line);padding:18px 20px;font-size:clamp(11.5px,1.35vw,14px);line-height:1.75;overflow-x:auto;margin:0}
+.code{background:var(--code);color:var(--codeink);border-radius:10px;border:0;padding:18px 20px;font-size:clamp(11.5px,1.35vw,14px);line-height:1.75;overflow-x:auto;margin:0}
 .code .c{white-space:pre-wrap}
 .code .head{color:#6BB6FF;font-weight:700}.code .clause{color:#C9A7FF}.code .guard{color:#FF9D5C;font-weight:700}
 .code .type{color:#2FD1BF}.code .name{color:#FF8FC7}.code .val{color:#FFD35C}.code .field{color:#FFFFFF}.code .op{color:#8A90C4}
@@ -66,22 +65,22 @@ section{padding-block:56px}
 .explain p{line-height:1.95}
 .explain code,.col code{font-family:var(--mono);font-size:13px;background:var(--ground);padding:1px 6px;border-radius:6px}
 .ctrl{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:18px;flex-wrap:wrap}
-.ctrl button{font-family:var(--pop);border:3px solid var(--line);border-radius:999px;background:var(--panel);color:var(--ink);padding:6px 14px;cursor:pointer;box-shadow:3px 3px 0 var(--line)}
-.ctrl button[aria-current="true"]{background:var(--lemon);color:#1B1F3B}
+.ctrl button{font-family:var(--pop);border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--ink);padding:6px 14px;cursor:pointer}
+.ctrl button[aria-current="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
 .ctrl button:focus-visible{outline:3px dashed var(--tomato);outline-offset:3px}
 .dots{display:flex;gap:8px}
 .dots button{width:34px;height:34px;padding:0;font-size:13px}
 
 /* ---- tagline ---- */
-.tagline{text-align:center;padding-block:26px 30px;font-family:var(--pop);font-size:clamp(18px,2.6vw,23px);line-height:1.7;max-width:34em;margin:0 auto}
-.tagline a{color:var(--tomato);text-decoration:none;white-space:nowrap}
+.tagline{text-align:center;padding-block:26px 30px;font-family:var(--pop);font-size:clamp(17px,2.3vw,21px);line-height:1.7;max-width:34em;margin:0 auto}
+.tagline a{color:var(--sky);text-decoration:none;white-space:nowrap}
 
 /* ---- columns ---- */
 .cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;padding-bottom:30px}
 .col{padding:20px;display:flex;flex-direction:column;gap:10px}
 .col h3{font-size:18px}
 .col p{font-size:14.5px;line-height:1.85}
-.col a.more{font-family:var(--pop);font-size:13px;color:var(--tomato);text-decoration:none;margin-top:auto}
+.col a.more{font-family:var(--pop);font-size:13px;color:var(--sky);text-decoration:none;margin-top:auto}
 .col pre{margin:0;font-family:var(--mono);font-size:13px;background:var(--code);color:var(--codeink);border-radius:10px;padding:8px 10px;overflow-x:auto}
 
 footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13.5px}
@@ -106,12 +105,12 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 <header class="bar">
   <a class="logo" href="https://github.com/AnIT012/nameless-lang" aria-label="Ponte">
     <svg viewBox="0 0 120 70" aria-hidden="true">
-      <path d="M6 60 L114 60" stroke="var(--line)" stroke-width="6" stroke-linecap="round"/>
-      <path d="M20 58 C 40 8, 80 8, 100 58" stroke="var(--tomato)" stroke-width="8" stroke-linecap="round" fill="none"/>
-      <circle cx="12" cy="50" r="9" fill="var(--lemon)" stroke="var(--line)" stroke-width="3"/>
-      <circle cx="108" cy="50" r="9" fill="var(--mint)" stroke="var(--line)" stroke-width="3"/>
+      <path d="M6 60 L114 60" stroke="var(--ink)" stroke-width="5" stroke-linecap="round"/>
+      <path d="M20 58 C 40 8, 80 8, 100 58" stroke="var(--sky)" stroke-width="7" stroke-linecap="round" fill="none"/>
+      <circle cx="12" cy="50" r="9" fill="var(--sky)"/>
+      <circle cx="108" cy="50" r="9" fill="var(--sky)"/>
     </svg>
-    <span class="word"><span>P</span><span>o</span><span>n</span><span>t</span><span>e</span></span>
+    <span class="word">Ponte</span>
   </a>
   <nav class="nav">
     <a href="https://github.com/AnIT012/nameless-lang/blob/main/docs/入門.md">入門</a>

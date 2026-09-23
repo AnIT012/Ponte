@@ -14,7 +14,7 @@ from pathlib import Path
 HERE = Path(__file__).parent
 SHOTS = HERE.parent / "docs" / "screenshots"
 PAGES = {"landing.html": "index.html", "learn.src.html": "learn.html", "reference.src.html": "reference.html",
-         "spec.src.html": "spec.html", "how.src.html": "how.html"}
+         "spec.src.html": "spec.html", "how.src.html": "how.html", "play.src.html": "play.html"}
 DESC = "Ponte — 人は決めて、AIが書いて、言語が守る。"
 
 
@@ -33,6 +33,16 @@ for src, out in PAGES.items():
         shutil.copy(SHOTS / f"{n}.png", HERE / "img" / f"{n}.png")
         body = body.replace("{{IMG:%s}}" % n, f"img/{n}.png")
     (HERE / out).write_text(wrap(body), encoding="utf-8")
+
+# 試す（play.html）がブラウザの中で読む Ponte の本体（.py と標準ライブラリ）と、色付け
+import zipfile
+ROOT = HERE.parent
+with zipfile.ZipFile(HERE / "ponte.zip", "w", zipfile.ZIP_DEFLATED) as z:
+    for p in sorted((ROOT / "ponte").rglob("*")):
+        if p.suffix in (".py", ".ponte") and "__pycache__" not in p.parts:
+            info = zipfile.ZipInfo(str(p.relative_to(ROOT)), date_time=(2026, 1, 1, 0, 0, 0))   # 中身が同じなら同じ zip
+            z.writestr(info, p.read_bytes(), zipfile.ZIP_DEFLATED)
+    z.writestr(zipfile.ZipInfo("highlight.py", date_time=(2026, 1, 1, 0, 0, 0)), (HERE / "highlight.py").read_bytes(), zipfile.ZIP_DEFLATED)
 
 one = bodies["landing.html"]
 for n in sorted(set(re.findall(r"\{\{IMG:(\w+)\}\}", one))):

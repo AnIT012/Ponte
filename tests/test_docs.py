@@ -78,6 +78,7 @@ def test_homepage_is_generated_from_docs_and_code():
     assert Path("site/reference.src.html").read_text(encoding="utf-8") == make.reference()
     for name, md_name, title, depth in make.DOCS:
         assert Path(f"site/{name}.src.html").read_text(encoding="utf-8") == make.doc_page(Path("docs") / md_name, title, name, depth), name
+    assert Path("site/play.src.html").read_text(encoding="utf-8") == make.play()
     ref = make.reference()
     for code in ("E01", "E32", "W09"):
         assert f'id="{code}"' in ref
@@ -95,3 +96,14 @@ def test_markdown_tables_have_even_rows():
                 bad = [n for n in rows if n != rows[0]]
                 assert not bad, f"{p}: 列数がずれている表があります {rows}"
                 rows = []
+
+
+def test_playground_zip_has_current_sources():
+    """試す（play.html）がブラウザで読む ponte.zip は、今の ponte/ と同じ中身"""
+    import zipfile
+    from pathlib import Path
+    z = zipfile.ZipFile("site/ponte.zip")
+    for p in Path("ponte").rglob("*"):
+        if p.suffix in (".py", ".ponte") and "__pycache__" not in p.parts:
+            assert z.read(str(p)) == p.read_bytes(), f"{p} が古い。python site/build.py"
+    assert z.read("highlight.py") == Path("site/highlight.py").read_bytes()

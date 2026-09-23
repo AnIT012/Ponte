@@ -1,0 +1,344 @@
+<title>試す — Ponte</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+:root{
+  --ground:#F6F7FB; --panel:#FFFFFF; --ink:#1F2340; --muted:#5E6385;
+  --tomato:#FF5A36; --mint:#17B3A3; --lemon:#FFC93C; --sky:#2F6FD6;
+  --err:#E0412A; --ok:#12997F; --line:#DADCE8; --code:#1E2238; --codeink:#F3F5FF;
+  --pop:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;
+  --body:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#14172A; --panel:#1C2036; --ink:#E8EAF6; --muted:#A3A8C8; --line:#2E3350;
+  --tomato:#FF7355; --mint:#2FD1BF; --lemon:#FFD35C; --sky:#83C3FF; --err:#FF6B55; --ok:#3FE0B8;
+  --code:#0C0F22; --codeink:#E9ECFF; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --ground:#14172A; --panel:#1C2036; --ink:#E8EAF6; --muted:#A3A8C8; --line:#2E3350;
+  --tomato:#FF7355; --mint:#2FD1BF; --lemon:#FFD35C; --sky:#83C3FF; --err:#FF6B55; --ok:#3FE0B8;
+  --code:#0C0F22; --codeink:#E9ECFF; color-scheme:dark;}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.8;padding-inline:16px}
+.wrap{max-width:1040px;margin:0 auto}
+a{color:inherit}
+h1,h2,h3{font-family:var(--pop);font-weight:700;line-height:1.3;text-wrap:balance;margin:0}
+h2{font-size:clamp(24px,4vw,34px)}
+p{margin:0}
+code,pre{font-family:var(--mono)}
+.sticker{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 3px rgba(20,24,50,.06)}
+section{padding-block:56px}
+.eyebrow{font-family:var(--pop);font-size:13px;letter-spacing:.08em;color:var(--tomato)}
+
+/* ---- top bar ---- */
+.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-block:18px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo svg{width:52px;height:auto}
+.logo .word{font-size:28px}
+.nav{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--pop);font-size:14px}
+.nav a{text-decoration:none;padding:4px 2px;border-bottom:3px solid transparent}
+.nav a:hover{border-bottom-color:var(--ink)}
+.word{font-family:var(--pop);letter-spacing:.02em;line-height:1}
+.word{color:var(--ink);font-weight:500}
+
+/* ---- slides ---- */
+.show{padding:22px;margin-top:8px}
+.slide[hidden]{display:none}
+.slide{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:26px;align-items:center;min-height:310px}
+.code{background:var(--code);color:var(--codeink);border-radius:10px;border:0;padding:18px 20px;font-size:clamp(11.5px,1.35vw,14px);line-height:1.75;overflow-x:auto;margin:0}
+.code .c{white-space:pre-wrap}
+.code .head{color:#6BB6FF;font-weight:700}.code .clause{color:#C9A7FF}.code .guard{color:#FF9D5C;font-weight:700}
+.code .type{color:#2FD1BF}.code .name{color:#FF8FC7}.code .val{color:#FFD35C}.code .field{color:#FFFFFF}.code .op{color:#8A90C4}
+.code .c{color:#7C83BA;font-style:italic}.code .block{background:#E0412A;color:#fff;border-radius:4px;padding:0 4px}
+.explain h2{font-size:clamp(22px,3vw,28px);margin-bottom:12px}
+.explain p{line-height:1.95}
+.explain code,.col code{font-family:var(--mono);font-size:13px;background:var(--ground);padding:1px 6px;border-radius:6px}
+.ctrl{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:18px;flex-wrap:wrap}
+.ctrl button{font-family:var(--pop);border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--ink);padding:6px 14px;cursor:pointer}
+.ctrl button[aria-current="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.ctrl button:focus-visible{outline:3px dashed var(--tomato);outline-offset:3px}
+.dots{display:flex;gap:8px}
+.dots button{width:34px;height:34px;padding:0;font-size:13px}
+
+/* ---- tagline ---- */
+.tagline{text-align:center;padding-block:26px 30px;font-family:var(--pop);font-size:clamp(17px,2.3vw,21px);line-height:1.7;max-width:34em;margin:0 auto}
+.tagline a{color:var(--sky);text-decoration:none;white-space:nowrap}
+
+/* ---- columns ---- */
+.cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;padding-bottom:30px}
+.col{padding:20px;display:flex;flex-direction:column;gap:10px}
+.col h3{font-size:18px}
+.col p{font-size:14.5px;line-height:1.85}
+.col a.more{font-family:var(--pop);font-size:13px;color:var(--sky);text-decoration:none;margin-top:auto}
+.col pre{margin:0;font-family:var(--mono);font-size:13px;background:var(--code);color:var(--codeink);border-radius:10px;padding:8px 10px;overflow-x:auto}
+
+footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13.5px}
+
+@media (max-width:1100px){
+  .slide{grid-template-columns:minmax(0,1fr);min-height:0}
+  .code{font-size:clamp(11.5px,1.9vw,14px)}
+}
+@media (max-width:860px){
+  .cols{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:520px){
+  .cols{grid-template-columns:minmax(0,1fr)}
+  .show{padding:12px}
+  .code{padding:14px 12px;font-size:11.5px;white-space:pre-wrap;overflow-wrap:anywhere}
+  .ctrl{gap:6px}.dots{gap:5px}.dots button,.ctrl button{width:30px;height:30px;padding:0;font-size:12px}
+}
+/* ---- 読みものページ（入門・道具とエラー） ---- */
+.nav a[aria-current="page"]{border-bottom-color:var(--sky)}
+.doc{display:grid;grid-template-columns:200px minmax(0,1fr);gap:40px;padding-block:18px 40px;align-items:start}
+.toc{position:sticky;top:16px;font-size:13.5px;max-height:calc(100vh - 32px);overflow:auto}
+.toc-h{font-family:var(--pop);font-weight:700;color:var(--muted);margin-bottom:6px}
+.toc ol{list-style:none;margin:0;padding:0;border-left:2px solid var(--line)}
+.toc li a{display:block;padding:4px 0 4px 12px;text-decoration:none;color:var(--muted);line-height:1.5}
+.toc li.d3 a{padding-left:24px;font-size:12.5px}
+.toc li a:hover{color:var(--ink)}
+.toc li a.on{color:var(--sky);border-left:2px solid var(--sky);margin-left:-2px}
+
+.prose{min-width:0;max-width:760px}
+.prose .eyebrow{margin-bottom:6px}
+.prose h1{font-size:clamp(26px,4vw,36px);margin-bottom:12px}
+.prose .lead{font-size:17px;color:var(--muted);margin-bottom:28px;line-height:1.9}
+.prose h2{font-size:clamp(21px,3vw,26px);margin:44px 0 14px;padding-top:6px;scroll-margin-top:16px}
+.prose h3{font-size:18px;margin:30px 0 10px;scroll-margin-top:16px}
+.prose p{margin:0 0 14px;line-height:1.95}
+.prose ul,.prose ol{margin:0 0 16px;padding-left:1.4em;line-height:1.9}
+.prose li{margin:4px 0}
+.prose hr{border:0;border-top:1px solid var(--line);margin:34px 0}
+.prose img{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);margin:8px 0 18px}
+.prose a{color:var(--sky)}
+.prose blockquote{margin:0 0 16px;padding:10px 16px;border-left:4px solid var(--lemon);background:var(--panel);border-radius:0 10px 10px 0}
+.prose :not(pre)>code{font-size:.88em;background:var(--panel);border:1px solid var(--line);padding:1px 6px;border-radius:6px;overflow-wrap:anywhere}
+.prose .code{margin:0 0 18px;font-size:13.5px}
+.term{margin:0 0 18px;background:#101326;color:#D7DBF5;border-radius:10px;padding:14px 18px;font-size:13px;line-height:1.7;overflow-x:auto;white-space:pre}
+.term .prompt{color:#6BE3A4;user-select:none}
+.term .ecode{color:#FF9D5C;font-weight:700}
+.note{font-size:14px;color:var(--muted)}
+.muted{color:var(--muted);font-size:.92em}
+.arrow{color:var(--muted);font-size:.9em;white-space:nowrap}
+
+.table{overflow-x:auto;margin:0 0 20px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.table table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.7}
+.table th{text-align:left;font-family:var(--pop);font-weight:700;background:var(--ground);white-space:nowrap}
+.table th,.table td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.table tr:last-child td{border-bottom:0}
+.table td:first-child{white-space:nowrap}
+
+.ref{padding-block:0}
+.errs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.errcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;scroll-margin-top:16px}
+.errcard:target{outline:3px solid var(--lemon)}
+.errcard p{margin:0 0 6px;font-size:14px;line-height:1.8}
+.errcard b{font-family:var(--pop);font-size:12.5px;color:var(--muted);margin-right:4px}
+.ehead{font-family:var(--pop);font-weight:700;font-size:15px!important}
+.badge{display:inline-block;font-family:var(--mono);font-size:12px;border-radius:6px;padding:0 7px;margin-right:6px;color:#fff}
+.badge.err{background:var(--err)}.badge.warn{background:var(--muted)}
+
+@media (max-width:860px){
+  .doc{grid-template-columns:minmax(0,1fr);gap:8px}
+  .toc{position:static;max-height:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:18px}
+  .toc ol{columns:2;column-gap:16px;border-left:0}
+  .toc li a{padding-left:0}
+  .toc li.d3{display:none}
+  .errs{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:520px){
+  .toc ol{columns:1}
+  .prose .code,.term{font-size:12px;padding:12px}
+  .table td:first-child{white-space:normal}
+}
+
+/* ---- 試す（playground） ---- */
+.play-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;padding-top:14px}
+.play-head h1{font-size:clamp(26px,4vw,36px);margin:4px 0 8px}
+.play-head .lead{max-width:40em;color:var(--muted);line-height:1.9;margin:0}
+.pick{font-family:var(--pop);font-size:14px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.pick select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 10px;max-width:70vw}
+.play{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:18px;padding-block:18px 10px;align-items:stretch}
+.editor{position:relative;height:min(72vh,720px);overflow:hidden;padding:0;background:var(--code)}
+.editor .hl,.editor textarea{position:absolute;inset:0;margin:0;border:0;border-radius:14px;padding:18px 20px;
+  font-family:var(--mono);font-size:14px;line-height:1.75;tab-size:2;white-space:pre;overflow:auto;box-sizing:border-box;letter-spacing:0}
+.editor .hl{pointer-events:none;color:var(--codeink);overflow:hidden}
+.editor .hl .c{white-space:pre}
+.editor textarea{background:transparent;color:transparent;caret-color:#fff;resize:none;outline:none}
+.editor textarea::selection{background:rgba(131,195,255,.35);color:transparent}
+.editor:focus-within{outline:3px solid var(--sky);outline-offset:2px}
+.panel{display:flex;flex-direction:column;height:min(72vh,720px);overflow:hidden}
+.panel-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.state{font-family:var(--pop);font-weight:700;font-size:15px;color:var(--muted)}
+.state.good{color:var(--ok)}.state.bad{color:var(--err)}
+.panel-bar button{font-family:var(--pop);font-weight:700;border:0;border-radius:999px;background:var(--ink);color:var(--panel);padding:7px 18px;cursor:pointer}
+.panel-bar button:disabled{opacity:.35;cursor:default}
+.out{overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+.out p{margin:4px 2px;font-size:14px;line-height:1.8}
+.out .ok{color:var(--ok);font-weight:700}.out .bad{color:var(--err);font-weight:700}.out .holes{color:var(--muted);font-weight:700;margin-top:10px}
+.finding{all:unset;display:flex;flex-direction:column;gap:3px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--ground);cursor:pointer;font-size:13.5px;line-height:1.7}
+.finding:hover,.finding:focus-visible{border-color:var(--sky)}
+.finding .where{font-family:var(--pop);font-weight:700;font-size:12.5px;color:var(--muted)}
+.finding .fix{color:var(--muted);font-size:12.5px}
+.finding .fix code{font-size:12px;background:var(--panel);border:1px solid var(--line);padding:0 4px;border-radius:5px}
+.finding.pass .where{color:var(--ok)}
+.finding.err{border-left:4px solid var(--err)}.finding.warn{border-left:4px solid var(--muted)}.finding.pass{border-left:4px solid var(--ok)}
+@media (max-width:860px){
+  .play{grid-template-columns:minmax(0,1fr)}
+  .editor{height:56vh}.panel{height:auto;max-height:60vh}
+  .editor .hl,.editor textarea{font-size:12.5px;padding:14px}
+}
+
+</style>
+
+<div class="wrap">
+<header class="bar">
+  <a class="logo" href="index.html" aria-label="Ponte">
+    <svg viewBox="0 0 120 70" aria-hidden="true">
+      <path d="M6 60 L114 60" stroke="var(--ink)" stroke-width="5" stroke-linecap="round"/>
+      <path d="M20 58 C 40 8, 80 8, 100 58" stroke="var(--sky)" stroke-width="7" stroke-linecap="round" fill="none"/>
+      <circle cx="12" cy="50" r="9" fill="var(--sky)"/>
+      <circle cx="108" cy="50" r="9" fill="var(--sky)"/>
+    </svg>
+    <span class="word">Ponte</span>
+  </a>
+  <nav class="nav">
+    <a href="play.html" aria-current="page">試す</a>
+    <a href="learn.html">入門</a>
+    <a href="reference.html">道具とエラー</a>
+    <a href="spec.html">仕様書</a>
+    <a href="https://github.com/AnIT012/nameless-lang">GitHub</a>
+  </nav>
+</header>
+
+<div class="play-head">
+  <div><p class="eyebrow">PLAYGROUND</p><h1>試す</h1>
+  <p class="lead">ここで書いた Ponte を、そのままブラウザの中で確かめます。書き換えると <code>ponte check</code> が流れ、「test」で example を動かします。インストールは要りません。</p></div>
+  <label class="pick">見本 <select id="pick"><option value="todo">やることアプリ（全部）</option><option value="s1">見本 1: データの形を書く</option><option value="s2">見本 2: 流れと、誰が何をできるか</option><option value="s3">見本 3: きっかけと、やること</option><option value="s4">見本 4: 例がそのままテストになる</option><option value="s5">見本 5: AIに任せる部分には約束を</option><option value="s6">見本 6: 決めていないことは tbd に（1〜5 と一緒に）</option></select></label>
+</div>
+<div class="play">
+  <div class="editor sticker">
+    <pre class="code hl" id="hl" aria-hidden="true"></pre>
+    <textarea id="src" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Ponte のコード"></textarea>
+  </div>
+  <div class="panel sticker" aria-live="polite">
+    <div class="panel-bar"><span id="state" class="state">準備しています…</span><button type="button" id="test" disabled>test</button></div>
+    <div id="out" class="out"><p class="muted">はじめての読み込みには数秒かかります（Python をブラウザに読み込むため）。</p></div>
+  </div>
+</div>
+<footer><p>check と test は、Ponte の本体をそのままブラウザで動かしています（<a href="https://pyodide.org/">Pyodide</a>）。書いたものはどこにも送りません。</p></footer>
+</div>
+<script type="application/json" id="samples">{"todo": "# データの形：やることと、その持ち主\nthing Task\n  title  text\n  due    monthday\n  owner  User  gone[remove too]\n  status[todo | done]\n\nthing User\n  name  text\n\n# 状態の流れと、誰が何をできるか\nflow Task.status\n  todo -> done -> todo\n\nwho\n  user  can see     Task  where owner is me\n  user  can change  Task  where owner is me\n  user  can see     User  where it is me\n\n# 毎朝8時に、明日までのやることを知らせる\nlist Soon\n  of     Task\n  where  status is todo\n  where  due within 1 days\n\nrule Remind\n  why   明日までのものを忘れない\n  when  every day at 8:00\n  do    notify owner each of Soon\n\n# ボタンを押したら終わりにする。例を書くとテストになる\nrule Finish\n  when   user taps done-button on Task\n  where  status is todo\n  do     move this to done\n  example\n    given   Task\n      title   \"牛乳を買う\"\n      status  todo\n    taps    done-button on Task\n      title   \"牛乳を買う\"\n    expect  Task is done\n      title   \"牛乳を買う\"\n\n# AIに任せる処理には、例と禁止事項を先に書く\naction FindDeadline\n  in       mail text\n  out      found monthday | missing\n  example  \"10/15まで\"     -> found 10/15\n  example  \"来週中に提出\"  -> missing\n  never    guess the year\n  never    fail\n  else     ask user\n  by       ai\n", "s1": "# データの形：やることと、その持ち主\nthing Task\n  title  text\n  due    monthday\n  owner  User  gone[remove too]\n  status[todo | done]\n\nthing User\n  name  text\n", "s2": "# 状態の流れと、誰が何をできるか\nflow Task.status\n  todo -> done -> todo\n\nwho\n  user  can see     Task  where owner is me\n  user  can change  Task  where owner is me\n  user  can see     User  where it is me\n", "s3": "# 毎朝8時に、明日までのやることを知らせる\nlist Soon\n  of     Task\n  where  status is todo\n  where  due within 1 days\n\nrule Remind\n  why   明日までのものを忘れない\n  when  every day at 8:00\n  do    notify owner each of Soon\n", "s4": "# ボタンを押したら終わりにする。例を書くとテストになる\nrule Finish\n  when   user taps done-button on Task\n  where  status is todo\n  do     move this to done\n  example\n    given   Task\n      title   \"牛乳を買う\"\n      status  todo\n    taps    done-button on Task\n      title   \"牛乳を買う\"\n    expect  Task is done\n      title   \"牛乳を買う\"\n", "s5": "# AIに任せる処理には、例と禁止事項を先に書く\naction FindDeadline\n  in       mail text\n  out      found monthday | missing\n  example  \"10/15まで\"     -> found 10/15\n  example  \"来週中に提出\"  -> missing\n  never    guess the year\n  never    fail\n  else     ask user\n  by       ai\n", "s6": "# データの形：やることと、その持ち主\nthing Task\n  title  text\n  due    monthday\n  owner  User  gone[remove too]\n  status[todo | done]\n\nthing User\n  name  text\n\n# 状態の流れと、誰が何をできるか\nflow Task.status\n  todo -> done -> todo\n\nwho\n  user  can see     Task  where owner is me\n  user  can change  Task  where owner is me\n  user  can see     User  where it is me\n\n# 毎朝8時に、明日までのやることを知らせる\nlist Soon\n  of     Task\n  where  status is todo\n  where  due within 1 days\n\nrule Remind\n  why   明日までのものを忘れない\n  when  every day at 8:00\n  do    notify owner each of Soon\n\n# ボタンを押したら終わりにする。例を書くとテストになる\nrule Finish\n  when   user taps done-button on Task\n  where  status is todo\n  do     move this to done\n  example\n    given   Task\n      title   \"牛乳を買う\"\n      status  todo\n    taps    done-button on Task\n      title   \"牛乳を買う\"\n    expect  Task is done\n      title   \"牛乳を買う\"\n\n# AIに任せる処理には、例と禁止事項を先に書く\naction FindDeadline\n  in       mail text\n  out      found monthday | missing\n  example  \"10/15まで\"     -> found 10/15\n  example  \"来週中に提出\"  -> missing\n  never    guess the year\n  never    fail\n  else     ask user\n  by       ai\n\n# まだ決めていないことは tbd に書く。残っているうちは動かない\ntbd\n  締切を過ぎたやることは、一覧に残すか消すか\n"}</script>
+<script type="text/plain" id="playpy">
+import json
+from ponte.parser import ParseError, parse_file
+from ponte.checker import check
+from ponte.errors import BY_CODE
+from ponte.examples import run_examples, holes
+from highlight import highlight
+
+def _spec(src):
+    return parse_file("/play/main.ponte", text=src)
+
+def run_check(src):
+    try:
+        spec = _spec(src)
+    except ParseError as e:
+        return json.dumps({"findings": [["読めません", e.line, e.message, True, "字下げ（2つずつ）と、行の書き方を確かめてください"]]})
+    out = []
+    for f in check(spec):
+        e = BY_CODE.get(f.code)
+        out.append([f.code, f.line, f.message, f.is_error, e[3] if e else None])
+    return json.dumps({"findings": out})
+
+def run_test(src):
+    try:
+        spec = _spec(src)
+    except ParseError as e:
+        return json.dumps({"error": f"L{e.line}: {e.message}"})
+    if any(f.is_error for f in check(spec)):
+        return json.dumps({"error": "先に check のエラーを直してください"})
+    res = run_examples(spec)
+    return json.dumps({"results": [[r.rule, r.line, r.ok, r.message] for r in res],
+                       "holes": [[h.line, h.message] for h in holes(spec, res)]})
+
+def run_highlight(src):
+    return highlight(src)
+</script>
+<script type="module">
+const $ = id => document.getElementById(id);
+const SAMPLES = JSON.parse($("samples").textContent);
+const src = $("src"), hl = $("hl"), out = $("out"), state = $("state"), testBtn = $("test");
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
+const md = s => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>");
+let py = null, timer = null, seq = 0;
+try { src.value = localStorage.getItem("ponte-play") || SAMPLES.todo; } catch (e) { src.value = SAMPLES.todo; }
+
+function paintPlain() { hl.textContent = src.value + "\n"; }
+function sync() { hl.scrollTop = src.scrollTop; hl.scrollLeft = src.scrollLeft; }
+function gotoLine(n) {
+  const lines = src.value.split("\n"); let pos = 0;
+  for (let i = 0; i < n - 1 && i < lines.length; i++) pos += lines[i].length + 1;
+  src.focus(); src.setSelectionRange(pos, pos + (lines[n - 1] || "").length);
+  const lh = parseFloat(getComputedStyle(src).lineHeight) || 20; src.scrollTop = Math.max(0, (n - 4) * lh); sync();
+}
+function showCheck(r) {
+  const errs = r.findings.filter(f => f[3]), warns = r.findings.filter(f => !f[3]);
+  state.className = "state " + (errs.length ? "bad" : "good");
+  state.textContent = errs.length ? `止まります（${errs.length}件）` : "決めてないことなし";
+  testBtn.disabled = errs.length > 0;
+  if (!r.findings.length) { out.innerHTML = '<p class="ok">check が通りました。「test」で example を動かせます。</p>'; return; }
+  out.innerHTML = r.findings.map(f => `<button type="button" class="finding ${f[3] ? "err" : "warn"}" data-line="${f[1]}">
+    <span class="where"><span class="badge ${f[3] ? "err" : "warn"}">${esc(f[0])}</span> ${f[1]}行目</span>
+    <span class="msg">${esc(f[2])}</span>${f[4] ? `<span class="fix">直し方: ${md(f[4])}</span>` : ""}</button>`).join("");
+}
+async function run() {
+  const my = ++seq, text = src.value;
+  try { localStorage.setItem("ponte-play", text); } catch (e) {}
+  if (!py) { paintPlain(); return; }
+  hl.innerHTML = py.globals.get("run_highlight")(text) + "\n";
+  const r = JSON.parse(py.globals.get("run_check")(text));
+  if (my === seq) showCheck(r);
+}
+src.addEventListener("input", () => { paintPlain(); if (py) hl.innerHTML = py.globals.get("run_highlight")(src.value) + "\n"; clearTimeout(timer); timer = setTimeout(run, 350); });
+src.addEventListener("scroll", sync);
+src.addEventListener("keydown", e => {
+  if (e.key === "Tab") { e.preventDefault(); const s = src.selectionStart; src.setRangeText("  ", s, src.selectionEnd, "end"); src.dispatchEvent(new Event("input")); }
+});
+out.addEventListener("click", e => { const b = e.target.closest("[data-line]"); if (b) gotoLine(+b.dataset.line); });
+$("pick").addEventListener("change", e => { src.value = SAMPLES[e.target.value]; src.scrollTop = 0; src.dispatchEvent(new Event("input")); });
+testBtn.addEventListener("click", () => {
+  const r = JSON.parse(py.globals.get("run_test")(src.value));
+  if (r.error) { out.innerHTML = `<p class="bad">${esc(r.error)}</p>`; return; }
+  const ok = r.results.filter(x => x[2]).length;
+  out.innerHTML = `<p class="${ok === r.results.length ? "ok" : "bad"}">example ${r.results.length}件中 ${ok}件通過</p>` +
+    r.results.map(x => `<button type="button" class="finding ${x[2] ? "pass" : "err"}" data-line="${x[1]}"><span class="where">${x[2] ? "通過" : "失敗"} ・ ${esc(x[0])}</span>${x[3] ? `<span class="msg">${esc(x[3])}</span>` : ""}</button>`).join("") +
+    (r.holes.length ? `<p class="holes">確かめていない所（${r.holes.length}件）</p>` + r.holes.map(h => `<button type="button" class="finding warn" data-line="${h[0]}"><span class="where">${h[0]}行目</span><span class="msg">${esc(h[1])}</span></button>`).join("") : "");
+});
+paintPlain();
+try {
+  const base = new URLSearchParams(location.search).get("pyodide") || "https://cdn.jsdelivr.net/npm/pyodide@314.0.7/";
+  const { loadPyodide } = await import(base + "pyodide.mjs");
+  py = await loadPyodide({ indexURL: base });
+  const zip = await (await fetch("ponte.zip")).arrayBuffer();
+  py.unpackArchive(zip, "zip");
+  py.runPython($("playpy").textContent);
+  testBtn.disabled = false;
+  run();
+} catch (e) {
+  state.className = "state bad"; state.textContent = "読み込めませんでした";
+  out.innerHTML = `<p class="bad">Python を読み込めませんでした: ${esc(e.message || e)}</p>`;
+}
+</script>
+<script>
+(() => {   // 目次の、いま読んでいる所に印を付ける
+  const links = [...document.querySelectorAll(".toc a")], map = new Map(links.map(a => [a.hash.slice(1), a]));
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if(!e.isIntersecting) return;
+    links.forEach(a => a.classList.remove("on")); const a = map.get(e.target.id); if(a) a.classList.add("on");
+  }), {rootMargin: "0px 0px -70% 0px"});
+  document.querySelectorAll(".prose h2[id], .prose h3[id], .prose section[id]").forEach(h => map.has(h.id) && io.observe(h));
+})();
+</script>

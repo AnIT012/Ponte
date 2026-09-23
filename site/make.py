@@ -43,7 +43,7 @@ DOCS_CSS = (HERE / "docs.css").read_text(encoding="utf-8")
 
 def header(current: str) -> str:
     h = (HERE / "header.html").read_text(encoding="utf-8").replace("{REPO}", REPO).replace("{DOC}", DOC)
-    for name in ("learn", "reference", "spec"):
+    for name in ("learn", "reference", "spec", "play"):
         h = h.replace("{CUR_%s}" % name, ' aria-current="page"' if name == current else "")
     return h
 
@@ -254,6 +254,88 @@ def reference() -> str:
 """, DOCS_CSS)
 
 
+# ---------------------------------------------------------------------------
+# 試す（ブラウザの中で check と test を動かす。Pyodide は、このページだけが読む）
+# ---------------------------------------------------------------------------
+
+PYODIDE = "https://cdn.jsdelivr.net/npm/pyodide@314.0.7/"
+
+PLAY_PY = r"""
+import json
+from ponte.parser import ParseError, parse_file
+from ponte.checker import check
+from ponte.errors import BY_CODE
+from ponte.examples import run_examples, holes
+from highlight import highlight
+
+def _spec(src):
+    return parse_file("/play/main.ponte", text=src)
+
+def run_check(src):
+    try:
+        spec = _spec(src)
+    except ParseError as e:
+        return json.dumps({"findings": [["読めません", e.line, e.message, True, "字下げ（2つずつ）と、行の書き方を確かめてください"]]})
+    out = []
+    for f in check(spec):
+        e = BY_CODE.get(f.code)
+        out.append([f.code, f.line, f.message, f.is_error, e[3] if e else None])
+    return json.dumps({"findings": out})
+
+def run_test(src):
+    try:
+        spec = _spec(src)
+    except ParseError as e:
+        return json.dumps({"error": f"L{e.line}: {e.message}"})
+    if any(f.is_error for f in check(spec)):
+        return json.dumps({"error": "先に check のエラーを直してください"})
+    res = run_examples(spec)
+    return json.dumps({"results": [[r.rule, r.line, r.ok, r.message] for r in res],
+                       "holes": [[h.line, h.message] for h in holes(spec, res)]})
+
+def run_highlight(src):
+    return highlight(src)
+"""
+
+
+def play() -> str:
+    assert "</" not in PLAY_PY                    # <script> の中身はそのまま読まれる（エスケープされない）
+    samples = {n: (HERE / "samples" / f"{n}.ponte").read_text(encoding="utf-8") for n in "123456"}
+    full = "\n".join(samples[n].rstrip("\n") + "\n" for n in "12345")
+    choices = [("todo", "やることアプリ（全部）", full)] + [(f"s{n}", f"見本 {n}: {h}", samples[n] + ("" if n == "6" else "")) for n, h, _ in SLIDES]
+    choices[-1] = ("s6", "見本 6: 決めていないことは tbd に（1〜5 と一緒に）", full + "\n" + samples["6"])
+    import json as _json
+    data = _json.dumps({k: v for k, _, v in choices}, ensure_ascii=False).replace("</", "<\\/")
+    opts = "".join(f'<option value="{k}">{html.escape(t)}</option>' for k, t, _ in choices)
+    body = f"""<div class="wrap">
+{{HEADER}}
+<div class="play-head">
+  <div><p class="eyebrow">PLAYGROUND</p><h1>試す</h1>
+  <p class="lead">ここで書いた Ponte を、そのままブラウザの中で確かめます。書き換えると <code>ponte check</code> が流れ、「test」で example を動かします。インストールは要りません。</p></div>
+  <label class="pick">見本 <select id="pick">{opts}</select></label>
+</div>
+<div class="play">
+  <div class="editor sticker">
+    <pre class="code hl" id="hl" aria-hidden="true"></pre>
+    <textarea id="src" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Ponte のコード"></textarea>
+  </div>
+  <div class="panel sticker" aria-live="polite">
+    <div class="panel-bar"><span id="state" class="state">準備しています…</span><button type="button" id="test" disabled>test</button></div>
+    <div id="out" class="out"><p class="muted">はじめての読み込みには数秒かかります（Python をブラウザに読み込むため）。</p></div>
+  </div>
+</div>
+<footer><p>check と test は、Ponte の本体をそのままブラウザで動かしています（<a href="https://pyodide.org/">Pyodide</a>）。書いたものはどこにも送りません。</p></footer>
+</div>
+<script type="application/json" id="samples">{data}</script>
+<script type="text/plain" id="playpy">{PLAY_PY}</script>
+<script type="module">
+{{js}}</script>
+"""
+    js = (HERE / "play.js").read_text(encoding="utf-8").replace("__PYODIDE__", PYODIDE)
+    body = body.replace("{js}", js)
+    return page("試す — Ponte", "play", body, DOCS_CSS + "\n" + (HERE / "play.css").read_text(encoding="utf-8"))
+
+
 DOCS = [("spec", "言語仕様_v0.3.md", "仕様書 v0.3", 2), ("how", "仕組み.md", "しくみ — ponte/ の中", 2)]
 
 
@@ -261,6 +343,7 @@ if __name__ == "__main__":
     (HERE / "landing.html").write_text(landing(), encoding="utf-8")
     (HERE / "learn.src.html").write_text(doc_page(ROOT / "docs" / "入門.md", "入門 — やることアプリを作る", "learn"), encoding="utf-8")
     (HERE / "reference.src.html").write_text(reference(), encoding="utf-8")
+    (HERE / "play.src.html").write_text(play(), encoding="utf-8")
     for name, md_name, title, depth in DOCS:
         (HERE / f"{name}.src.html").write_text(doc_page(ROOT / "docs" / md_name, title, name, depth), encoding="utf-8")
     print("site/landing.html と *.src.html を作りました")

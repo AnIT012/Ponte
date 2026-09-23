@@ -10,20 +10,20 @@ CLAUSE = ("of where sort when do why in out example by ask how given at says tap
           "title sub mark button lead heading empty search take top main side bottom over").split()
 GUARD = "never else tbd gone limit confirm".split()
 TYPES = "text number count money percent date monthday duration file image pdf".split()
-TOKEN = re.compile(r'"[^"]*"|->|\||>|\[[^\]]*\]|\d+(?:[:/.]\d+)*(?:\s+(?:days?|hours?|minutes?|seconds?|weeks?))?|[A-Za-z_][\w-]*|\s+|.')
+TOKEN = re.compile(r'"[^"]*"|->|\||>|\[|\]|\d+(?:[:/.]\d+)*(?:\s+(?:days?|hours?|minutes?|seconds?|weeks?))?|[A-Za-z_][\w-]*|\s+|.')
 
 
 def _span(cls, text):
     return f'<span class="{cls}">{html.escape(text, quote=False)}</span>'
 
 
-def line(src: str, in_fields: bool) -> str:
+def line(src: str, in_fields: bool, states: frozenset = frozenset()) -> str:
     if src.lstrip().startswith("##"):
         return _span("block", src)
     code, _, comment = src.partition(" #") if " #" in src and '"' not in src.split(" #")[0][-1:] else (src, "", "")
     if src.lstrip().startswith("#"):
         return _span("c", src)
-    out, first = [], True
+    out, first, guard_bracket = [], True, False
     indented = src[:1] == " "
     for m in TOKEN.finditer(code):
         t = m.group(0)
@@ -38,12 +38,19 @@ def line(src: str, in_fields: bool) -> str:
             cls = "field"                          # thing / input の中の行頭は項目名（title なども）
         elif first and indented and t in CLAUSE:
             cls = "clause"
-        elif t in GUARD or t == ">" or (t.startswith("[") and out and out[-1].endswith(">gone</span>")):
-            cls = "guard"                          # gone[remove too] の中身も守り
-        elif t in TYPES or t.startswith("["):
-            cls = "type"
-        elif t in ("->", "|"):
+        elif t == "[" and out and out[-1].endswith(">gone</span>"):
+            cls, guard_bracket = "guard", True     # gone[remove too] の中身も守り
+        elif guard_bracket:
+            cls = "guard"
+            guard_bracket = t != "]"
+        elif t in GUARD or t == ">":
+            cls = "guard"
+        elif t in ("[", "]", "->", "|"):
             cls = "op"
+        elif t in states:
+            cls = "val"                            # 状態の名前は値の仲間
+        elif t in TYPES:
+            cls = "type"
         elif t.startswith('"') or re.match(r"\d", t):
             cls = "val"
         elif re.fullmatch(r"[A-Z]\w*", t):
@@ -57,10 +64,22 @@ def line(src: str, in_fields: bool) -> str:
     return "".join(out)
 
 
-def highlight(src: str) -> str:
+def states_in(src: str) -> frozenset:
+    """[a | b] と flow の行から、状態の名前を集める"""
+    names = set()
+    for m in re.finditer(r"\w+\[([^\]]*)\]", src):
+        if not m.group(0).startswith("gone["):
+            names |= {x.strip() for x in m.group(1).split("|")}
+    for l in re.findall(r"^\s+(\w.*->.*)$", src, re.M):
+        names |= set(re.findall(r"[a-z_]\w*", l))
+    return frozenset(names)
+
+
+def highlight(src: str, states: frozenset | None = None) -> str:
+    states = states_in(src) if states is None else states
     rows, in_fields = [], False
     for l in src.rstrip("\n").split("\n"):
         if l and l[0] != " " and not l.startswith("#"):
             in_fields = l.split()[0] in ("thing", "input")
-        rows.append(line(l, in_fields))
+        rows.append(line(l, in_fields, states))
     return "\n".join(rows)

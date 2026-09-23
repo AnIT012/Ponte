@@ -168,3 +168,12 @@ python experiment/score.py          # EXPERIMENT.md を上書き
 - 散らかりの整理（v0.1 を archive へ、設計メモを docs/design へ）、仕様と実装のズレの修正、無い型の名前もエラー28に、エラーを `ファイル:行` で出す、整形 `lang fmt`、example で「画面に N 件」を確かめる。
 - 仮の決めごとを `docs/DECISIONS.md` の1枚にまとめた（26個、おすすめ付き）。
 - 言語の形が変わるので直さなかったもの（ダメなパーツ8つ・欲しいもの8つ・まだ動かないもの8つ）は `REVIEW.md`。
+
+## DECISIONS と REVIEW をおすすめ通りに（完了）
+
+- DECISIONS の26個を仕様書 11.5 章に★として書き写した。
+- ダメなパーツ: example の箱は字下げして1行1つ / rule の do は1つ（E29）/ 通知の宛先（E30）/ part の計算も do の下 / user does を消す / words がある spec は画面の文字を words の名前で / tone はボタンの行に。
+- 欲しいもの: sort の desc / never を4つに / take と「もっと見る」/ エディタの色分け / `lang build` で1つのファイルに。
+- まだ動かなかったもの: 消す（gone の通り）/ change で古いデータを移す / how の limit と retry / ask ai / input の決まりをサーバーでも / use で別ファイル。
+- 残り（判断待ち）: 年をまたぐ締切（B2）、元に戻す（B6）。大きいもの: WebAssembly（B8）。
+- テスト155件通過。ブラウザで消す→確認→ホームへ戻るまで確かめた。

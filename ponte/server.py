@@ -47,6 +47,7 @@ class App:
     def __init__(self, spec: Spec, engine: Engine):
         self.spec, self.eng = spec, engine
         self.auth = None                          # ponte run --login の時だけ
+        self.version = 0                          # ponte run --reload で読み直すたびに増える
         self.scenes = {s.name: s for s in spec.decls("scene")}
         self.looks = {l.name: l for l in spec.decls("look")}
         self.parts = {p.name: p for p in spec.decls("part")}
@@ -65,6 +66,14 @@ class App:
                "next-year": "来年（{year}年）の締切ですか？ いいえなら、もう過ぎた締切として保存します", "total-of": "{x}の合計"}   # 言語が出す文字（words で訳せる）
     BUILTIN_EN = {"search": "Search", "save": "Save", "cancel": "Cancel", "none": "Nothing yet", "more": "Show more", "undo": "Undo",
                   "total-of": "Total {x}"}
+
+    def reload(self, spec: Spec, engine: Engine) -> None:
+        """書き直した spec に入れ替える（--reload）。開いている画面には読み直してもらう"""
+        old, auth, version = self.eng, self.auth, self.version
+        self.__init__(spec, engine)
+        self.auth, self.version = auth, version + 1
+        for fn in list(old.listeners):
+            fn()
 
     def tr(self, key, env: Env) -> str:
         key = "" if key is None else str(key)
@@ -684,11 +693,16 @@ def make_handler(app: App):
                 self.send_header("cache-control", "no-cache")
                 self.end_headers()
                 ev = threading.Event()
-                app.eng.listeners.append(ev.set)
+                eng, version = app.eng, app.version
+                eng.listeners.append(ev.set)
                 try:
                     while True:
                         if ev.wait(15):
                             ev.clear()
+                            if app.version != version:          # spec が書き直された → 画面ごと読み直す
+                                self.wfile.write(b"data: reload\n\n")
+                                self.wfile.flush()
+                                break
                             self.wfile.write(b"data: changed\n\n")
                         else:
                             self.wfile.write(b": keep\n\n")
@@ -696,7 +710,7 @@ def make_handler(app: App):
                 except (BrokenPipeError, ConnectionResetError):
                     pass
                 finally:
-                    app.eng.listeners.remove(ev.set)
+                    eng.listeners.remove(ev.set)
             else:
                 self._json({"error": "not found"}, 404)
 
@@ -806,15 +820,16 @@ def serve(spec: Spec, engine: Engine, port: int = 8000, host: str = "127.0.0.1",
     app = App(spec, engine)
     app.auth = auth
     httpd = ThreadingHTTPServer((host, port), make_handler(app))
+    httpd.app = app
     httpd.daemon_threads = True
     if ticker:
         def loop():
             last = None
             while True:
-                now = engine.clock().replace(second=0, microsecond=0)
+                now = app.eng.clock().replace(second=0, microsecond=0)
                 if now != last:
                     last = now
-                    engine.tick(now)
+                    app.eng.tick(now)
                 time.sleep(5)
         threading.Thread(target=loop, daemon=True).start()
     return httpd

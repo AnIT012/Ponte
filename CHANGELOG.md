@@ -6,7 +6,10 @@
 
 - **本当のログイン**: `ponte run --login`（名前と合言葉。scrypt・HttpOnly の cookie・間違いが続くと少し止める）。`--signup` で画面から登録。`ponte user add / remove / list`。`--login` 無しで 127.0.0.1 以外に開こうとすると止める
 - **エラーの辞書**: `ponte explain E32`（なぜ止めるか・どう直すか）。check のエラーの下に「直し方: ponte explain …」。仕様書 13章の表もここから作る
-- `ponte check --json`（エディタや AI のループ向け）
+- `ponte check --json`（エディタや AI のループ向け。直し方も入る）
+- `ponte run --reload`: spec を書き直すと読み直して、開いている画面も読み直す。check が通らない書き直しは前のまま動かし続ける
+- VS Code: 保存するとエラーの行に波線（`editor/vscode/extension.js`。依存なし）
+- ホームページに「入門」と「道具とエラー」のページ（docs と実装から作る。ずれたらテストが落ちる）
 - 道具: `avg of` / `abs` / `date of`（年月日の当たりを "2026/10/15" に）
 - `round` を本当の四捨五入に（2.5 → 3。前は Python の round で 2 になっていた）
 

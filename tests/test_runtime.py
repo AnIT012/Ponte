@@ -240,3 +240,27 @@ def test_server_end_to_end():
         assert blocks(view(lang="en"), "main")[0]["empty"]["text"] == "Nothing due in the next 3 days"   # 引用符の鍵で訳す
     finally:
         httpd.shutdown()
+
+
+def test_reload_swaps_spec_and_keeps_data(tmp_path):
+    """ponte run --reload: 通る書き直しは入れ替え、通らない書き直しは前のまま"""
+    import shutil
+    from ponte.cli import reload_once
+    from ponte.parser import parse_file
+    from ponte.server import App
+    src = tmp_path / "todo.ponte"
+    shutil.copy("spec/todo.ponte", src)
+    store = str(tmp_path / "d.jsonl")
+    spec = parse_file(str(src))
+    eng = Engine(spec, store=store)
+    user = eng.login("taro")
+    eng.submit(user, "AddTask", {"title": "牛乳"})
+    app = App(spec, eng)
+    woke = []
+    eng.listeners.append(lambda: woke.append(1))
+    src.write_text(src.read_text(encoding="utf-8").replace("move this to done", "move this to finished"), encoding="utf-8")
+    assert reload_once(str(src), store, app) is False and app.eng is eng
+    src.write_text(src.read_text(encoding="utf-8").replace("move this to finished", "move this to done"), encoding="utf-8")
+    assert reload_once(str(src), store, app) is True
+    assert app.eng is not eng and app.version == 1 and woke
+    assert [b.values["title"] for b in app.eng.boxes["Task"].values()] == ["牛乳"]

@@ -323,6 +323,7 @@ async function render(){
   document.getElementById("over").innerHTML = slot("over").map(block).join("");   // 小窓はページの一番上の層に出す
   document.getElementById("bottom").innerHTML = slot("bottom").map(block).join("");
   document.querySelectorAll("[data-card]").forEach(el => { el.tabIndex = 0; el.setAttribute("role", "button"); });   // キーボードでも開ける
+  document.querySelectorAll('[data-drag][draggable="true"]').forEach(el => { el.tabIndex = 0; el.setAttribute("aria-keyshortcuts", "ArrowLeft ArrowRight"); });
   // 新しく出たものはふわっと、動いたものはするっと
   document.querySelectorAll("[data-key]").forEach(el => {
     const k = el.dataset.key, a = before[k];
@@ -434,6 +435,17 @@ document.addEventListener("submit", async e => {
   toast(r.edited ? "書き換えました" : "保存しました"); goBack();
 });
 let dragId = null;
+document.addEventListener("keydown", async e => {   // board のカードは ← → で隣の列へ（マウスが無くても動かせる）
+  const c = e.target.closest && e.target.closest('[data-drag][draggable="true"]');
+  if(!c || e.target !== c || (e.key !== "ArrowLeft" && e.key !== "ArrowRight")) return;
+  const col = c.closest("[data-drop]"), cols = [...col.parentElement.querySelectorAll(":scope > [data-drop]")];
+  const next = cols[cols.indexOf(col) + (e.key === "ArrowRight" ? 1 : -1)];
+  if(!next) return;
+  e.preventDefault();
+  const id = c.dataset.drag, r = await post("/api/drag", {id, to: next.dataset.drop, lang: LANG});
+  await render();
+  if(!r.error) document.querySelector(`[data-drag="${CSS.escape(id)}"]`)?.focus();
+});
 document.addEventListener("dragstart", e => { const c = e.target.closest("[data-drag]"); if(c){ dragId = c.dataset.drag; c.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; } });
 document.addEventListener("dragend", e => { document.querySelectorAll(".dragging,.over").forEach(x => x.classList.remove("dragging", "over")); });
 document.addEventListener("dragover", e => { const col = e.target.closest("[data-drop]"); if(col && dragId){ e.preventDefault(); document.querySelectorAll(".over").forEach(x => x !== col && x.classList.remove("over")); col.classList.add("over"); } });

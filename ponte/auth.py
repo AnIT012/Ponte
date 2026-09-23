@@ -56,7 +56,8 @@ class Users:
         except OSError:
             pass
 
-    def add(self, name: str, password: str) -> None:
+    def add(self, name: str, password: str, overwrite: bool = False) -> None:
+        """人を足す。overwrite は ponte user add（合言葉を変える）の時だけ。画面の登録では、いる人を上書きしない"""
         name = name.strip()
         if not name or len(name) > 64:
             raise ValueError("名前は1〜64文字にしてください")
@@ -66,6 +67,8 @@ class Users:
         h = _hash(password, salt).hex()
         with self.lock:
             self._load()                          # 別のところ（ponte user add）で足した人を消さない
+            if name in self.data and not overwrite:
+                raise ValueError("その名前はもう使われています")
             self.data[name] = {"salt": salt.hex(), "hash": h}
             self._save()
 

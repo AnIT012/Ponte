@@ -59,7 +59,9 @@ def test_login_and_cookie_is_the_only_identity(site):
     assert st == 200
     # フォームからの POST（json でない）は、ログインしていても受け付けない
     assert req(port, "POST", "/api/tap", "a=b", {"cookie": cookie, "content-type": "application/x-www-form-urlencoded"})[0] == 415
-    assert req(port, "GET", "/logout", headers={"cookie": cookie})[0] == 303
+    assert req(port, "GET", "/logout", headers={"cookie": cookie})[0] == 405      # GET では切れない（よそのリンクで切らせない）
+    assert req(port, "GET", "/api/view", headers={"cookie": cookie})[0] == 200
+    assert req(port, "POST", "/logout", "", {"cookie": cookie})[0] == 303
     assert req(port, "GET", "/api/view", headers={"cookie": cookie})[0] == 401
 
 
@@ -105,7 +107,7 @@ def test_page_shows_who_is_logged_in(site):
     _, h, _ = login(port, "taro", "correct-horse")
     cookie = h["set-cookie"].split(";")[0]
     st, _, body = req(port, "GET", "/", headers={"cookie": cookie})
-    assert st == 200 and 'taro ・ <a href="/logout">' in body
+    assert st == 200 and 'taro ・ <form method="post" action="/logout"' in body
 
 
 def test_lang_in_url_cannot_inject(tmp_path):
@@ -176,3 +178,36 @@ def test_removed_user_is_logged_out_and_signups_are_limited(site):
     assert req(port, "GET", "/api/view", headers={"cookie": cookie})[0] == 401
     codes = [login(port, f"u{i}", "long-enough", "/signup")[0] for i in range(7)]
     assert codes[:5] == [303] * 5 and codes[5] == 401
+
+
+def test_review_fixes(site, tmp_path):
+    """見直しで見つかった穴: 登録で上書き・データのある名前の横取り・よそのページからのログイン・入力に無い項目・深い JSON"""
+    port, users = site
+    import pytest as _pytest
+    with _pytest.raises(ValueError):
+        users.add("taro", "another-password")                   # 画面の登録では上書きしない
+    assert users.verify("taro", "correct-horse")
+    st, _, body = req(port, "POST", "/login", urlencode({"name": "taro", "password": "correct-horse"}),
+                      {"content-type": "application/x-www-form-urlencoded", "origin": "http://evil.example"})
+    assert st == 403
+    _, h, _ = login(port, "taro", "correct-horse")
+    cookie = h["set-cookie"].split(";")[0]
+    j = {"cookie": cookie, "content-type": "application/json"}
+    st, _, body = req(port, "POST", "/api/submit", json.dumps({"input": "AddTask", "values": {"title": "x", "owner": "User-9"}}), j)
+    assert st == 400 and "この入力にはありません" in body
+    assert req(port, "POST", "/api/submit", b"[" * 100000, j)[0] == 400
+
+
+def test_signup_cannot_take_a_name_that_already_has_data(tmp_path):
+    import threading as _t
+    users = Users(str(tmp_path / "u.json"))
+    spec = parse_file("spec/lend.ponte")
+    eng = Engine(spec)
+    eng.set_role("boss", "admin")                           # ponte role で先に管理者にした名前
+    httpd = serve(spec, eng, port=0, ticker=False, auth=Auth(users, signup=True))
+    _t.Thread(target=httpd.serve_forever, daemon=True).start()
+    try:
+        st, _, body = login(httpd.server_address[1], "boss", "long-enough", "/signup")
+        assert st == 401 and "使われています" in body
+    finally:
+        httpd.shutdown()

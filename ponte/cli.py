@@ -390,7 +390,7 @@ def cmd_user(args) -> int:
         return 0
     pw = os.environ.get("PONTE_PASSWORD") or getpass.getpass("合言葉（8文字以上）: ")
     try:
-        users.add(args.name, pw)
+        users.add(args.name, pw, overwrite=True)
     except ValueError as e:
         print(e)
         return 1

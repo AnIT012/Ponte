@@ -88,3 +88,15 @@ def test_lsp_in_process():
     assert by_id[4]["error"]["code"] == -32601
     diags = [m for m in got if m.get("method") == "textDocument/publishDiagnostics"]
     assert diags and any(d["code"] == "E19" for d in diags[0]["params"]["diagnostics"])
+
+
+def test_lsp_survives_garbage():
+    from ponte.lsp import serve
+
+    def raw(body: bytes, length=None):
+        return b"Content-Length: %s\r\n\r\n" % (str(len(body) if length is None else length).encode()) + body
+    good = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize"}).encode()
+    stream = raw(b"[]") + raw(b"{not json") + raw(b'"str"') + raw(good)
+    out = io.BytesIO()
+    assert serve(io.BytesIO(stream), out) == 0
+    assert b'"id": 1' in out.getvalue()

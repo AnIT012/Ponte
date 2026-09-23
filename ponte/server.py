@@ -48,6 +48,9 @@ class App:
         self.spec, self.eng = spec, engine
         self.auth = None                          # ponte run --login の時だけ
         self.version = 0                          # ponte run --reload で読み直すたびに増える
+        self._press_cache: dict = {}
+        self._card_cache: dict = {}
+        self._local = threading.local()           # 見ている人は要求ごと（サーバーは並列に動くので、App に直接持たない）
         self.scenes = {s.name: s for s in spec.decls("scene")}
         self.looks = {l.name: l for l in spec.decls("look")}
         self.parts = {p.name: p for p in spec.decls("part")}
@@ -97,6 +100,7 @@ class App:
                     this = t[this_id]
         env = Env(user, scene, dict(state), this, origin, lang)
         self._viewer = user.name if user is not None else "me"
+        self._local.user = user
         if scene in self.inputs:
             top = []  # noqa
             if self.home in self.scenes:
@@ -238,17 +242,38 @@ class App:
                     return False
         return True
 
+    def _press_rules(self, bid: str, on: str, thing: str) -> list:
+        """そのボタンを押した時に動く rule（一覧の行ごとに聞かれるので、組み合わせごとに1回だけ探す）"""
+        key = (bid, on, thing)
+        if key not in self._press_cache:
+            pat = re.compile(rf"^user taps {re.escape(bid)} on ({re.escape(on)}|{re.escape(thing)})$")
+            self._press_cache[key] = [r for r in self.eng.rules.values()
+                                      if r.child("when") is not None and pat.match(r.child("when").text.strip())]
+        return self._press_cache[key]
+
+    @property
+    def _viewer(self) -> str:
+        return getattr(self._local, "name", "me")
+
+    @_viewer.setter
+    def _viewer(self, name: str) -> None:
+        self._local.name = name
+        self._local.user = None
+
+    def _viewer_user(self):
+        if getattr(self._local, "user", None) is None:
+            self._local.user = self.eng.login(self._viewer)
+        return self._local.user
+
     def can_press(self, box: Box, bid: str, on: str) -> bool:
         """このボタンの rule が `move this to X` なら、flow でいま X へ動けるかを見る（動けないボタンは押せなくする）"""
-        for r in self.eng.rules.values():
-            w = r.child("when")
-            if w is None or not re.match(rf"^user taps {re.escape(bid)} on ({re.escape(on)}|{re.escape(box.thing)})$", w.text.strip()):
-                continue
-            if not self.eng.applies(r, Ctx(self.eng.login(self._viewer), this=box)):   # rule の where に合わない
+        for r in self._press_rules(bid, on, box.thing):
+            viewer = self._viewer_user()
+            if not self.eng.applies(r, Ctx(viewer, this=box)):   # rule の where に合わない
                 return False
             for d in r.children_of("do"):
                 if d.text.strip() == "remove this":         # 消すボタンは、who で消せる時だけ押せる
-                    if not self.eng.can(self.eng.login(self._viewer), "remove", box.thing, box):
+                    if not self.eng.can(viewer, "remove", box.thing, box):
                         return False
                     continue
                 m = re.match(r"^move this to (\w+)$", d.text.strip())
@@ -288,12 +313,9 @@ class App:
         return self.tr(v, env) if f is not None and f.states else v
 
     def has_card_rule(self, name: str) -> bool:
-        thing = self.thing_of(name)
-        for r in self.eng.rules.values():
-            w = r.child("when")
-            if w is not None and re.match(rf"^user taps card on ({re.escape(name)}|{re.escape(thing)})$", w.text.strip()):
-                return True
-        return False
+        if name not in self._card_cache:
+            self._card_cache[name] = bool(self._press_rules("card", name, self.thing_of(name)))
+        return self._card_cache[name]
 
     def row(self, box: Box, look: Node | None, env: Env, list_name: str) -> dict:
         fields = self.eng.fields[box.thing]

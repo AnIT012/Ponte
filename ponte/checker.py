@@ -1005,7 +1005,10 @@ def check_do_form(spec: Spec, opt: Options) -> list[Finding]:
             elif t.split() and (t.split()[0], " ".join(t.split()[1:3])) in verbs:
                 pass
             else:
-                out.append(Finding("E31", d.line, f"rule {r.name}: do の書き方が分かりません: '{t}'（使えるのは notify / move / remove this / go / create / set 項目 to 値 / action の名前 [with 項目] / connect の does）"))
+                import difflib
+                near = difflib.get_close_matches(t, [f[3] for f in _DO_DOC], n=1, cutoff=0.5)
+                hint = f"。近い書き方: `{near[0]}`" if near else ""
+                out.append(Finding("E31", d.line, f"rule {r.name}: do の書き方が分かりません: '{t}'（使えるのは notify / move / remove this / go / create / set 項目 to 値 / action の名前 [with 項目] / connect の does）{hint}"))
                 continue
             sm = re.fullmatch(r"set \w+ to (.+)", t)
             if sm and not _VALUE.match(sm.group(1).strip()):

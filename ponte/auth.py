@@ -28,9 +28,19 @@ class Users:
         self.path = path
         self.lock = threading.Lock()
         self.data: dict[str, dict] = {}
-        if os.path.exists(path):
-            with open(path, encoding="utf-8") as f:
+        self._mtime = None
+        self._load()
+
+    def _load(self) -> None:
+        """ファイルが書き換わっていたら読み直す（動かしている間に ponte user add / remove しても効く）"""
+        try:
+            mt = os.path.getmtime(self.path)
+        except OSError:
+            return
+        if mt != self._mtime:
+            with open(self.path, encoding="utf-8") as f:
                 self.data = json.load(f)
+            self._mtime = mt
 
     def _save(self) -> None:
         tmp = self.path + ".tmp"
@@ -41,6 +51,10 @@ class Users:
             os.chmod(self.path, 0o600)
         except OSError:
             pass
+        try:
+            self._mtime = os.path.getmtime(self.path)
+        except OSError:
+            pass
 
     def add(self, name: str, password: str) -> None:
         name = name.strip()
@@ -49,14 +63,18 @@ class Users:
         if len(password) < 8:
             raise ValueError("合言葉は8文字以上にしてください")
         salt = secrets.token_bytes(16)
+        h = _hash(password, salt).hex()
         with self.lock:
-            self.data[name] = {"salt": salt.hex(), "hash": _hash(password, salt).hex()}
+            self._load()                          # 別のところ（ponte user add）で足した人を消さない
+            self.data[name] = {"salt": salt.hex(), "hash": h}
             self._save()
 
     def exists(self, name: str) -> bool:
+        self._load()
         return name in self.data
 
     def verify(self, name: str, password: str) -> bool:
+        self._load()
         u = self.data.get(name)
         if u is None:
             _hash(password, b"\0" * 16)          # 無い名前でも同じだけ時間をかける（名前があるかを漏らさない）

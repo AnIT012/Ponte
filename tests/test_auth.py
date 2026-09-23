@@ -160,3 +160,19 @@ def test_images_are_checked_stored_and_served_by_who(tmp_path):
         assert c.getresponse().status == 413
     finally:
         httpd.shutdown()
+
+
+def test_removed_user_is_logged_out_and_signups_are_limited(site):
+    port, users = site
+    _, h, _ = login(port, "taro", "correct-horse")
+    cookie = h["set-cookie"].split(";")[0]
+    assert req(port, "GET", "/api/view", headers={"cookie": cookie})[0] == 200
+    other = Users(users.path)                        # 別のところ（ponte user remove）で消す
+    other.data.pop("taro")
+    import os as _os, time as _time
+    _time.sleep(0.01)
+    other._save()
+    _os.utime(users.path, None)
+    assert req(port, "GET", "/api/view", headers={"cookie": cookie})[0] == 401
+    codes = [login(port, f"u{i}", "long-enough", "/signup")[0] for i in range(7)]
+    assert codes[:5] == [303] * 5 and codes[5] == 401

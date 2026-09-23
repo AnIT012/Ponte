@@ -17,6 +17,7 @@
 - chart に `group by 項目` と `sum 項目`（家計メモに「費目ごとの合計」）。input の状態の項目は選ぶ形に（flow のある状態は選べない）
 - 道具 `time of`
 - `ponte run --reload`: spec を書き直すと読み直して、開いている画面も読み直す。check が通らない書き直しは前のまま動かし続ける
+- `ponte doc`: 決めごとを、コードを読まない人にも読める1枚の HTML に（書いた人以外が確かめるため）
 - `ponte lsp`: 言語サーバー（Neovim・Helix などでもエラー・E32 の説明・名前の補い）
 - VS Code: 保存するとエラーの行に波線（`editor/vscode/extension.js`。依存なし）
 - ホームページに「入門」と「道具とエラー」のページ（docs と実装から作る。ずれたらテストが落ちる）

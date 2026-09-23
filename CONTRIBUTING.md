@@ -4,7 +4,8 @@
 
 ```
 python -m pytest                               # 全部通ること
-python -m ponte guide --spec                    # 仕様書 10章の道具の表を実装に合わせる
+python -m ponte guide --spec                    # 仕様書 10章（道具）と 13章（エラー）の表を実装に合わせる
+python site/make.py && python site/build.py     # ホームページを docs と実装に合わせる
 ```
 
 依存は増やさない（Python 3.11 の標準機能だけ）。
@@ -25,7 +26,8 @@ python -m ponte guide --spec                    # 仕様書 10章の道具の表
 ### エラーを1つ足す
 1. `ponte/checker.py` に関数を1つ書き、`ALL_CHECKS` に足す。
 2. `tests/make_cases.py` に「壊した仕様」と「直した仕様」の組を足して `python tests/make_cases.py`。
-3. 仕様書 13章に1行。
+3. `ponte/errors.py` の `ERRORS` に1行（一言・なぜ止めるか・どう直すか）。無いと `tests/test_errors.py` が落ちる。
+4. `python -m ponte guide --spec` で仕様書 13章、`python site/make.py && python site/build.py` でホームページ。
 
 ### 標準ライブラリを足す
 1. `ponte/std/名前.ponte` に action（契約）、`ponte/std/body/` に中身。

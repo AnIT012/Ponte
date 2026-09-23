@@ -4,18 +4,18 @@
 
 [English](README.en.md)
 
-> Ponte はイタリア語で「橋」。人とAIの間にかかる橋、そして上の決まりと裏の Python をつなぐ橋。
+> Ponte はイタリア語で「橋」という意味です。人と AI の間にかかる橋であり、上に書いた仕様と裏で動く Python をつなぐ橋でもあります。
 
 **人は決めて、AIが書いて、言語が守る。**
 
-AIにアプリを作ってもらうとき、いちばん困るのは「決めてないことを、AIが勝手に決めてしまう」こと。
-この言語では、人は **何が欲しいか・何がダメか・何がまだ決まってないか** だけを書く。
+AI にアプリを作ってもらうとき、いちばん困るのは「決めていないことを AI が勝手に決めてしまう」ことです。
+Ponte では、人は「何が欲しいか」「何をしてはいけないか」「何がまだ決まっていないか」だけを書きます。
 
-- 決まったこと（データの形・状態の流れ・誰が何をできるか・画面）は、言語がそのまま動かす。
-- AIが書くのは、契約（例・禁止・逃げ道）の付いた小さな穴だけ。
-- 決めてないことがあれば、**動かす前にエラーで止まる。**
+- 決まったこと（データの形、状態の流れ、誰が何をできるか、画面）は、言語がそのまま動かします。
+- AI が書くのは、契約（例・禁止・逃げ道）の付いた小さな部分だけです。
+- 決めていないことがあれば、動かす前にエラーで止まります。
 
-依存は Python 3.11 の標準機能だけ（ライブラリも Go も要らない）。
+必要なのは Python 3.11 の標準機能だけです。ライブラリも Go も必要ありません。
 
 ![備品かしだし](docs/screenshots/lend_home.png)
 
@@ -45,7 +45,7 @@ rule Borrow
       name "カメラ"
 ```
 
-打ち間違いも、決め忘れも、動かす前に止まる。
+打ち間違いも決め忘れも、動かす前にエラーになります。
 
 ```
 $ python -m ponte check todo.ponte
@@ -54,7 +54,7 @@ $ python -m ponte check todo.ponte
   （直し方: ponte explain E32）
 ```
 
-example で確かめていない所も教えてくれる。
+example で確かめていない部分も一覧で示します。
 
 ```
 $ python -m ponte test todo.ponte
@@ -63,19 +63,20 @@ $ python -m ponte test todo.ponte
   flow Task.status: todo -> done をどの example も通っていません
 ```
 
-## 比べてみた
+## 比較実験
 
-同じアプリを「日本語で頼む」のと「この言語で頼む」ので、AIに16回ずつ書かせて、同じ14個の隠しテストを当てた（[EXPERIMENT.md](EXPERIMENT.md)）。
+同じアプリを「日本語で頼む」場合と「Ponte で頼む」場合とで、AI に16回ずつ書かせました。
+結果には、同じ14個の隠しテストを当てています（[EXPERIMENT.md](EXPERIMENT.md)）。
 
-| | 日本語で頼む | この言語で頼む |
+| | 日本語で頼む | Ponte で頼む |
 |---|---|---|
-| 全部通った（Sonnet・2回目の条件） | 3/5 | 5/5 |
-| 全部通った（Haiku） | 1/6 | 6/6 |
-| AIが推測で埋めた所 | 1回あたり約6個 | 0 |
-| AIが書いた行数 | 約170行 | 約20行 |
+| すべて通った（Sonnet、2回目の条件） | 3/5 | 5/5 |
+| すべて通った（Haiku） | 1/6 | 6/6 |
+| AI が推測で埋めた箇所 | 1回あたり約6個 | 0 |
+| AI が書いた行数 | 約170行 | 約20行 |
 
-この言語の方は、1回目で間違えても言語がエラーを返すので、AIが直せる（ループ後の数字）。
-弱い所も [EXPERIMENT.md](EXPERIMENT.md) に正直に書いてある。
+Ponte の側は、1回目で間違えても言語がエラーを返すため、AI が自分で直せます。表の数字は、この直しのループを回した後のものです。
+弱い点も [EXPERIMENT.md](EXPERIMENT.md) に書いています。
 
 ---
 
@@ -89,77 +90,82 @@ python -m ponte run spec/todo.ponte        # → http://127.0.0.1:8000/
 pip install -e .                           # 入れると `ponte run spec/todo.ponte` だけで動く（依存は増えない）
 ```
 
-1歩ずつ作るなら **[docs/入門.md](docs/入門.md)**（やることアプリを、エラーを見ながら作る）。
+1歩ずつ作るなら [docs/入門.md](docs/入門.md) を読んでください。やることアプリを、エラーを見ながら作ります。
 
 ## コマンド
 
 | コマンド | すること |
 |---|---|
-| `python -m ponte new myapp` | ひな形から新しいアプリを作る（最初から check も test も通る）。`--from lend` で見本のアプリから |
-| `python -m ponte check 仕様.ponte` | 決めてないこと・間違いを探す（エラー32種）。`--json` で機械向け |
-| `python -m ponte test 仕様.ponte` | example と never を全部流す。確かめていない所（穴）も出す。`--strict` で穴も失敗に |
-| `python -m ponte run 仕様.ponte` | 動かす（ブラウザの画面つき）。人に使ってもらうなら `--login`（`--signup` で画面から登録も）。作っている間は `--reload` で書き直すたびに読み直す |
-| `python -m ponte user add 仕様.ponte 名前` | ログインする人を足す（合言葉は scrypt で残す） |
-| `python -m ponte explain E32` | エラーの意味と直し方（無しなら一覧）。`check --json` で機械向けの出力も |
-| `python -m ponte fill 仕様.ponte` | AIに action の中身を書かせて、機械で確かめる（要 `ANTHROPIC_API_KEY`） |
-| `python -m ponte guide` | AIに渡す書き方の説明を出す（実装から作るので、実装とずれない）。`--rules` で rule の書き方 |
-| `python -m ponte fmt 仕様.ponte` | 見た目を整える（意味が変わるなら書かない） |
-| `python -m ponte build 仕様.ponte` | 1つのファイル（.pyz）にまとめる → `python app.pyz` |
+| `python -m ponte new myapp` | ひな形から新しいアプリを作る。最初から check も test も通る。`--from lend` で見本のアプリから作る |
+| `python -m ponte check 仕様.ponte` | 決めていないことや間違いを探す（エラー32種）。`--json` で機械向けに出す |
+| `python -m ponte test 仕様.ponte` | example と never をすべて流し、確かめていない部分（穴）も出す。`--strict` で穴も失敗にする |
+| `python -m ponte run 仕様.ponte` | ブラウザの画面つきで動かす。人に使ってもらうなら `--login` を付ける（`--signup` で画面から登録もできる）。作っている間は `--reload` で書き直すたびに読み直す |
+| `python -m ponte user add 仕様.ponte 名前` | ログインする人を足す。合言葉は scrypt で保存する |
+| `python -m ponte explain E32` | エラーの意味と直し方を出す。コードを省くと一覧を出す |
+| `python -m ponte fill 仕様.ponte` | AI に action の中身を書かせ、機械で確かめる。`ANTHROPIC_API_KEY` が必要 |
+| `python -m ponte guide` | AI に渡す書き方の説明を出す。実装から作るため、実装とずれない。`--rules` で rule の書き方を出す |
+| `python -m ponte fmt 仕様.ponte` | 見た目を整える。意味が変わる場合は書き換えない |
+| `python -m ponte build 仕様.ponte` | 1つのファイル（.pyz）にまとめる。`python app.pyz` で動く |
 | `python -m ponte role 仕様.ponte 名前 admin` | 最初の管理者を決める |
-| `python -m ponte data export 仕様.ponte` | 保存したデータを JSON で（`--csv フォルダ` で Excel 向けの CSV）。`data import 仕様 Thing 表.csv` で CSV から入れる（全部確かめてから）。`data compact` で伸び続ける記録を今の中身に詰める |
-| `python -m ponte doc 仕様.ponte` | 決めごと（データ・流れ・誰が何をできるか・きまりと理由・AIに任せた所・残っていること）を、コードを読まない人にも読める1枚の HTML に |
-| `python -m ponte lsp` | エディタ向けの言語サーバー（エラー・説明・補い。設定は [editor/vscode/README.md](editor/vscode/README.md)） |
-| `python -m pytest` | 言語そのもののテスト |
+| `python -m ponte data export 仕様.ponte` | 保存したデータを JSON で出す（`--csv フォルダ` で Excel 向けの CSV）。`data import 仕様 Thing 表.csv` で CSV から取り込む。取り込む前にすべて確かめる。`data compact` で、伸び続ける記録を今の中身に詰める |
+| `python -m ponte doc 仕様.ponte` | 仕様を、コードを読まない人にも読める1枚の HTML にまとめる。データ、流れ、権限、ルールと理由、AI に任せた部分、残っていることが載る |
+| `python -m ponte lsp` | エディタ向けの言語サーバーを起動する。エラー、説明、補完を出す（設定は [editor/vscode/README.md](editor/vscode/README.md)） |
+| `python -m pytest` | 言語そのもののテストを流す |
 
 ## 見本のアプリ
 
 | アプリ | 見どころ | |
 |---|---|---|
-| [spec/todo.ponte](spec/todo.ponte) やること | 入門のできあがり。一番小さい | ![](docs/screenshots/todo.png) |
+| [spec/todo.ponte](spec/todo.ponte) やること | 入門のできあがり。いちばん小さい | ![](docs/screenshots/todo.png) |
 | [spec/lend.ponte](spec/lend.ponte) 備品かしだし | 役割（管理者）、2つの thing のつながり、rule の where、件数 | ![](docs/screenshots/lend_members.png) |
-| [spec/kakeibo.ponte](spec/kakeibo.ponte) 家計メモ | 標準ライブラリ（`use std/money`）で金額を拾って合計 | ![](docs/screenshots/kakeibo.png) |
-| [spec/hub_app.ponte](spec/hub_app.ponte) 就活Hub | メールから締切を拾う（AIが中身を書いた action）、ボード・カレンダー・英語 | ![](docs/screenshots/board.png) |
+| [spec/kakeibo.ponte](spec/kakeibo.ponte) 家計メモ | 標準ライブラリ（`use std/money`）で金額を拾って合計する | ![](docs/screenshots/kakeibo.png) |
+| [spec/hub_app.ponte](spec/hub_app.ponte) 就活Hub | メールから締切を拾う action（中身は AI が書いた）、ボード、カレンダー、英語 | ![](docs/screenshots/board.png) |
 
-## 言語の中身（ひとめで）
+## 言語の構成
 
 | パーツ | 書くこと |
 |---|---|
-| `thing` | データの形。`status [draft \| submitted]` のような状態も |
-| `flow` | 状態の流れ（`draft -> submitted`）と、ぶつかった時の勝ち（`failed > passed`） |
-| `who` | 誰が何をできるか。書いてないことは誰もできない |
+| `thing` | データの形。`status [draft \| submitted]` のような状態も書く |
+| `flow` | 状態の流れ（`draft -> submitted`）と、ぶつかったときにどちらを優先するか（`failed > passed`） |
+| `who` | 誰が何をできるか。書いていないことは誰もできない |
 | `list` | 条件で絞った一覧 |
-| `rule` | きっかけ → やること（1つだけ）。`example` で確かめる |
+| `rule` | きっかけと、そのときにすること（1つだけ）。`example` で確かめる |
 | `relate` | rule 同士の関係（`then` / `then no` / `before` / `>` / `else`） |
-| `action` | AIが中身を書く穴。`example`・`never`・`else` の契約付き |
-| `scene` / `look` / `part` / `input` / `style` / `words` | 画面・見せ方・部品・入力・見た目・言葉（日本語と英語） |
-| `use std/...` | 標準ライブラリ（日付・金額・メール・電話） |
-| `tbd` / `##` | まだ決めてないこと。残っていると動かない |
+| `action` | AI が中身を書く部分。`example`、`never`、`else` の契約を付ける |
+| `scene` / `look` / `part` / `input` / `style` / `words` | 画面、見せ方、部品、入力、見た目、言葉（日本語と英語） |
+| `use std/...` | 標準ライブラリ（日付、金額、メール、電話） |
+| `tbd` / `##` | まだ決めていないこと。残っていると動かない |
 
-全部は **[仕様書 v0.3](docs/言語仕様_v0.3.md)**。
+詳しくは [仕様書 v0.3](docs/言語仕様_v0.3.md) を参照してください。
 
-## リポジトリの中
+## リポジトリの構成
 
 | 場所 | 中身 |
 |---|---|
-| `ponte/` | 言語の本体（パーサ・チェッカー・実行エンジン・画面・AIの穴埋め）→ [docs/仕組み.md](docs/仕組み.md) |
-| `ponte/std/` | 標準ライブラリ（中身もこの言語） |
+| `ponte/` | 言語の本体（パーサ、チェッカー、実行エンジン、画面、AI による穴埋め）。[docs/仕組み.md](docs/仕組み.md) を参照 |
+| `ponte/std/` | 標準ライブラリ。中身も Ponte で書いている |
 | `spec/` | 見本のアプリ |
 | `tests/` | テスト（320件ほど） |
-| `docs/` | 仕様書・入門・仕組み・決めごと・画面の写真 |
-| `site/` | ホームページ（`python site/make.py && python site/build.py` で作る。main に入ると GitHub Pages へ） |
-| `experiment/` | 比較実験（プロンプト・AIの返事・採点） |
+| `docs/` | 仕様書、入門、しくみ、設計の判断、画面の写真 |
+| `site/` | ホームページ。`python site/make.py && python site/build.py` で作り、main に入ると GitHub Pages に出る |
+| `experiment/` | 比較実験（プロンプト、AI の返答、採点） |
 | `editor/vscode/` | エディタの色分けと、保存時のエラー表示 |
 | `archive/v01/` | 最初の版（当時のまま） |
 
-記録: [CHANGELOG.md](CHANGELOG.md)（何が入ったか）/ [REPORT.md](REPORT.md)（作業の記録）/ [REVIEW.md](REVIEW.md)（ダメなパーツと欲しいもの）/ [docs/DECISIONS.md](docs/DECISIONS.md)（決めごと）
+記録は次のとおりです。
 
-手を入れるなら: [CONTRIBUTING.md](CONTRIBUTING.md)
+- [CHANGELOG.md](CHANGELOG.md): 何が入ったか
+- [REPORT.md](REPORT.md): 作業の記録
+- [REVIEW.md](REVIEW.md): 弱いパーツと欲しいもの
+- [docs/DECISIONS.md](docs/DECISIONS.md): 設計の判断
 
-## いまの限界
+手を入れる場合は [CONTRIBUTING.md](CONTRIBUTING.md) を読んでください。
 
-- **ログインは合言葉だけ。** `ponte run --login` で名前と合言葉のログインになる（`--login` 無しで外に開こうとすると止まる）。メールでの確認や、合言葉を忘れた時の手続きはまだ無い。
-- **例と never に書いてないことは守れない。** 穴さがしで「書いていない所」は見えるが、書くのは人。
-- **道具はまだ少ない。** each・group by・json などは「まだ無い道具」（書くとエラー）。
-- **外への通知はまだ画面の中だけ。** メールや LINE に送る（connect の does）は形だけで、本当につなぐのは中身の仕事。
-- **地図は出せない。** 画像は出せる（`image`）。
-- **1台で動かす前提。** データは1つのファイルに追記する。たくさんの人が同時に使う大きなサービスには向かない。
+## 現在の制限
+
+- ログインは合言葉だけです。`ponte run --login` で、名前と合言葉によるログインになります（`--login` なしで外に開こうとすると止まります）。メールでの確認や、合言葉を忘れたときの手続きはまだありません。
+- example と never に書いていないことは守れません。穴さがしで「書いていない部分」は見えますが、書くのは人です。
+- 道具はまだ少なめです。each、group by、json などは「まだない道具」として、書くとエラーになります。
+- 外への通知は、まだ画面の中だけです。メールや LINE に送る部分（connect の does）は形だけで、実際につなぐのは中身の仕事です。
+- 地図は出せません。画像は `image` で出せます。
+- 1台で動かす前提です。データは1つのファイルに追記します。たくさんの人が同時に使う大きなサービスには向きません。

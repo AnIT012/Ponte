@@ -1,7 +1,7 @@
-"""`ponte doc` — 仕様を、コードを読まない人にも読める1枚の HTML にする。
+"""`ponte doc`: 仕様を、コードを読まない人にも読める1枚の HTML にする。
 
-人が決めたこと（データ・流れ・誰が何をできるか・きまりとその理由・AIに任せた所と約束）と、
-まだ決めていないこと・確かめていない所を並べる。書いた人以外が「決めごと」を確かめるためのもの。
+人が決めたこと（データ・流れ・誰が何をできるか・ルールとその理由・AIに任せた所と約束）と、
+まだ決めていないこと・確かめていない所を並べる。書いた人以外が仕様を確かめるためのもの。
 """
 from __future__ import annotations
 
@@ -56,7 +56,7 @@ def build(spec: Spec, title: str | None = None) -> str:
             continue
         arrows = "".join(f"<li>{name(a)} → {name(b)}</li>" for a, b in edges)
         win = "".join(f"<li>同時なら {name(a)} が {name(b)} に勝つ</li>" for a, b in wins)
-        flows.append(f"<h3><code>{_e(f.name)}</code></h3><ul>{arrows}{win}</ul><p class='note'>矢印の無い動きはできません。</p>")
+        flows.append(f"<h3><code>{_e(f.name)}</code></h3><ul>{arrows}{win}</ul><p class='note'>矢印のない動きはできません。</p>")
     if flows:
         sections.append(("flow", "状態の流れ", "".join(flows)))
 
@@ -70,7 +70,7 @@ def build(spec: Spec, title: str | None = None) -> str:
                 who.append(f"<tr><td>{_e('みんな' if role == 'user' else role)}</td><td>{name(t)} を{_e(VERBS.get(verb, verb))}</td>"
                            f"<td>{_e(cond or '（いつでも）')}</td></tr>")
     sections.append(("who", "誰が何をできるか",
-                     f"<p>ここに無いことは、誰にもできません。</p><table><tr><th>誰が</th><th>できること</th><th>条件</th></tr>{''.join(who)}</table>"))
+                     f"<p>ここにないことは、誰にもできません。</p><table><tr><th>誰が</th><th>できること</th><th>条件</th></tr>{''.join(who)}</table>"))
 
     # きまり
     rel = relate_lines(spec)
@@ -83,14 +83,14 @@ def build(spec: Spec, title: str | None = None) -> str:
         n_ex = len(r.children_of("example"))
         links = [_e(RELS.get(k, "{a} " + k + " {b}").format(a=a, b=b)) for a, k, b, _ in rel if r.name in (a, b)]
         rs.append(f"<div class='card'><h3>{_e(r.name)}</h3>"
-                  + (f"<p class='why'>{_e(why.text.strip())}</p>" if why else "<p class='why missing'>（なぜ、が書いてありません）</p>")
+                  + (f"<p class='why'>{_e(why.text.strip())}</p>" if why else "<p class='why missing'>（理由が書かれていません）</p>")
                   + "<dl>"
                   + (f"<dt>きっかけ</dt><dd><code>{_e(when.text.strip())}</code></dd>" if when else "")
                   + (f"<dt>条件</dt><dd>{'<br>'.join(f'<code>{_e(x)}</code>' for x in wh)}</dd>" if wh else "")
-                  + f"<dt>やること</dt><dd>{'<br>'.join(f'<code>{_e(x)}</code>' for x in dos) or '—'}</dd>"
+                  + f"<dt>やること</dt><dd>{'<br>'.join(f'<code>{_e(x)}</code>' for x in dos) or 'なし'}</dd>"
                   + (f"<dt>つながり</dt><dd>{'<br>'.join(links)}</dd>" if links else "")
                   + f"<dt>例</dt><dd>{n_ex}つ</dd></dl></div>")
-    sections.append(("rules", "きまり", "".join(rs)))
+    sections.append(("rules", "ルール", "".join(rs)))
 
     # AIに任せた所
     acts = []
@@ -100,15 +100,15 @@ def build(spec: Spec, title: str | None = None) -> str:
         nv = [c.text.strip() for c in a.children_of("never")]
         el = a.child("else")
         acts.append(f"<div class='card'><h3>{_e(a.name)}</h3><dl>"
-                    f"<dt>入るもの</dt><dd><code>{_e(a.child('in').text.strip() if a.child('in') else '—')}</code></dd>"
-                    f"<dt>答えの形</dt><dd><code>{_e(a.child('out').text.strip() if a.child('out') else '—')}</code></dd>"
+                    f"<dt>入るもの</dt><dd><code>{_e(a.child('in').text.strip() if a.child('in') else 'なし')}</code></dd>"
+                    f"<dt>答えの形</dt><dd><code>{_e(a.child('out').text.strip() if a.child('out') else 'なし')}</code></dd>"
                     f"<dt>誰が中身を書くか</dt><dd>{_e(by.text.strip() if by else 'ai')}</dd>"
                     f"<dt>例（守ること）</dt><dd>{'<br>'.join(f'<code>{_e(x)}</code>' for x in ex)}</dd>"
                     + (f"<dt>してはいけないこと</dt><dd>{'<br>'.join(f'<code>{_e(x)}</code>' for x in nv)}</dd>" if nv else "")
-                    + (f"<dt>困った時</dt><dd><code>{_e(el.text.strip())}</code></dd>" if el else "")
+                    + (f"<dt>答えが出ないとき</dt><dd><code>{_e(el.text.strip())}</code></dd>" if el else "")
                     + "</dl></div>")
     if acts:
-        sections.append(("ai", "AIに任せた所と、その約束", "<p>AIが書いた中身は、下の例と「してはいけないこと」で機械が確かめます。</p>" + "".join(acts)))
+        sections.append(("ai", "AI の担当部分と約束", "<p>AI が書いた中身は、下の例と「してはいけないこと」を使って機械的に確かめます。</p>" + "".join(acts)))
 
     # 画面
     def label(text: str) -> str:                   # ボタンは画面に出る名前で（無ければ名前そのもの）
@@ -153,10 +153,10 @@ def build(spec: Spec, title: str | None = None) -> str:
             open_items.append(f"<li>{_e(f.message)} <span class='where'>{_e(path)}:{line}</span></li>")
     todo = f"<h3>まだ決めていないこと（{len(open_items)}）</h3>" + (f"<ul>{''.join(open_items)}</ul>" if open_items else "<p>ありません。</p>")
     if [f for f in check(spec) if f.is_error]:
-        todo += "<h3>例で確かめていない所</h3><p class='missing'>check が通っていないので、まだ数えていません（<code>ponte check</code>）。</p>"
+        todo += "<h3>例で確かめていない部分</h3><p class='missing'>check が通っていないため、まだ数えていません（<code>ponte check</code>）。</p>"
     else:
         hole_items = [f"<li>{_e(h.message)}</li>" for h in holes(spec, run_examples(spec))]
-        todo += f"<h3>例で確かめていない所（{len(hole_items)}）</h3>" + (f"<ul>{''.join(hole_items)}</ul>" if hole_items else "<p>ありません。</p>")
+        todo += f"<h3>例で確かめていない部分（{len(hole_items)}）</h3>" + (f"<ul>{''.join(hole_items)}</ul>" if hole_items else "<p>ありません。</p>")
     sections.append(("open", "残っていること", todo))
 
     import os
@@ -165,7 +165,7 @@ def build(spec: Spec, title: str | None = None) -> str:
     body = "".join(f'<section id="{i}"><h2>{_e(t)}</h2>{inner}</section>' for i, t, inner in sections)
     return f"""<!doctype html>
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{_e(title)} — 決めごと</title>
+<title>{_e(title)}：仕様のまとめ</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Cdefs%3E%3ClinearGradient id="pi" x1="0" x2="1"%3E%3Cstop offset=".15" stop-color="#FF7355"/%3E%3Cstop offset=".85" stop-color="#83C3FF"/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="100" height="100" rx="24" fill="#1F2340"/%3E%3Cpath d="M24 62 C 38 28, 62 28, 76 62" stroke="url%28#pi%29" stroke-width="9" fill="none" stroke-linecap="round"/%3E%3Ccircle cx="24" cy="62" r="13" fill="#FF7355"/%3E%3Ccircle cx="76" cy="62" r="13" fill="#83C3FF"/%3E%3C/svg%3E">
 <style>
 :root{{--bg:#f7f7f5;--fg:#1f2328;--sub:#6b7280;--card:#fff;--line:#e5e7eb;--accent:#2f6fd6;--warn:#b42318}}
@@ -183,7 +183,7 @@ th,td{{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vert
 .why{{margin:0 0 4px}} .missing{{color:var(--warn)}} .note{{color:var(--sub);font-size:14px;margin:4px 0}} .where{{color:var(--sub);font-size:13px}}
 @media (max-width:560px){{dl{{grid-template-columns:1fr}} dt{{margin-top:6px}}}}
 </style></head><body><div class="wrap">
-<header><h1>{_e(title)}</h1><p class="lead">この仕様で決まっていること（<code>ponte doc</code> で作りました）</p></header>
+<header><h1>{_e(title)}</h1><p class="lead">この仕様で決まっていることの一覧です（<code>ponte doc</code> で生成）。</p></header>
 <nav>{nav}</nav>
 {body}
 </div></body></html>

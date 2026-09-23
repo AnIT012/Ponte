@@ -78,7 +78,7 @@ function gotoLine(n) {
 function showCheck(r) {
   const errs = r.findings.filter(f => f[3]), warns = r.findings.filter(f => !f[3]);
   state.className = "state " + (errs.length ? "bad" : "good");
-  state.textContent = errs.length ? `止まります（${errs.length}件）` : "決めてないことなし";
+  state.textContent = errs.length ? `エラー ${errs.length}件` : "決めていないことはありません";
   testBtn.disabled = errs.length > 0;
   if (!r.findings.length) { out.innerHTML = '<p class="ok">check が通りました。「test」で example を動かせます。</p>'; return; }
   out.innerHTML = r.findings.map(f => `<button type="button" class="finding ${f[3] ? "err" : "warn"}" data-line="${f[1]}">
@@ -106,7 +106,7 @@ testBtn.addEventListener("click", () => {
   const ok = r.results.filter(x => x[2]).length;
   out.innerHTML = `<p class="${ok === r.results.length ? "ok" : "bad"}">example ${r.results.length}件中 ${ok}件通過</p>` +
     r.results.map(x => `<button type="button" class="finding ${x[2] ? "pass" : "err"}" data-line="${x[1]}"><span class="where">${x[2] ? "通過" : "失敗"} ・ ${esc(x[0])}</span>${x[3] ? `<span class="msg">${esc(x[3])}</span>` : ""}</button>`).join("") +
-    (r.holes.length ? `<p class="holes">確かめていない所（${r.holes.length}件）</p>` + r.holes.map(h => `<button type="button" class="finding warn" data-line="${h[0]}"><span class="where">${h[0]}行目</span><span class="msg">${esc(h[1])}</span></button>`).join("") : "");
+    (r.holes.length ? `<p class="holes">確かめていない部分（${r.holes.length}件）</p>` + r.holes.map(h => `<button type="button" class="finding warn" data-line="${h[0]}"><span class="where">${h[0]}行目</span><span class="msg">${esc(h[1])}</span></button>`).join("") : "");
 });
 $("share").addEventListener("click", async () => {
   const url = location.href.split("#")[0] + "#code=" + b64(src.value);
@@ -117,7 +117,7 @@ $("share").addEventListener("click", async () => {
 });
 docBtn.addEventListener("click", () => {
   const page = py.globals.get("run_doc")(src.value);
-  if (!page) { out.innerHTML = '<p class="bad">読めないので、決めごとの1枚を作れません。</p>'; return; }
+  if (!page) { out.innerHTML = '<p class="bad">仕様を読めないため、1枚の HTML を作れません。</p>'; return; }
   const url = URL.createObjectURL(new Blob([page], { type: "text/html" }));
   window.open(url, "_blank", "noopener");
 });

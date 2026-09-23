@@ -28,12 +28,12 @@ DOC = REPO + "/blob/main/docs/"
 BLOB = REPO + "/blob/main/"
 
 SLIDES = [
-    ("1", "データの形を書く", "thing には、アプリが持つデータの形を書きます。項目の名前と型を並べておけば、保存や読み書きは Ponte が引き受けます。状態は <code>[todo | done]</code> のように、取りうる値を全部書いておきます。"),
-    ("2", "流れと、誰が何をできるか", "flow には状態がどう移れるかを、who には誰が何をしてよいかを書きます。who に書いていない操作は誰にもできないので、権限の書き忘れはエラーとして見つかります。"),
-    ("3", "きっかけと、やること", "rule には、きっかけとやることを一組で書きます。when に書けるのは時刻やボタンのような出来事だけで、「明日まで」のような条件は list の where で絞ります。"),
-    ("4", "例がそのままテストになる", "rule の下に example を書くと、それがテストになります。<code>ponte test</code> は例が通るかを確かめるだけでなく、まだ例で確かめていないルールや状態の変化も教えてくれます。"),
-    ("5", "AIに任せる部分には約束を", "処理の中身をAIに書いてもらうときは、action に入力と答えの例、してはいけないことを先に書きます。AIが書いた中身はこの約束に照らして機械で確かめられ、守れていなければ書き直しになります。"),
-    ("6", "決めていないことは tbd に", "まだ決めていないことは tbd に書いておけます。tbd が残っているあいだは <code>ponte check</code> が通らないので、決め忘れたまま動き出すことはありません。"),
+    ("1", "データの形を書く", "thing には、アプリが持つデータの形を書きます。項目の名前と型を並べておけば、保存や読み書きは Ponte が引き受けます。状態は <code>[todo | done]</code> のように、取りうる値をすべて書いておきます。"),
+    ("2", "状態の流れと権限", "flow には状態がどう移れるかを、who には誰が何をしてよいかを書きます。who に書いていない操作は誰にもできません。そのため、権限の書き忘れはエラーとして見つかります。"),
+    ("3", "きっかけとすること", "rule には、きっかけとそのときにすることを一組で書きます。when に書けるのは時刻やボタンのような出来事だけで、「明日まで」のような条件は list の where で絞ります。"),
+    ("4", "例がテストになる", "rule の下に example を書くと、それがテストになります。<code>ponte test</code> は例が通るかを確かめるだけでなく、まだ例で確かめていないルールや状態の変化も一覧で示します。"),
+    ("5", "AI に任せる部分には約束を書く", "処理の中身を AI に書いてもらうときは、action に入力と答えの例、してはいけないことを先に書きます。AI が書いた中身はこの約束に照らして機械で確かめ、守れていなければ書き直させます。"),
+    ("6", "決めていないことは tbd に", "まだ決めていないことは tbd に書いておけます。tbd が残っているあいだは <code>ponte check</code> が通りません。このため、決め忘れたまま動き出すことはありません。"),
 ]
 
 HEAD = (HERE / "head.html").read_text(encoding="utf-8")
@@ -105,7 +105,7 @@ def link(url: str) -> str:
 
 
 FOOT = {
-    "learn": "この入門の出力は、実際にコマンドを流したものです（テストで確かめています）。",
+    "learn": "この入門に載せた出力は、実際にコマンドを流した結果です。テストで一致を確かめています。",
     "spec": "10章の道具と13章のエラーの表は、実装から作っています。",
     "how": "v0.3 ・ Python 3.11",
 }
@@ -174,9 +174,9 @@ def forms_section() -> str:
     later = " / ".join(_code(f[1]) for f in WHEN_FORMS if not f[4])
     do = _table(["書き方", "意味"], [(_code(f[1]), _md(f[2])) for f in DO_FORMS])
     val = _table(["書き方", "意味"], [(_code(f[1]), _md(f[2])) for f in VALUE_FORMS])
-    return (f'<h3 id="when">when — きっかけ</h3><p>書けるのは出来事だけです。状態（「期限が近い」など）は where か list で絞ります。</p>{when}'
-            f'<p class="note">書き方は決まっていて、まだ起きないもの（check で止まります）: {later}</p>'
-            f'<h3 id="do">do — やること</h3><p>1つの rule でやることは1つだけです。2つあるときは rule を分けて relate の then でつなぎます。</p>{do}'
+    return (f'<h3 id="when">when（きっかけ）</h3><p>when に書けるのは出来事だけです。状態（「期限が近い」など）は where か list で絞ります。</p>{when}'
+            f'<p class="note">書き方は決まっているものの、まだ動かないもの（check でエラーになります）: {later}</p>'
+            f'<h3 id="do">do（すること）</h3><p>1つの rule ですることは1つだけです。2つあるときは rule を分け、relate の then でつなぎます。</p>{do}'
             f'<h3 id="values">値</h3><p>create の「項目 値」と set に書けるものです。</p>{val}')
 
 
@@ -202,7 +202,7 @@ shape Clock
   ":"
   minute digits 2"""
     return ("".join(out)
-            + '<h3 id="shape">shape — 正規表現の代わり</h3><p>見出しの下に、部品を1行に1つずつ並べます。名前を付けた部分は <code>名前 of 当たり</code> で取り出せます。</p>'
+            + '<h3 id="shape">shape（正規表現の代わり）</h3><p>見出しの下に、部品を1行に1つずつ並べます。名前を付けた部分は <code>名前 of 当たり</code> で取り出せます。</p>'
             + shapes + f'<pre class="code">{highlight(sample, states_in(sample))}</pre>')
 
 
@@ -232,9 +232,9 @@ def reference() -> str:
     sections = [
         ("commands", "コマンド", "<code>python -m ponte</code> か、<code>pip install -e .</code> のあとは <code>ponte</code> だけで使えます。", commands_section()),
         ("rules", "rule の書き方", "rule は、きっかけ（when）とやること（do）の一組です。", forms_section()),
-        ("tools", "do で使える道具", "action の中身に書ける道具は、これで全部です。ここに無いものを書くとエラーになります。", tools_section()),
-        ("std", "標準ライブラリ", "中身も Ponte で書かれていて、example が付いています。", std_section()),
-        ("errors", "エラー", "<code>ponte check</code> が止める理由と直し方です。<code>ponte explain E32</code> でも同じものが見られます。", errors_section()),
+        ("tools", "do で使える道具", "action の中身に書ける道具は、ここに載せたものですべてです。ここにないものを書くとエラーになります。", tools_section()),
+        ("std", "標準ライブラリ", "中身も Ponte で書かれており、example が付いています。", std_section()),
+        ("errors", "エラー", "<code>ponte check</code> がエラーにする理由と直し方です。<code>ponte explain E32</code> でも同じ内容を表示できます。", errors_section()),
     ]
     nav = "".join(f'<li class="d2"><a href="#{i}">{t}</a></li>' for i, t, _, _ in sections)
     body = "".join(f'<section class="ref" id="{i}"><h2>{t}</h2><p>{lead}</p>{inner}</section>' for i, t, lead, inner in sections)
@@ -245,7 +245,7 @@ def reference() -> str:
   <article class="prose">
     <p class="eyebrow">REFERENCE</p>
     <h1>道具とエラー</h1>
-    <p class="lead">このページは Ponte の実装から作っています。道具の例は全部テストで動かしているので、ここに書いてあることはそのまま動きます。</p>
+    <p class="lead">このページは Ponte の実装から作っています。道具の例はすべてテストで動かしているため、ここに書いてある例は実際に動きます。</p>
 {body}
   </article>
 </div>
@@ -309,7 +309,7 @@ def play() -> str:
     assert "</" not in PLAY_PY                    # <script> の中身はそのまま読まれる（エスケープされない）
     samples = {n: (HERE / "samples" / f"{n}.ponte").read_text(encoding="utf-8") for n in "123456"}
     full = "\n".join(samples[n].rstrip("\n") + "\n" for n in "12345")
-    choices = [("todo", "やることアプリ（全部）", full)] + [(f"s{n}", f"見本 {n}: {h}", samples[n] + ("" if n == "6" else "")) for n, h, _ in SLIDES]
+    choices = [("todo", "やることアプリ（完成形）", full)] + [(f"s{n}", f"見本 {n}: {h}", samples[n] + ("" if n == "6" else "")) for n, h, _ in SLIDES]
     choices[-1] = ("s6", "見本 6: 決めていないことは tbd に（1〜5 と一緒に）", full + "\n" + samples["6"])
     import json as _json
     data = _json.dumps({k: v for k, _, v in choices}, ensure_ascii=False).replace("</", "<\\/")
@@ -318,7 +318,7 @@ def play() -> str:
 {{HEADER}}
 <div class="play-head">
   <div><p class="eyebrow">PLAYGROUND</p><h1>試す</h1>
-  <p class="lead">ここで書いた Ponte を、そのままブラウザの中で確かめます。書き換えると <code>ponte check</code> が流れ、「test」で example を動かします。インストールは要りません。</p></div>
+  <p class="lead">ここに書いた Ponte を、ブラウザの中で確かめられます。書き換えると <code>ponte check</code> が流れ、「test」を押すと example を動かします。インストールは必要ありません。</p></div>
   <label class="pick">見本 <select id="pick">{opts}</select></label>
 </div>
 <div class="play">
@@ -327,11 +327,11 @@ def play() -> str:
     <textarea id="src" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Ponte のコード"></textarea>
   </div>
   <div class="panel sticker" aria-live="polite">
-    <div class="panel-bar"><span id="state" class="state">準備しています…</span><span class="acts"><button type="button" id="share" class="quiet">共有</button><button type="button" id="doc" class="quiet" disabled>決めごと</button><button type="button" id="test" disabled>test</button></span></div>
-    <div id="out" class="out"><p class="muted">はじめての読み込みには数秒かかります（Python をブラウザに読み込むため）。</p></div>
+    <div class="panel-bar"><span id="state" class="state">準備しています…</span><span class="acts"><button type="button" id="share" class="quiet">共有</button><button type="button" id="doc" class="quiet" disabled>仕様のまとめ</button><button type="button" id="test" disabled>test</button></span></div>
+    <div id="out" class="out"><p class="muted">Python をブラウザに読み込むため、初回は数秒かかります。</p></div>
   </div>
 </div>
-<footer><p>check と test は、Ponte の本体をそのままブラウザで動かしています（<a href="https://pyodide.org/">Pyodide</a>）。書いたものはどこにも送りません。</p></footer>
+<footer><p>check と test は、Ponte の本体を <a href="https://pyodide.org/">Pyodide</a> でブラウザ上で動かしています。書いた内容はどこにも送信しません。</p></footer>
 </div>
 <script type="application/json" id="samples">{data}</script>
 <script type="text/plain" id="playpy">{PLAY_PY}</script>
@@ -343,7 +343,7 @@ def play() -> str:
     return page("試す — Ponte", "play", body, DOCS_CSS + "\n" + (HERE / "play.css").read_text(encoding="utf-8"))
 
 
-DOCS = [("spec", "言語仕様_v0.3.md", "仕様書 v0.3", 2), ("how", "仕組み.md", "しくみ — ponte/ の中", 2)]
+DOCS = [("spec", "言語仕様_v0.3.md", "仕様書 v0.3", 2), ("how", "仕組み.md", "しくみ（ponte/ の中）", 2)]
 
 
 if __name__ == "__main__":

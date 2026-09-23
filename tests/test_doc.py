@@ -1,4 +1,4 @@
-"""ponte doc: 決めごとの1枚。"""
+"""ponte doc: 仕様のまとめの1枚。"""
 from ponte.cli import main
 from ponte.doc import build
 from ponte.parser import parse_file
@@ -7,10 +7,10 @@ from ponte.parser import parse_file
 def test_doc_shows_decisions_and_open_items(tmp_path):
     lend = build(parse_file("spec/lend.ponte"))
     assert "備品かしだし" in lend and "誰が何をできるか" in lend and "空いている備品を借りる" in lend
-    assert "ここに無いことは、誰にもできません" in lend
+    assert "ここにないことは、誰にもできません" in lend
     assert "借りる <code>borrow-button</code>" in lend and "入力 備品を足す" in lend
     hub = build(parse_file("spec/hub.ponte"))
-    assert "timezone" in hub and "AIに任せた所" in hub and "まだ数えていません" in hub
+    assert "timezone" in hub and "AI の担当部分" in hub and "まだ数えていません" in hub
     out = tmp_path / "x.html"
     assert main(["doc", "spec/todo.ponte", "-o", str(out)]) == 0 and "<!doctype html>" in out.read_text(encoding="utf-8")
 

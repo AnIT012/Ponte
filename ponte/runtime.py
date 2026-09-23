@@ -11,6 +11,7 @@
 """
 from __future__ import annotations
 
+import functools
 import itertools
 import json
 import os
@@ -66,6 +67,26 @@ class Ctx:
     vars: dict = field(default_factory=dict)
     nav: str | None = None
     payload: str | None = None     # 外から届いたもの（メール本文など）
+
+
+@functools.lru_cache(maxsize=1024)
+def _parse_cond(cond: str) -> tuple[str, str | None, str | None]:
+    """where の1行を読む（同じ行は1回だけ読む。一覧は箱の数だけ同じ where を見るので）"""
+    cond = cond.strip()
+    if cond == "it is me":
+        return "me", None, None
+    if cond == "it is not me":
+        return "not me", None, None
+    m = re.match(r"^(\w+) within (\d+ \w+)$", cond)
+    if m:
+        return "within", m.group(1), m.group(2)
+    m = re.match(r"^(\w+) is (after|before) now$", cond)
+    if m:
+        return m.group(2), m.group(1), None
+    m = re.match(r"^(\w+) is (.+)$", cond)
+    if m:
+        return "is", m.group(1), m.group(2).strip()
+    return "?", None, None
 
 
 class Engine:
@@ -383,22 +404,19 @@ class Engine:
             return None
 
     def _where(self, box: Box, cond: str, ctx: Ctx) -> bool:
-        cond = cond.strip()
-        if cond == "it is me":
+        kind, fld, arg = _parse_cond(cond)
+        if kind == "me":
             return ctx.user is not None and box.id == ctx.user.id
-        if cond == "it is not me":
+        if kind == "not me":
             return ctx.user is None or box.id != ctx.user.id
-        m = re.match(r"^(\w+) within (\d+ \w+)$", cond)
-        if m:
-            t = self._time_of(box.values.get(m.group(1), ""))
-            return t is not None and within(t, self.clock(), m.group(2))
-        m = re.match(r"^(\w+) is (after|before) now$", cond)
-        if m:
-            t = self._time_of(box.values.get(m.group(1), ""))
-            return t is not None and (t > self.clock() if m.group(2) == "after" else t < self.clock())
-        m = re.match(r"^(\w+) is (.+)$", cond)
-        if m:
-            fld, want = m.group(1), m.group(2).strip()
+        if kind == "within":
+            t = self._time_of(box.values.get(fld, ""))
+            return t is not None and within(t, self.clock(), arg)
+        if kind in ("after", "before"):
+            t = self._time_of(box.values.get(fld, ""))
+            return t is not None and (t > self.clock() if kind == "after" else t < self.clock())
+        if kind == "is":
+            want = arg
             if want == "me":
                 want = ctx.user.id if ctx.user else None
             elif want.startswith("{") and want.endswith("}"):
@@ -406,7 +424,7 @@ class Engine:
             else:
                 want = unquote(want)
             return str(box.values.get(fld)) == str(want)
-        raise RuleError(f"where の書き方が分かりません: '{cond}'")
+        raise RuleError(f"where の書き方が分かりません: '{cond.strip()}'")
 
     def list_items(self, name: str, ctx: Ctx) -> list[Box]:
         lst = self.lists[name]

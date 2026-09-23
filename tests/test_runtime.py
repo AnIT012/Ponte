@@ -294,3 +294,17 @@ def test_data_export_and_compact(tmp_path, capsys):
     eng2 = Engine(parse_file(str(src)), store=store)
     eng2.submit(eng2.login("taro"), "AddTask", {"title": "パン"})   # 番号がぶつからない
     assert len({b.id for b in eng2.boxes["Task"].values()}) == len(before["Task"]) + 1
+
+
+def test_viewer_is_per_thread():
+    """画面のボタンを押せるかは見ている人で決まる。並列の要求で、人が入れ替わらない"""
+    import threading
+    from ponte.server import App
+    spec = parse_file("spec/lend.ponte")
+    app = App(spec, Engine(spec))
+    app._viewer = "taro"
+    seen = []
+    t = threading.Thread(target=lambda: seen.append(app._viewer))
+    t.start()
+    t.join()
+    assert seen == ["me"] and app._viewer == "taro"

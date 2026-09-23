@@ -33,6 +33,33 @@ def users_path(spec_path: str) -> str:
 
 
 def cmd_check(args) -> int:
+    if getattr(args, "watch", False):
+        return watch_check(args)
+    return check_once(args)
+
+
+def watch_check(args) -> int:
+    """保存するたびに check を流す（Ctrl+C で止める）"""
+    import time
+    args.watch = False
+    seen = None
+    try:
+        while True:
+            try:
+                spec = parse_file(args.spec)
+                now = watched_files(args.spec, spec)
+            except (ParseError, OSError):
+                now = {args.spec: os.path.getmtime(args.spec)} if os.path.exists(args.spec) else {}
+            if now != seen:
+                seen = now
+                print(f"\n--- {time.strftime('%H:%M:%S')} ---")
+                check_once(args)
+            time.sleep(0.5)
+    except KeyboardInterrupt:
+        return 0
+
+
+def check_once(args) -> int:
     try:
         spec = parse_file(args.spec)
     except ParseError as e:
@@ -506,6 +533,7 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--publish", action="store_true", help="公開する時の検査")
     c.add_argument("--save-shape", action="store_true", help="通ったら thing の形を残す")
     c.add_argument("--json", action="store_true", help="結果を JSON で出す（エディタや AI のループ向け）")
+    c.add_argument("--watch", action="store_true", help="保存するたびに流す（Ctrl+C で止める）")
     c.set_defaults(fn=cmd_check)
     t = sub.add_parser("test", help="rule の example を全部流す")
     t.add_argument("spec")

@@ -739,7 +739,13 @@ def make_handler(app: App):
             self._send(json.dumps(obj, ensure_ascii=False).encode(), "application/json; charset=utf-8", code)
 
         def _session(self):
-            return app.auth.sessions.who(cookie_token(self.headers.get("cookie"))) if app.auth else None
+            if not app.auth:
+                return None
+            name = app.auth.sessions.who(cookie_token(self.headers.get("cookie")))
+            if name is not None and not app.auth.users.exists(name):   # 消された人のログインは、その場で切る
+                app.auth.sessions.end(cookie_token(self.headers.get("cookie")))
+                return None
+            return name
 
         def _user(self, name):
             if app.auth:                           # ログインが有る時は、送られてきた名前は使わない（cookie の鍵だけ信じる）
@@ -796,6 +802,8 @@ def make_handler(app: App):
                 err = "何度も間違えたので、少し待ってからやり直してください"
             elif signup and not app.auth.signup:
                 err = "登録は閉じています"
+            elif signup and not app.auth.allow_signup(ip):
+                err = "登録が多すぎます。しばらくしてからやり直してください"
             elif signup:
                 if app.auth.users.exists(name):
                     err = "その名前はもう使われています"
@@ -1004,6 +1012,7 @@ class Auth:
     def __init__(self, users: Users, signup: bool = False):
         self.users, self.signup, self.sessions = users, signup, Sessions()
         self.fails: dict[str, list[float]] = {}
+        self.signups: dict[str, list[float]] = {}
         self.lock = threading.Lock()
 
     def allow(self, ip: str) -> bool:
@@ -1011,6 +1020,17 @@ class Auth:
             recent = [t for t in self.fails.get(ip, []) if t > time.time() - 600]
             self.fails[ip] = recent
             return len(recent) < 10
+
+    def allow_signup(self, ip: str) -> bool:
+        """同じところからの登録は1時間に5人まで（ずっと作り続けてディスクを埋めさせない）"""
+        with self.lock:
+            recent = [t for t in self.signups.get(ip, []) if t > time.time() - 3600]
+            if len(recent) >= 5:
+                self.signups[ip] = recent
+                return False
+            recent.append(time.time())
+            self.signups[ip] = recent
+            return True
 
     def fail(self, ip: str) -> None:
         with self.lock:

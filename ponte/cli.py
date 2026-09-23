@@ -354,7 +354,7 @@ def cmd_user(args) -> int:
     if not args.name:
         print("名前が要ります: ponte user add 仕様.ponte 名前")
         return 1
-    if args.action == "remove":
+    if args.action == "remove":                    # 動いているサーバーも、次の要求でこの人のログインを切る
         if users.data.pop(args.name, None) is None:
             print(f"{args.name} はいません")
             return 1

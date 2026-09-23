@@ -8,6 +8,7 @@
 """
 from __future__ import annotations
 
+import html as _html
 import json
 import pkgutil
 import re
@@ -735,11 +736,13 @@ def make_handler(app: App):
                 return
             if u.path == "/":
                 lang = q.get("lang") or ("ja" if "ja" in app.words or not app.words else next(iter(app.words)))
+                if not re.fullmatch(r"[a-z]{2,3}(?:-[A-Za-z]{2})?", lang):      # URL から来るので、言語の名前の形だけ通す
+                    lang = "ja"
                 acct = ""
                 if app.auth:
-                    import html as _h
-                    acct = f'<div class="acct">{_h.escape(self._session() or "")} ・ <a href="/logout">ログアウト</a></div>'
-                page = (PAGE.replace("<!--__ACCOUNT__-->", acct).replace("__TITLE__", app.title()).replace("__HOME__", app.home or "")
+                    acct = f'<div class="acct">{_html.escape(self._session() or "")} ・ <a href="/logout">ログアウト</a></div>'
+                page = (PAGE.replace("<!--__ACCOUNT__-->", acct).replace('"__TITLE__"', json.dumps(app.title(), ensure_ascii=False).replace("</", "<\\/"))
+                        .replace("__TITLE__", _html.escape(app.title())).replace("__HOME__", app.home or "")
                         .replace("__LANG__", lang).replace("/*__CSS__*/", app.css()))
                 self._send(page.encode(), "text/html; charset=utf-8")
             elif u.path == "/favicon.ico":

@@ -216,3 +216,11 @@ python experiment/score.py          # EXPERIMENT.md を上書き
 - 3つ目のアプリ `spec/kakeibo.lang`（家計メモ）: メモから金額を拾って合計。AIが中身を書く行は0（std の FindYen、中身27行＋契約13行をそのまま使う）。穴さがしが「メモを書いたら金額を拾う」の example が無いことを見つけた → adds を足して書いた。
 - 就活Hub の ExtractDeadline は std に置き換えなかった。AIに中身を書かせる実験の題材で、テストと実験がそのまま使っているため。
 - テスト221件通過。ブラウザで 3件・3,880円 の合計まで確かめた。
+
+## 型を強くする（完了）
+
+- E32: rule ごとに this が何の thing かを決め（when から、relate の then の先へ、create の後は作った箱）、直前の action の答えの型も then で渡す。
+- 動かす前に止まるようになったもの: 無い状態への move / 無い項目の set・where・with・通知の {…} / 状態の set / 値の型違い（number に User、Item に User、number に text の result）/ this が決まらない rule / list の where の項目 / stats の sum が数でない。
+- 3つのアプリで誤検知0。わざと壊した11通りを全部止める（テストにした）。
+- 作りながら見つけた穴: list の where の項目は今まで誰も確かめていなかった。
+- テスト240件通過。

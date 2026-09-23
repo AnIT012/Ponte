@@ -658,7 +658,11 @@ def make_handler(app: App):
                 return
             if u.path == "/":
                 lang = q.get("lang") or ("ja" if "ja" in app.words or not app.words else next(iter(app.words)))
-                page = (PAGE.replace("__TITLE__", app.title()).replace("__HOME__", app.home or "")
+                acct = ""
+                if app.auth:
+                    import html as _h
+                    acct = f'<div class="acct">{_h.escape(self._session() or "")} ・ <a href="/logout">ログアウト</a></div>'
+                page = (PAGE.replace("<!--__ACCOUNT__-->", acct).replace("__TITLE__", app.title()).replace("__HOME__", app.home or "")
                         .replace("__LANG__", lang).replace("/*__CSS__*/", app.css()))
                 self._send(page.encode(), "text/html; charset=utf-8")
             elif u.path == "/favicon.ico":

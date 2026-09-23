@@ -1,8 +1,10 @@
-# エディタの色分け（VS Code）
+# エディタ（VS Code）
 
-仕様書 7章の色分けを VS Code で出す。依存は無い（文法ファイル1つと設定だけ）。
+色分けと、保存した時のエラー表示。依存は無い（文法ファイル・設定・extension.js だけ）。
 
 入れ方: このフォルダを `~/.vscode/extensions/nameless-lang` にコピーして VS Code を開き直す。`.ponte` のファイルに色が付く。
+
+**エラー表示。** 保存すると `python -m ponte check --json` を流して、エラーの行に波線を出す（直し方も一緒に）。ponte が入った Python を使うので、`pip install -e .` しておくか、このリポジトリをワークスペースとして開く。Python の場所は設定の `ponte.python` で変えられる。
 
 | 種類 | 色 |
 |---|---|

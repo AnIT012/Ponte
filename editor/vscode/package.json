@@ -7,7 +7,12 @@
     "vscode": "^1.80.0"
   },
   "categories": [
-    "Programming Languages"
+    "Programming Languages",
+    "Linters"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [
+    "onLanguage:ponte"
   ],
   "contributes": {
     "languages": [
@@ -88,6 +93,16 @@
             }
           }
         ]
+      }
+    },
+    "configuration": {
+      "title": "Ponte",
+      "properties": {
+        "ponte.python": {
+          "type": "string",
+          "default": "python",
+          "description": "ponte check を動かす Python（Python 3.11 以上）"
+        }
       }
     }
   }

@@ -49,10 +49,13 @@ def cmd_check(args) -> int:
     errors = [f for f in findings if f.is_error]
     warnings = [f for f in findings if not f.is_error]
     if args.json:
+        from .errors import BY_CODE
         rows = []
         for f in findings:
             path, line = spec.where(f.line)
-            rows.append({"code": f.code, "file": path, "line": line, "message": f.message, "error": f.is_error})
+            e = BY_CODE.get(f.code)
+            rows.append({"code": f.code, "file": path, "line": line, "message": f.message, "error": f.is_error,
+                         "fix": e[3] if e else None})
         print(json.dumps({"ok": not errors, "findings": rows}, ensure_ascii=False, indent=2))
         return 1 if errors else 0
     if errors:

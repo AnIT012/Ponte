@@ -15,7 +15,7 @@ from .parser import Node, match_arms, states_of
 
 
 # do で使える道具の一覧。ここが元で、AIへの説明（ponte guide）・エラーの一言・仕様書 10章の表を、ここから作る。
-# 1つずつ「動く例」を持つ（tests/test_guide.py が全部流して確かめる）。例の入力は t、shape は D（数字 n）と M（月日）。
+# 1つずつ「動く例」を持つ（tests/test_guide.py が全部流して確かめる）。例の入力は t、shape は D（数字 n）と M（月日）と Y（年月日）。
 TOOLS = [
     # (種類, 書き方, 意味, 例の式, 例の入力 t, 答え)
     ("文字", "normalize X", "全角を半角に（数字・英字・記号）", "normalize t", "１２／３", "12/3"),
@@ -39,8 +39,11 @@ TOOLS = [
     ("集まり", "take 3 of X", "先頭から3つ", 'take 2 of split t by ","', "a,b,c", ["a", "b"]),
     ("集まり", "unique of X", "同じものを1つに（順番はそのまま）", 'unique of split t by ","', "a,b,a", ["a", "b"]),
     ("数", "sum of X / min of X / max of X", "合計 / 一番小さい / 一番大きい（空の sum は 0）", 'sum of split t by ","', "1,2,3", 6),
-    ("数", "round X", "四捨五入して整数に", "round number of t", "7", 7),
+    ("数", "round X", "四捨五入して整数に（2.5 は 3）", "round avg of split t by \",\"", "2,3", 3),
+    ("数", "avg of X", "平均（空なら止まる）", 'avg of split t by ","', "1,2", 1.5),
+    ("数", "abs X", "マイナスを取る", 'abs number of t', "-7", 7),
     ("日時", "monthday of X", "月・日（・時・分）を取り出した当たりを \"10/15 12:00\" に", "monthday of first of find all M in t", "締切10/15まで", "10/15"),
+    ("日時", "date of X", "年・月・日を取り出した当たりを \"2026/10/15\" に（年が要る）", "date of first of find all Y in t", "2026年10月15日", "2026/10/15"),
     ("日時", "add 3 days to X", "年の入った日付に日を足す（年の無い日付は止まる。年は推測しない）", "add 3 days to t", "2026/12/30", "2027/1/2"),
     ("日時", "weekday of X", "年の入った日付の曜日（mon〜sun。match で分ける）", "weekday of t", "2026/9/23", "wed"),
     ("日時", "days until X", "今日から X まで何日（part の中で。今の時刻が要る）", None, None, None),
@@ -378,7 +381,7 @@ class Body:
             except ValueError as err:
                 raise BodyError(line, str(err))
             return (t.date() - now.date()).days
-        m = re.fullmatch(r"(count|length|first|last|monthday|number) of (.+)", e)
+        m = re.fullmatch(r"(count|length|first|last|monthday|date|number) of (.+)", e)
         if m:
             v = ev(m.group(2))
             op = m.group(1)
@@ -390,12 +393,16 @@ class Body:
                 return v[0] if op == "first" else v[-1]
             if op == "number":
                 return int(str(v))
+            if op == "date":
+                if not isinstance(v, dict) or not {"year", "month", "day"} <= set(v):
+                    raise BodyError(line, "date of: year と month と day を取り出した shape の結果が要ります（年は推測しません）")
+                return f"{int(v['year'])}/{int(v['month'])}/{int(v['day'])}"
             if not isinstance(v, dict) or not {"month", "day"} <= set(v):
                 raise BodyError(line, "monthday of: month と day を取り出した shape の結果が要ります")
             h, mi = v.get("hour"), v.get("minute")
             s = f"{int(v['month'])}/{int(v['day'])}"
             return s + (f" {int(h)}:{mi}" if h is not None and mi is not None else "")
-        m = re.fullmatch(r"(sum|min|max|unique) of (.+)", e)
+        m = re.fullmatch(r"(sum|min|max|avg|unique) of (.+)", e)
         if m:
             v = ev(m.group(2))
             if not isinstance(v, list):
@@ -410,6 +417,8 @@ class Body:
                     raise BodyError(line, f"{m.group(1)} of: 数でないものがあります: {x!r}")
             if not nums and m.group(1) != "sum":
                 raise BodyError(line, f"{m.group(1)} of: 空の集まりです（先に count で分けてください）")
+            if m.group(1) == "avg":
+                return sum(nums) / len(nums)
             return {"sum": sum, "min": min, "max": max}[m.group(1)](nums) if nums else 0
         m = re.fullmatch(r"take (\d+) of (.+)", e)
         if m:
@@ -429,7 +438,14 @@ class Body:
             v = ev(m.group(1))
             if not isinstance(v, (int, float)):
                 raise BodyError(line, "round: 数が要ります")
-            return int(round(v))
+            import math
+            return int(math.floor(abs(v) + 0.5)) * (1 if v >= 0 else -1)     # 四捨五入（2.5 → 3。Python の round は 2）
+        m = re.fullmatch(r"abs (.+)", e)
+        if m:
+            v = ev(m.group(1))
+            if not isinstance(v, (int, float)):
+                raise BodyError(line, "abs: 数が要ります")
+            return abs(v)
         m = re.fullmatch(r'(.+) (contains|starts with) "([^"]*)"', e)
         if m:                                          # 答えは yes / no（状態の名前として match で分ける）
             v = ev(m.group(1))

@@ -47,6 +47,7 @@ rule Borrow
 $ python -m ponte check todo.ponte
 渡せません（1件）
   todo.ponte:20  E32  rule Finish: Task に「finished」という状態はありません（todo / done）
+  （直し方: ponte explain E32）
 ```
 
 example で確かめていない所も教えてくれる。

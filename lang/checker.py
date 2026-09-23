@@ -704,6 +704,34 @@ def check_scene_move(spec: Spec, opt: Options) -> list[Finding]:
 # 25. words に片方の言語の訳が無い
 # ---------------------------------------------------------------------------
 
+def ui_texts(spec: Spec) -> list[tuple[str, int]]:
+    """画面に出る文字（ボタンの名前・見出し・空の時の文・確認の文・部品の文と、部品が計算する文）"""
+    out = []
+    for d in spec.decls():
+        if d.keyword not in ("scene", "look", "part"):
+            continue
+        for c in d.walk():
+            if c is d:
+                continue
+            m = re.search(r"(?:^|\s)button\s+(.+)$", c.raw)
+            if m and (b := parse_button(m.group(1))):
+                if b["label"]:
+                    out.append((b["label"], c.line))
+                if b["confirm"]:
+                    out.append((b["confirm"], c.line))
+            if c.keyword in ("heading", "empty") and c.parent is d:
+                t = re.findall(r'"[^"]*"|\S+', c.text)
+                if t:
+                    out.append((t[0].strip('"'), c.line))
+            if c.keyword == "show" and c.text.startswith("text "):
+                out.append((c.text[5:].strip().strip('"'), c.line))
+            if d.keyword == "part" and "->" in c.raw:
+                right = c.raw.split("->", 1)[1].strip()
+                if right.startswith('"'):
+                    out.append((right.strip('"'), c.line))
+    return out
+
+
 def check_words(spec: Spec, opt: Options) -> list[Finding]:
     blocks = spec.decls("words")
     keys = {w.name: set(words_entries(w)) for w in blocks}
@@ -712,6 +740,11 @@ def check_words(spec: Spec, opt: Options) -> list[Finding]:
     for w in blocks:
         for k in sorted(every - keys[w.name]):
             out.append(Finding("E25", w.line, f"words {w.name}: 「{k}」の訳がありません"))
+    if blocks:   # words がある spec では、画面の文字は words の名前で書く（日本語を2回書かない）
+        for text, line in ui_texts(spec):
+            missing = [w for w, ks in keys.items() if text not in ks]
+            if missing:
+                out.append(Finding("E25", line, f"画面の文字「{text}」が words に無い（{', '.join(missing)}）。words の名前で書いて、words に訳を書く"))
     return out
 
 

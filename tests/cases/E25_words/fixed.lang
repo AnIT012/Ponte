@@ -108,9 +108,13 @@ style DueSoon
   title  size 18, bold
 
 words ja
-  add  追加
-  back 戻る
+  "3日以内に締切の下書きはありません"  3日以内に締切の下書きはありません
+  "就活Hub"  就活Hub
+  "提出した"  提出した
+  "追加"  追加
 
 words en
-  add  Add
-  back Back
+  "3日以内に締切の下書きはありません"  EN:3日以内に締切の下書きはありません
+  "就活Hub"  EN:就活Hub
+  "提出した"  EN:提出した
+  "追加"  EN:追加

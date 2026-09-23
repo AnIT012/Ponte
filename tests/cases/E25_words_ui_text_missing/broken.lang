@@ -108,7 +108,7 @@ style DueSoon
   title  size 18, bold
 
 words ja
-  "提出した"  提出した
+  draft  下書き
 
 words en
   draft  Draft

@@ -288,11 +288,14 @@ function block(b){
   }
   return "";
 }
+let renderSeq = 0;
 async function render(){
+  const my = ++renderSeq;                         // 追い越された古い描画は捨てる（保存直後の更新と画面の移動が重なる時）
   const st = S.states[S.scene] || {};
   const qs = new URLSearchParams({scene:S.scene, user:USER, lang:LANG, state:JSON.stringify(st)});
   if(S.thisId) qs.set("this", S.thisId); if(S.origin) qs.set("origin", S.origin);
   const v = await (await fetch("/api/view?" + qs)).json();
+  if(my !== renderSeq) return;
   if(v.error){ toast("画面を出せませんでした: " + esc(v.error), true); if(S.scene !== HOME) go(HOME); return; }
   S.states[S.scene] = Object.fromEntries(Object.entries(v.states || {}).map(([k, x]) => [k, x.current]));
   // 前の位置（並び替えの動きに使う）

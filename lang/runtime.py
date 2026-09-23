@@ -80,6 +80,7 @@ class Engine:
         self.ask_client = None            # ask ai で使う AI（テストでは差し替える。None なら API キーで呼ぶ）
         self._pending: list[tuple[Node, Ctx]] = []   # before 待ちの rule
         self._fired_today: set = set()
+        self.trace: list[tuple] = []      # 起きたこと（("move", thing, 項目, 前, 後) / ("rule", 名前)）。lang test の穴さがしに使う
         self._read_spec()
         self.bodies = {}
         from .fill import load_body     # action の中身（by ai / by code）
@@ -265,6 +266,7 @@ class Engine:
                     raise RuleError(f"{box.thing}.{fld}: {cur} から {to} へは動けません")
             self._log({"t": "set", "thing": box.thing, "id": box.id, "field": fld, "value": box.values[fld]})
             box.last_move = (fld, before, box.values[fld], user.id if user else None)
+            self.trace.append(("move", box.thing, fld, before, box.values[fld]))
         self._changed()
         if fire:
             self.fire(f"{box.thing} moves to {to}", Ctx(user, this=box))
@@ -508,6 +510,7 @@ class Engine:
             if rel == "before" and b == rule.name and a not in done:
                 self._pending.append((rule, ctx))
                 return
+        self.trace.append(("rule", rule.name))
         try:
             for d in rule.children_of("do"):
                 self._do(rule, d.text.strip(), ctx)

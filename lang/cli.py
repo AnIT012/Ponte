@@ -3,7 +3,7 @@
   python -m lang check spec/hub.lang               決めてないことを探す
   python -m lang check spec/hub.lang --publish     公開する時の検査（読み上げ対応もエラー）
   python -m lang check spec/hub.lang --save-shape  通ったら thing の形を <spec>.shape.json に残す（次の change 検査に使う）
-  python -m lang test  spec/hub_app.lang           rule の example を全部流す
+  python -m lang test  spec/hub_app.lang           rule の example を全部流す（確かめていない所も出す。--strict で失敗に）
   python -m lang fill  spec/hub_app.lang           by ai の action の中身をAIに書かせる
   python -m lang run   spec/hub_app.lang           動かす（ブラウザで http://127.0.0.1:8000/）
 """
@@ -85,7 +85,16 @@ def cmd_test(args) -> int:
         kind = "action" if r.rule in {a.name for a in spec.decls("action")} else "rule"
         print(f"  {'通過' if r.ok else '失敗'}  {kind} {r.rule}（L{r.line}）{'' if r.ok else ': ' + r.message}")
     print(f"example {len(results)}件中 {len(results) - len(bad)}件通過")
-    return 1 if bad else 0
+    from .examples import holes
+    hs = holes(spec, results)
+    if hs:
+        print(f"穴（example で確かめていない所 {len(hs)}件）")
+        for h in hs:
+            path, line = spec.where(h.line)
+            print(f"  {path}:{line}  {h.message}")
+    if bad:
+        return 1
+    return 1 if hs and args.strict else 0
 
 
 def cmd_run(args) -> int:
@@ -189,6 +198,7 @@ def main(argv: list[str] | None = None) -> int:
     c.set_defaults(fn=cmd_check)
     t = sub.add_parser("test", help="rule の example を全部流す")
     t.add_argument("spec")
+    t.add_argument("--strict", action="store_true", help="穴（example で確かめていない所）があれば失敗にする")
     t.set_defaults(fn=cmd_test)
     fl = sub.add_parser("fill", help="by ai の action の中身をAIに書かせる（example と never を通るまで）")
     fl.add_argument("spec")

@@ -360,7 +360,11 @@ def check_nesting(spec: Spec, opt: Options) -> list[Finding]:
             out.append(Finding("E12", n.line, f"入れ子: match の中に match は書けません。外に出して名前を付けてください: '{n.raw}'"))
         if n.children and not n.is_decl:
             leaf = n.keyword in LEAF or (n.keyword == "do" and n.parent is not None and n.parent.keyword == "rule")
-            if leaf:
+            if leaf and n.keyword == "do" and n.text.startswith("create "):   # create の下は「項目 値」
+                for c in n.children:
+                    if c.children:
+                        out.append(Finding("E12", c.children[0].line, "入れ子: create の中身の下に、さらに行は書けません"))
+            elif leaf:
                 out.append(Finding("E12", n.children[0].line, f"入れ子: `{n.keyword}` の下にさらに行は書けません: '{n.children[0].raw}'"))
         if n.keyword in ("given", "taps", "expect") and not n.is_decl:
             if re.search(r"\w\(", n.text):
@@ -932,6 +936,46 @@ def check_single_do(spec: Spec, opt: Options) -> list[Finding]:
 
 
 # ---------------------------------------------------------------------------
+# 31. do の書き方（動かす前に分かるように）
+# ---------------------------------------------------------------------------
+
+DO_FORMS = [
+    r'notify \w+ each of \w+', r'notify \w+ ".*"',
+    r'move this to \w+', r'move \w+ of this to \w+', r'move \w+ where .+ to \w+',
+    r'remove this', r'go \w+( with this)?', r'create \w+',
+]
+_VALUE = re.compile(r'^(this|me|\w+ of this|".*"|\{\w+\}|\d+ (minutes?|hours?|days?|weeks?) from now|[\w/:. -]+)$')
+
+
+def check_do_form(spec: Spec, opt: Options) -> list[Finding]:
+    out = []
+    ths = things(spec)
+    verbs = {(c.name, " ".join(g.text.split()[:2])) for c in spec.decls("connect") for g in c.children if g.keyword == "does"}
+    for r in rules(spec).values():
+        for d in r.children_of("do"):
+            t = d.text.strip()
+            if t in actions(spec) or any(re.fullmatch(f, t) for f in DO_FORMS):
+                pass
+            elif t.split() and (t.split()[0], " ".join(t.split()[1:3])) in verbs:
+                pass
+            else:
+                out.append(Finding("E31", d.line, f"rule {r.name}: do の書き方が分かりません: '{t}'（使えるのは notify / move / remove this / go / create / action の名前 / connect の does）"))
+                continue
+            m = re.fullmatch(r"create (\w+)", t)
+            if m:
+                if m.group(1) not in ths:
+                    out.append(Finding("E28", d.line, f"rule {r.name}: 「{m.group(1)}」という thing はありません"))
+                    continue
+                flds = {f.name for f in thing_fields(ths[m.group(1)])}
+                for c in d.children:
+                    if c.keyword not in flds:
+                        out.append(Finding("E28", c.line, f"create {m.group(1)}: 「{c.keyword}」という項目はありません（{', '.join(sorted(flds))}）"))
+                    elif not _VALUE.match(c.text.strip()):
+                        out.append(Finding("E31", c.line, f"create {m.group(1)}: 値の書き方が分かりません: '{c.text}'（this / me / \"文字\" / 7 days from now / {{名前}} / 項目 of this）"))
+    return out
+
+
+# ---------------------------------------------------------------------------
 # 30. 通知の宛先が書いていない
 # ---------------------------------------------------------------------------
 
@@ -963,7 +1007,7 @@ ALL_CHECKS = [
     check_relate_cycle, check_relate_contradiction, check_before_possible,
     check_double_else, check_match_states, check_who, check_gone, check_change,
     check_ask_ai_limit, check_connect_fallback, check_scene_move, check_words,
-    check_a11y, check_money, check_undefined, check_single_do, check_notify_recipient,
+    check_a11y, check_money, check_undefined, check_single_do, check_do_form, check_notify_recipient,
 ]
 
 

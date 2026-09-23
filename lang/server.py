@@ -199,6 +199,9 @@ class App:
             w = r.child("when")
             if w is None or not re.match(rf"^user taps {re.escape(bid)} on ({re.escape(on)}|{re.escape(box.thing)})$", w.text.strip()):
                 continue
+            from .runtime import Ctx
+            if not self.eng.applies(r, Ctx(self.eng.login(self._viewer), this=box)):   # rule の where に合わない
+                return False
             for d in r.children_of("do"):
                 if d.text.strip() == "remove this":         # 消すボタンは、who で消せる時だけ押せる
                     if not self.eng.can(self.eng.login(self._viewer), "remove", box.thing, box):
@@ -588,8 +591,12 @@ def make_handler(app: App):
                 if self.path == "/api/tap":
                     box = next((t[data["id"]] for t in app.eng.boxes.values() if data.get("id") in t), None) if data.get("id") else None
                     before = box.last_move if box is not None else None
+                    mark, count = len(app.eng.trace), sum(len(t) for t in app.eng.boxes.values())
                     ctx = app.eng.tap(user, data["button"], data["on"], data.get("id"))
-                    moved = box is not None and box.last_move is not None and box.last_move is not before
+                    moves = [t for t in app.eng.trace[mark:] if t[0] == "move"]
+                    # 取り消せるのは、押した1件が1回動いただけの時。他の箱も動いた・作った・消した時は、半分だけ戻ると食い違うので出さない
+                    moved = (box is not None and box.last_move is not None and box.last_move is not before
+                             and len(moves) == 1 and sum(len(t) for t in app.eng.boxes.values()) == count)
                     self._json({"nav": ctx.nav, "this": ctx.this.id if ctx.this is not None else None,
                                 "undo": box.id if moved else None, "undo_label": app.tr("undo", Env(user, "", {}, None, None, data.get("lang") or "ja"))})
                 elif self.path == "/api/undo":

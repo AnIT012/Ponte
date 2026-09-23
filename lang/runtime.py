@@ -18,7 +18,7 @@ import re
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from .parser import Node, Spec, flow_parts, flow_states, match_arms, relate_lines, thing_fields
 from .values import parse_time, unquote, within
@@ -499,11 +499,20 @@ class Engine:
     def _done_key(self, ctx: Ctx):
         return ctx.this if ctx.this is not None else self   # 箱が無ければ全体で1つ
 
+    def applies(self, rule: Node, ctx: Ctx) -> bool:
+        """rule の where（押された1件の条件）を全部満たすか"""
+        ws = rule.children_of("where")
+        if not ws:
+            return True
+        return ctx.this is not None and all(self._where(ctx.this, w.text, ctx) for w in ws)
+
     def run_rule(self, rule: Node, ctx: Ctx):
         holder = self._done_key(ctx)
         done = holder.done if isinstance(holder, Box) else self.__dict__.setdefault("done", set())
         blocked = holder.blocked if isinstance(holder, Box) else self.__dict__.setdefault("blocked", set())
         if rule.name in blocked:
+            return
+        if not self.applies(rule, ctx):     # rule の where に合わない時は、その rule は起きない
             return
         # before: 前提が済んでいなければ待つ
         for a, rel, b, _ in self.relates:
@@ -513,7 +522,7 @@ class Engine:
         self.trace.append(("rule", rule.name))
         try:
             for d in rule.children_of("do"):
-                self._do(rule, d.text.strip(), ctx)
+                self._do(rule, d.text.strip(), ctx, d)
         except RuleError as e:
             fallbacks = [b for a, rel, b, _ in self.relates if rel == "else" and a == rule.name]
             if not fallbacks:
@@ -543,11 +552,49 @@ class Engine:
             if k in ctx.vars:
                 return str(ctx.vars[k])
             if ctx.this is not None and k in ctx.this.values:
-                return str(ctx.this.values[k])
+                ref = self._ref(ctx.this, k)
+                return self.label(ref) if ref is not None else str(ctx.this.values[k])
             return m.group(0)
         return re.sub(r"\{(\w+)\}", rep, text)
 
-    def _do(self, rule: Node, text: str, ctx: Ctx):
+    def _ref(self, box: Box, fld: str) -> Box | None:
+        """box の項目 fld が別の thing を指していれば、その箱"""
+        f = self.fields[box.thing].get(fld)
+        if f is None or f.type not in self.fields:
+            return None
+        return self.boxes[f.type].get(box.values.get(fld))
+
+    def _target(self, ref: str, ctx: Ctx) -> Box:
+        """`this` か `項目 of this`（this が指している箱）"""
+        if ctx.this is None:
+            raise RuleError("this（押された1件）がありません")
+        if ref == "this":
+            return ctx.this
+        m = re.match(r"^(\w+) of this$", ref)
+        b = self._ref(ctx.this, m.group(1)) if m else None
+        if b is None:
+            raise RuleError(f"{ref} が見つかりません")
+        return b
+
+    def value_of(self, expr: str, ctx: Ctx) -> str:
+        """create の下の値：this / me / "文字" / 7 days from now / {名前} / 項目 of this"""
+        e = expr.strip()
+        if e == "this" or re.fullmatch(r"\w+ of this", e):
+            return self._target(e, ctx).id if e == "this" else (ctx.this.values.get(e.split()[0]) if ctx.this else "")
+        if e == "me":
+            if ctx.user is None:
+                raise RuleError("me（押した人）がいません")
+            return ctx.user.id
+        m = re.fullmatch(r"(\d+) (minutes?|hours?|days?|weeks?) from now", e)
+        if m:
+            n, unit = int(m.group(1)), m.group(2).rstrip("s")
+            t = self.clock() + timedelta(**{unit + "s": n})
+            return f"{t.year}/{t.month}/{t.day} {t.hour}:{t.minute:02d}"   # 年まで書く（推測しない）
+        if e.startswith("{") and e.endswith("}"):
+            return str(ctx.vars.get(e[1:-1], ""))
+        return unquote(e)
+
+    def _do(self, rule: Node, text: str, ctx: Ctx, node: Node | None = None):
         m = re.match(r"^notify (\w+) each of (\w+)$", text)
         if m:
             for b in self.list_items(m.group(2), ctx):
@@ -557,11 +604,9 @@ class Engine:
         if m:
             self.notify(rule.name, self._fill(m.group(2), ctx), self.recipient(m.group(1), ctx.this, ctx))
             return
-        m = re.match(r"^move this to (\w+)$", text)
+        m = re.match(r"^move (this|\w+ of this) to (\w+)$", text)
         if m:
-            if ctx.this is None:
-                raise RuleError("this（押された1件）がありません")
-            self.move(ctx.this, m.group(1), ctx.user)
+            self.move(self._target(m.group(1), ctx), m.group(2), ctx.user)
             return
         m = re.match(r"^move (\w+) where (.+) to (\w+)$", text)
         if m:
@@ -594,7 +639,10 @@ class Engine:
         m = re.match(r"^create (\w+)$", text)
         if m:
             vals = ctx.vars.get("__result") or {}
-            ctx.this = self.create(m.group(1), vals if isinstance(vals, dict) else {}, ctx.user)
+            vals = dict(vals) if isinstance(vals, dict) else {}
+            for c in (node.children if node is not None else []):     # 下に「項目 値」
+                vals[c.keyword] = self.value_of(c.text, ctx)
+            ctx.this = self.create(m.group(1), vals, ctx.user)
             return
         if text in self.actions:
             ctx.vars["__result"] = self.run_action(text, ctx)

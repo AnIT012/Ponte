@@ -2,7 +2,7 @@
 
   given   箱の名前（下に「項目 値」を1行1つ）  … 前の状態（出来事は起こさない）
   at "..." / says "..." / taps X on 箱(...) / gets Conn 出来事 "..."   … 出来事
-  expect notify "..." / expect 箱の名前 is 状態（下に中身）/ expect scene X / expect 画面 shows N cards / expect nothing
+  expect notify "..." / expect 箱の名前 is 状態（下に中身）/ expect scene X / expect 画面 shows N cards / expect no 箱 / expect 2 箱 / expect nothing
 """
 from __future__ import annotations
 
@@ -47,6 +47,7 @@ def run_example(spec: Spec, rule: Node, ex: Node) -> Result:
             k, t = c.keyword, c.text.strip()
             if k == "given":
                 thing, vals = record(c, t.split()[0])
+                vals = _refs(eng, thing, vals)
                 eng.create(thing, vals, me, fire=False, check=False)
             elif k == "at":
                 eng.run_rule(rule, Ctx(None))
@@ -58,7 +59,7 @@ def run_example(spec: Spec, rule: Node, ex: Node) -> Result:
                     ctx = eng.tap(me, m.group(1), m.group(2))
                     continue
                 thing, vals = record(c, m.group(2))
-                boxes = eng.find(thing, vals)
+                boxes = eng.find(thing, _refs(eng, thing, vals))
                 if not boxes:
                     return Result(rule.name, c.line, False, f"taps の対象が見つかりません: {m.group(2)} {vals}")
                 on = re.search(r"\bon (\w+)$", rule.child("when").text)
@@ -78,6 +79,20 @@ def run_example(spec: Spec, rule: Node, ex: Node) -> Result:
     return Result(rule.name, ex.line, True, "", tuple(eng.trace))
 
 
+def _refs(eng: Engine, thing: str, vals: dict) -> dict:
+    """別の thing を指す項目は、その箱の文字（名前など）で書ける：`item "カメラ"`"""
+    out = dict(vals)
+    for k, v in vals.items():
+        f = eng.fields.get(thing, {}).get(k)
+        if f is None or f.type not in eng.fields or v in eng.boxes[f.type]:
+            continue
+        hits = [b for b in eng.boxes[f.type].values() if v in b.values.values() or eng.label(b) == v]
+        if len(hits) != 1:
+            raise ValueError(f"{thing}.{k}: 「{v}」の {f.type} が{'見つかりません' if not hits else '2つ以上あります'}（先に given で書く）")
+        out[k] = hits[0].id
+    return out
+
+
 def _expect(eng: Engine, t: str, ctx: Ctx, node: Node | None = None) -> str | None:
     m = re.match(r'^notify "(.*)"$', t)
     if m:
@@ -87,7 +102,7 @@ def _expect(eng: Engine, t: str, ctx: Ctx, node: Node | None = None) -> str | No
     m = re.match(r"^([A-Z]\w*) is (\w+)$", t)
     if m and m.group(1) in eng.fields:
         thing, vals = record(node, m.group(1)) if node is not None else (m.group(1), {})
-        boxes = eng.find(thing, vals)
+        boxes = eng.find(thing, _refs(eng, thing, vals))
         if not boxes:
             return f"{thing} {vals} が見つかりません"
         states = [v for b in boxes for k, v in b.values.items() if eng.fields[thing][k].states]
@@ -98,11 +113,18 @@ def _expect(eng: Engine, t: str, ctx: Ctx, node: Node | None = None) -> str | No
     m = re.match(r"^(\w+) shows (\d+) (cards?|rows?|items?)$", t)
     if m:
         from .server import App
+        if not eng.spec.find("scene", m.group(1)):
+            return f"scene {m.group(1)} がありません（shows は scene の名前に使います）"
         app = App(eng.spec, eng)
         me = eng.login("me")
         v = app.view(m.group(1), me, {}, None, None, "ja")
         rows = sum(len(b.get("rows", [])) for s in v["slots"] for b in s["blocks"])
         return None if rows == int(m.group(2)) else f"{m.group(1)} に {m.group(2)} 件のはずが {rows} 件"
+    m = re.match(r"^(no|\d+) ([A-Z]\w*)$", t)
+    if m and m.group(2) in eng.fields:                # expect no Loan / expect 2 Loan
+        want = 0 if m.group(1) == "no" else int(m.group(1))
+        got = len(eng.all(m.group(2)))
+        return None if got == want else f"{m.group(2)} は {want} 件のはずが {got} 件"
     if t == "nothing":
         return None if not eng.notifications else f"何も起きないはずが {eng.notifications}"
     return f"expect の書き方が分かりません: '{t}'"
@@ -155,7 +177,7 @@ class Hole:
 def holes(spec: Spec, results: list[Result]) -> list[Hole]:
     """example で一度も確かめていない所（穴）。通っていても、ここは誰も見ていない。
 
-      - 出来事（when）がある rule なのに、example が無い
+      - 出来事（when）がある rule なのに、example が無く、どの example の中でも動いていない
       - flow の矢印を、どの example も通っていない
       - action の out の答えの形を、どの example も出していない
     """
@@ -167,7 +189,7 @@ def holes(spec: Spec, results: list[Result]) -> list[Hole]:
     tested_actions = {a.name for a in spec.decls("action") if a.children_of("example")}
     out: list[Hole] = []
     for r in spec.decls("rule"):
-        if not r.child("when") or r.children_of("example"):
+        if not r.child("when") or r.children_of("example") or r.name in ran:   # 他の example の中で動いていれば見ている
             continue
         dos = [d.text.strip() for d in r.children_of("do")]
         if len(dos) == 1 and dos[0] in tested_actions:      # 中身は action の example で確かめている

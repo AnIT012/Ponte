@@ -380,3 +380,22 @@ def test_notices_without_recipient_only_reach_admins():
     boss = eng.login("boss")
     seen = lambda u: [n["text"] for n in eng.notifications if app.can_read_notice(n, u)]
     assert seen(taro) == ["taro 宛て"] and seen(hana) == [] and seen(boss) == ["だれ宛てでもない"]
+
+
+def test_torn_last_line_is_dropped_but_broken_middle_stops(tmp_path, capsys):
+    """書いている途中で止まった最後の1行は捨てて起動する。途中の行が壊れていたら、黙って進まずに止める"""
+    import pytest
+    from ponte.runtime import RuleError
+    spec = parse_file("spec/todo.ponte")
+    store = tmp_path / "d.jsonl"
+    eng = Engine(spec, store=str(store))
+    eng.submit(eng.login("taro"), "AddTask", {"title": "牛乳"})
+    good = store.read_text(encoding="utf-8")
+    store.write_text(good + '{"t": "create", "thing": "Ta', encoding="utf-8")
+    eng2 = Engine(spec, store=str(store))
+    assert [b.values["title"] for b in eng2.boxes["Task"].values()] == ["牛乳"]
+    assert store.read_text(encoding="utf-8") == good
+    assert "書きかけ" in capsys.readouterr().err
+    store.write_text('{"broken\n' + good, encoding="utf-8")
+    with pytest.raises(RuleError):
+        Engine(spec, store=str(store))

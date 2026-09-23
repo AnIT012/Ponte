@@ -86,3 +86,5 @@ Full specification (Japanese): [docs/言語仕様_v0.3.md](docs/言語仕様_v0.
 - Login is name + password only (no e-mail verification or password reset yet).
 - Only what examples and `never`s say can be guaranteed. Ponte shows what is unchecked, but people still have to write it.
 - The toolset for AI-written bodies is deliberately small (no loops, no regex — `shape` instead).
+- Notifications stay inside the app; sending real e-mail or chat messages (`connect … does`) is only a declared shape so far.
+- Single machine, single append-only data file. Not meant for large multi-server services.

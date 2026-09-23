@@ -62,3 +62,20 @@ def test_homepage_samples_are_real_ponte():
     for p in sorted(glob.glob("site/samples/*.ponte")):
         first = open(p, encoding="utf-8").read().splitlines()[0]
         assert first in page, p
+
+
+def test_homepage_is_generated_from_docs_and_code():
+    """site/ の中身は docs と実装から作る。ずれていたら python site/make.py && python site/build.py"""
+    import importlib.util
+    import sys
+    sys.path.insert(0, "site")
+    spec = importlib.util.spec_from_file_location("site_make", "site/make.py")
+    make = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(make)
+    from pathlib import Path
+    assert Path("site/landing.html").read_text(encoding="utf-8") == make.landing()
+    assert Path("site/learn.src.html").read_text(encoding="utf-8") == make.doc_page(Path("docs/入門.md"), "入門 — やることアプリを作る", "learn")
+    assert Path("site/reference.src.html").read_text(encoding="utf-8") == make.reference()
+    ref = make.reference()
+    for code in ("E01", "E32", "W09"):
+        assert f'id="{code}"' in ref

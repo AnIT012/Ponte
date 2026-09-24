@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-DOCS = ["README.md", "docs/入門.md", "docs/言語仕様_v0.3.md", "docs/仕組み.md", "docs/文章の書き方.md"]
+DOCS = ["README.md", "docs/入門.md", "docs/言語仕様_v0.3.md", "docs/仕組み.md", "docs/文章の書き方.md", "docs/IR.md"]
 PAGES = ["site/landing.html"]
 
 # (見つけたらだめな形, 直し方)

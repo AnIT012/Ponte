@@ -22,6 +22,13 @@ def record(node: Node, thing: str) -> tuple[str, dict[str, str]]:
         vals[c.keyword] = unquote(c.text)
     return thing, vals
 
+def example_steps(ex: Node) -> list[dict]:
+    """example の手順を、言語に依らない形にする（IR と共通テストでも同じ形を使う）。
+    1つの手順 = {"kind": given/adds/at/says/taps/gets/expect, "text": 行の残り, "values": {項目: 値}, "line": 行}"""
+    return [{"kind": c.keyword, "text": c.text.strip(), "values": {g.keyword: unquote(g.text) for g in c.children},
+             "line": c.line} for c in ex.children]
+
+
 EXAMPLE_YEAR = 2026   # example の日時は年が無い。年は推測しないので、決まった年で読む（QUESTIONS_v0.2 R5）
 
 
@@ -35,21 +42,26 @@ class Result:
 
 
 def run_example(spec: Spec, rule: Node, ex: Node) -> Result:
+    return run_steps(spec, rule, example_steps(ex), ex.line)
+
+
+def run_steps(spec: Spec, rule: Node, steps: list[dict], line: int) -> Result:
+    """手順（example_steps の形）を実行エンジンで流す。ponte test も共通テストの基準もこれを使う。"""
     now = [datetime(EXAMPLE_YEAR, 1, 1, 0, 0)]
     try:
-        for c in ex.children:
-            if c.keyword == "at":
-                now[0] = parse_time(unquote(c.text), EXAMPLE_YEAR)
+        for c in steps:
+            if c["kind"] == "at":
+                now[0] = parse_time(unquote(c["text"]), EXAMPLE_YEAR)
         eng = Engine(spec, clock=lambda: now[0], parallel=False)
         me = eng.login("me")
         ctx = Ctx(me)
     except Exception as e:   # 動かす前の準備で止まっても、失敗として返す（check が先に止めるはず）
-        return Result(rule.name, ex.line, False, f"{type(e).__name__}: {e}")
+        return Result(rule.name, line, False, f"{type(e).__name__}: {e}")
     try:
-        for c in ex.children:
-            k, t = c.keyword, c.text.strip()
+        for c in steps:
+            k, t = c["kind"], c["text"]
             if k == "given":
-                thing, vals = record(c, t.split()[0])
+                thing, vals = t.split()[0], dict(c["values"])
                 vals = _refs(eng, thing, vals)
                 same = [b for b in eng.all("User") if b.values.get("name") == vals.get("name")] if thing == "User" else []
                 if same:                          # `given User name "me" role admin` は、例を動かす人そのもの
@@ -59,7 +71,7 @@ def run_example(spec: Spec, rule: Node, ex: Node) -> Result:
                 else:
                     eng.create(thing, vals, me, fire=False, check=False)
             elif k == "adds":                       # 人が作った（出来事も起きる）: adds Expense の下に中身
-                thing, vals = record(c, t.split()[0])
+                thing, vals = t.split()[0], dict(c["values"])
                 eng.create(thing, _refs(eng, thing, vals), me)
             elif k == "at":
                 eng.run_rule(rule, Ctx(None))
@@ -67,13 +79,13 @@ def run_example(spec: Spec, rule: Node, ex: Node) -> Result:
                 ctx = eng.says(me, unquote(t))
             elif k == "taps":
                 m = re.match(r"^(\S+) on (\w+)$", t)
-                if not c.children:                              # 画面そのものを押した
+                if not c["values"]:                             # 画面そのものを押した
                     ctx = eng.tap(me, m.group(1), m.group(2))
                     continue
-                thing, vals = record(c, m.group(2))
+                thing, vals = m.group(2), dict(c["values"])
                 boxes = eng.find(thing, _refs(eng, thing, vals))
                 if not boxes:
-                    return Result(rule.name, c.line, False, f"taps の対象が見つかりません: {m.group(2)} {vals}")
+                    return Result(rule.name, c["line"], False, f"taps の対象が見つかりません: {m.group(2)} {vals}")
                 when = rule.child("when")               # when の無い rule（relate の then で動くもの）でも押せる
                 on = re.search(r"\bon (\w+)$", when.text) if when is not None else None
                 try:
@@ -84,15 +96,15 @@ def run_example(spec: Spec, rule: Node, ex: Node) -> Result:
                 m = re.match(r'^(\w+) (.+?) "(.*)"$', t)
                 ctx = eng.gives(m.group(1), m.group(2), m.group(3))
             elif k == "expect":
-                bad = _expect(eng, t, ctx, c)
+                bad = _expect(eng, t, ctx, c["values"])
                 if bad:
                     why = [n["text"] for n in eng.notifications if n["text"].startswith("うまくいきませんでした")]
                     if why and not t.startswith("notify"):     # 途中で止まった理由も見せる
                         bad += f"（途中で止まっています: {why[0].split(': ', 1)[-1]}）"
-                    return Result(rule.name, c.line, False, bad, tuple(eng.trace))
+                    return Result(rule.name, c["line"], False, bad, tuple(eng.trace))
     except Exception as e:   # 例の途中で止まったら、それも失敗として返す
-        return Result(rule.name, ex.line, False, f"{type(e).__name__}: {e}", tuple(eng.trace))
-    return Result(rule.name, ex.line, True, "", tuple(eng.trace))
+        return Result(rule.name, line, False, f"{type(e).__name__}: {e}", tuple(eng.trace))
+    return Result(rule.name, line, True, "", tuple(eng.trace))
 
 
 def _refs(eng: Engine, thing: str, vals: dict) -> dict:
@@ -109,7 +121,7 @@ def _refs(eng: Engine, thing: str, vals: dict) -> dict:
     return out
 
 
-def _expect(eng: Engine, t: str, ctx: Ctx, node: Node | None = None) -> str | None:
+def _expect(eng: Engine, t: str, ctx: Ctx, values: dict | None = None) -> str | None:
     m = re.match(r'^notify "(.*)"$', t)
     if m:
         if any(m.group(1) in n["text"] for n in eng.notifications):
@@ -117,7 +129,7 @@ def _expect(eng: Engine, t: str, ctx: Ctx, node: Node | None = None) -> str | No
         return f"notify 「{m.group(1)}」のはずが {[n['text'] for n in eng.notifications]}"
     m = re.match(r"^([A-Z]\w*) is (\w+)$", t)
     if m and m.group(1) in eng.fields:
-        thing, vals = record(node, m.group(1)) if node is not None else (m.group(1), {})
+        thing, vals = m.group(1), dict(values or {})
         boxes = eng.find(thing, _refs(eng, thing, vals))
         if not boxes:
             return f"{thing} {vals} が見つかりません"
@@ -137,7 +149,7 @@ def _expect(eng: Engine, t: str, ctx: Ctx, node: Node | None = None) -> str | No
         rows = sum(len(b.get("rows", [])) for s in v["slots"] for b in s["blocks"])
         return None if rows == int(m.group(2)) else f"{m.group(1)} に {m.group(2)} 件のはずが {rows} 件"
     if re.fullmatch(r"[A-Z]\w*", t) and t in eng.fields:      # expect Expense の下に中身 → その中身の箱がある
-        thing, vals = record(node, t) if node is not None else (t, {})
+        thing, vals = t, dict(values or {})
         if eng.find(thing, _refs(eng, thing, vals)):
             return None
         return f"{thing} {vals} が見つかりません（あるのは {[b.values for b in eng.all(thing)][:3]}）"
@@ -181,12 +193,29 @@ def run_action_examples(spec: Spec) -> list[Result]:
     return out
 
 
+def run_model_checks(spec: Spec) -> list[Result]:
+    """学んだ結果がある model が、使えるモデルの条件（仕様 5章 model）を満たすか。学んでいないものは穴に出す"""
+    from .model import decls, load, verdict
+    out = []
+    for d in decls(spec).values():
+        try:
+            t = load(spec, d.name)
+        except (OSError, ValueError) as e:
+            out.append(Result(d.name, d.line, False, f"model {d.name}: 学んだ結果が読めません: {e}"))
+            continue
+        if t is None:
+            continue
+        ok, why = verdict(spec, d, t)
+        out.append(Result(d.name, d.line, ok, "; ".join(why)))
+    return out
+
+
 def run_examples(spec: Spec) -> list[Result]:
     out = run_action_examples(spec)
     for r in spec.decls("rule"):
         for ex in r.children_of("example"):
             out.append(run_example(spec, r, ex))
-    return out
+    return out + run_model_checks(spec)
 
 
 @dataclass
@@ -216,6 +245,12 @@ def holes(spec: Spec, results: list[Result]) -> list[Hole]:
         if len(dos) == 1 and dos[0] in tested_actions:      # 中身は action の example で確かめている
             continue
         out.append(Hole(r.line, f"rule {r.name}: when があるのに example がありません"))
+    from .model import path_of
+    import os
+    from .model import load as load_model
+    for m in spec.decls("model"):
+        if load_model(spec, m.name) is None:
+            out.append(Hole(m.line, f"model {m.name}: まだ学習していません（ponte train）"))
     for f in spec.decls("flow"):
         if "." not in f.name:
             continue

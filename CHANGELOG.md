@@ -12,6 +12,8 @@
 - エラーと出力は英語が標準に（日本語は `--lang ja` / `PONTE_LANG=ja`）
 - 見出しを書いて Enter を押すと、必須の部品の名前だけが入る（「試す」と `ponte lsp`）。必須の部品の表は `ponte/skeleton.py` の1か所で、抜くと本当にエラーになることをテストで確かめる
 - `rule` に `do` が、`action` に `in` / `out` がないとエラー（E28）になった
+- `model`: レコードから学んで状態を当てる部品。書くのは learn（何を当てるか）・using（何を見てよいか）・require（合格の条件）・else（使えないとき）・example（必ず当てる例）で、学び方は書かない。`ponte train` で学び（NN は Python の標準機能だけで書いた ponte/nn.py）、`ponte test` が約束を確かめる。約束を満たさないモデルは使わず else に従う。`where predict Churn for it is yes` で使う（仕様 5章 model、見本 spec/churn.ponte）
+- IR（中間の形）と共通テスト: `ponte ir` で check を通った仕様を JSON にし、`ponte conform` で共通テストを流す。IR から仕様に戻しても何も失わない。`ponte test` も同じ手順の形で動く（[docs/IR.md](docs/IR.md)）
 - ホームページ: 固定の上のバー、スクロールしても見える目次、アニメーション、先頭へ戻るボタンなど
 
 ## 格上げ（2026-09-23）

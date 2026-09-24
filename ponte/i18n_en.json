@@ -362,7 +362,7 @@
  "{} {} が見つかりません（あるのは {}）": "{} {} not found (existing: {})",
  "{} {} は {} のはずが {}": "expected {0} {1} to be {2}, got {3}",
  "{} {}: confirm の「{}」は with にありません（{}）{}": "{} {}: confirm name \"{}\" is not in with ({}){}",
- "{} {}: with と confirm は、中身を下の層に任せる部品（`by python \"x.py\"` の action）に書きます": "{} {}: with and confirm belong on parts whose body is left to a lower layer (an action with `by python \"x.py\"`)",
+ "{} {}: with と confirm は、中身を下の層に任せる部品（`by python \"x.py\"` の action、connect）に書きます": "{} {}: with and confirm belong on parts whose body is left to a lower layer (an action with `by python \"x.py\"`, or a connect)",
  "{} {}: with は `名前 値` を , で並べます: '{}'": "{} {}: write with as `name value` pairs separated by commas: '{}'",
  "{} {}: 「{}」という画面の状態はありません（{}）{}": "{} {}: there is no screen state named \"{}\" ({}){}",
  "{} {}: 「{}」という節はありません（{}）{}": "{} {}: there is no section named \"{}\" ({}){}",

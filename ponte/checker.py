@@ -1491,7 +1491,7 @@ CLAUSES = {"rule": ("why", "when", "where", "do", "example"),
            "action": ("in", "out", "example", "never", "else", "by", "ask", "how", "do", "with", "confirm"),
            "model": ("learn", "using", "require", "else", "how", "example"),
            "part": ("in", "do", "show", "mark"),
-           "connect": ("gives", "needs", "does", "limit"),
+           "connect": ("gives", "needs", "does", "limit", "by", "with", "confirm"),
            "look": ("title", "sub", "mark", "lead", "image", "button", "empty", "heading", "search", "group", "take", "sum")}
 
 
@@ -1731,9 +1731,9 @@ def check_confirm(spec: Spec, opt: Options) -> list[Finding]:
         if not n.is_decl or (w is None and c is None):
             continue
         by = n.child("by")
-        lower = n.keyword == "action" and by is not None and by.text.strip().startswith("python ")
+        lower = (n.keyword == "action" and by is not None and by.text.strip().startswith("python ")) or n.keyword == "connect"
         if not lower:
-            out.append(Finding("E31", (w or c).line, f"{n.keyword} {n.name}: with と confirm は、中身を下の層に任せる部品（`by python \"x.py\"` の action）に書きます"))
+            out.append(Finding("E31", (w or c).line, f"{n.keyword} {n.name}: with と confirm は、中身を下の層に任せる部品（`by python \"x.py\"` の action、connect）に書きます"))
             continue
         declared = {}
         if w is not None:

@@ -100,6 +100,68 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
   .code{padding:14px 12px;font-size:11.5px;white-space:pre-wrap;overflow-wrap:anywhere}
   .ctrl{gap:6px}.dots{gap:5px}.dots button,.ctrl button{width:30px;height:30px;padding:0;font-size:12px}
 }
+
+/* ---- hero ---- */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:44px;align-items:center;padding-block:40px 20px}
+.hero h1{font-size:clamp(28px,3.6vw,42px);line-height:1.3;margin:10px 0 18px;letter-spacing:.01em}
+.hero h1 span{display:inline-block}
+.hero .lead{font-size:16.5px;line-height:1.95;color:var(--muted);margin-bottom:24px}
+.cta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.btn{display:inline-block;font-family:var(--pop);font-weight:700;text-decoration:none;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:11px 22px}
+.btn.main{background:var(--sky);border-color:var(--sky);color:#fff}
+.btn:hover{filter:brightness(1.05)}
+.btn:focus-visible{outline:3px dashed var(--tomato);outline-offset:3px}
+.hero .note{font-size:13.5px;color:var(--muted)}
+.hero-demo{display:flex;flex-direction:column;gap:10px;min-width:0}
+.demo-code{position:relative}
+.demo-label{position:absolute;top:8px;right:12px;font-family:var(--mono);font-size:11.5px;color:#8A90C4}
+.hero-demo .code{font-size:clamp(11px,1.15vw,13px);line-height:1.65;padding:14px 18px}
+.demo-arrow{text-align:center;font-family:var(--pop);color:var(--muted);font-size:14px}
+.demo-arrow code{font-family:var(--mono);font-size:12.5px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:1px 8px}
+.demo-shot{width:100%;height:auto;aspect-ratio:900/330;object-fit:cover;object-position:top;border-radius:12px;border:1px solid var(--line);box-shadow:0 6px 24px rgba(20,24,50,.10)}
+.motto{text-align:center;font-family:var(--pop);font-weight:700;font-size:clamp(18px,2.4vw,24px);padding-block:26px 34px}
+
+/* ---- features ---- */
+.feats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.feat{padding:24px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.feat .num{font-family:var(--pop);font-weight:700;color:var(--tomato);font-size:14px}
+.feat h2{font-size:clamp(19px,2.2vw,23px)}
+.feat p{font-size:14.5px;line-height:1.9}
+.feat p code,.compare code{font-family:var(--mono);font-size:12.5px;background:var(--ground);padding:1px 6px;border-radius:6px}
+.feat .code{font-size:12.5px;padding:14px 16px}
+.term{margin:0;background:#101326;color:#D7DBF5;border-radius:10px;padding:14px 16px;font-family:var(--mono);font-size:12.5px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
+.term .prompt{color:#6BE3A4;user-select:none}
+.term .ecode{color:#FF9D5C;font-weight:700}
+
+/* ---- compare / gets ---- */
+.compare,.gets{padding-block:56px 0}
+.compare h2,.gets h2,.show-h{font-size:clamp(22px,3vw,28px);margin-bottom:16px}
+.gets .lead{color:var(--muted);margin-bottom:16px}
+.table{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.table table{border-collapse:collapse;width:100%;font-size:14.5px;line-height:1.7}
+.table th{text-align:left;font-family:var(--pop);background:var(--ground)}
+.table th,.table td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+.table tr:last-child td{border-bottom:0}
+.table td:first-child{font-family:var(--pop);font-weight:700;white-space:nowrap}
+.table td:last-child{color:var(--ok);font-weight:500}
+.chips{display:flex;flex-wrap:wrap;gap:8px;list-style:none;padding:0;margin:0 0 22px}
+.chips li{font-family:var(--pop);font-size:13.5px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px 14px}
+.shots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.shots figure{margin:0}
+.shots img{width:100%;height:auto;border-radius:12px;border:1px solid var(--line)}
+.shots figcaption{font-family:var(--pop);font-size:13px;color:var(--muted);text-align:center;margin-top:6px}
+.show{margin-top:56px}
+.cols{margin-top:40px}
+
+@media (max-width:900px){
+  .hero{grid-template-columns:minmax(0,1fr);gap:28px;padding-top:20px}
+  .feats{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:600px){
+  .shots{grid-template-columns:minmax(0,1fr)}
+  .term,.feat .code{font-size:11px;white-space:pre-wrap;overflow-wrap:anywhere}
+  .table td:first-child{white-space:normal}
+}
 </style>
 
 <div class="wrap">
@@ -119,9 +181,137 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 </header>
 
 
-<p class="tagline">Ponte は、アプリの仕様を書き、それをそのまま動かすためのプログラミング言語です。決まっていないことがあれば、動かす前にエラーとして示します。 <a href="spec.html">詳しく ›</a> <a href="play.html">ブラウザで試す ›</a></p>
+<section class="hero">
+  <div class="hero-text">
+    <p class="eyebrow">AI と一緒にアプリを作るための言語</p>
+    <h1><span>仕様を書けば、</span><span>そのままアプリになる。</span></h1>
+    <p class="lead">Ponte で書くのは「どう作るか」ではなく「何を作るか」です。データの形、誰が何をできるか、ボタンを押したら何が起きるかを書くと、ログイン付きの Web アプリとして動きます。決めていないことが残っていれば、動かす前にエラーで止まります。</p>
+    <p class="cta"><a class="btn main" href="play.html">ブラウザで試す</a><a class="btn" href="learn.html">入門を読む</a></p>
+    <p class="note">Python 3.11 だけで動きます。ほかに入れるものはありません。</p>
+  </div>
+  <div class="hero-demo">
+    <div class="demo-code"><div class="demo-label">todo.ponte</div><pre class="code"><span class="head">thing</span> <span class="name">Task</span>
+  <span class="field">title</span>   <span class="type">text</span>
+  <span class="field">due</span>     <span class="type">monthday</span>
+  <span class="field">owner</span>   <span class="name">User</span>  <span class="guard">gone</span><span class="guard">[</span><span class="guard">remove</span> <span class="guard">too</span><span class="guard">]</span>
+  <span class="field">status</span>  <span class="op">[</span><span class="val">todo</span> <span class="op">|</span> <span class="val">done</span><span class="op">]</span>
+
+<span class="head">thing</span> <span class="name">User</span>
+  <span class="field">name</span>  <span class="type">text</span>
+
+<span class="head">flow</span> <span class="name">Task</span>.status
+  <span class="val">todo</span> <span class="op">-&gt;</span> <span class="val">done</span> <span class="op">-&gt;</span> <span class="val">todo</span>
+
+<span class="head">who</span>
+  user  can see     <span class="name">Task</span>  where owner is me
+  user  can change  <span class="name">Task</span>  where owner is me
+  user  can see     <span class="name">User</span>  where it is me
+
+<span class="head">rule</span> <span class="name">Finish</span>
+  <span class="clause">when</span>   user taps done-button on <span class="name">Task</span>
+  <span class="clause">where</span>  status is <span class="val">todo</span>
+  <span class="clause">do</span>     move this to <span class="val">done</span></pre></div>
+    <div class="demo-arrow" aria-hidden="true">↓ <code>ponte run todo.ponte</code></div>
+    <img class="demo-shot" src="img/todo.png" alt="この仕様から動いた、やることアプリの画面" loading="lazy">
+  </div>
+</section>
+
+<p class="motto">人は決めて、AI が書いて、言語が守る。</p>
+
+<section class="feats" aria-label="特徴">
+  <article class="feat sticker">
+    <p class="num">1</p>
+    <h2>決め忘れは、動かす前に止まる</h2>
+    <p>AI にアプリを頼むと、決めていないことは AI が勝手に補って進みます。Ponte では、まだ決めていないことを <code>tbd</code> に書いておけます。1つでも残っていれば <code>ponte check</code> が通らず、アプリは動きません。</p>
+    <pre class="code"><span class="head">thing</span> <span class="name">Order</span>
+  <span class="field">item</span>    <span class="type">text</span>
+  <span class="field">status</span>  <span class="op">[</span><span class="val">new</span> <span class="op">|</span> <span class="val">paid</span> <span class="op">|</span> <span class="val">shipped</span><span class="op">]</span>
+
+<span class="head">flow</span> <span class="name">Order</span>.status
+  <span class="val">new</span> <span class="op">-&gt;</span> <span class="val">paid</span> <span class="op">-&gt;</span> <span class="val">shipped</span>
+
+<span class="head">who</span>
+  user  can see     <span class="name">Order</span>
+  user  can create  <span class="name">Order</span>
+
+<span class="guard">tbd</span>  発送した後でも、キャンセルできる？</pre>
+    <pre class="term"><span class="prompt">$</span> ponte check order.ponte
+渡せません（1件）
+  order.ponte:12  <span class="ecode">E05</span>  tbd が残っています: 「発送した後でも、キャンセルできる？」— 決めてから渡してください
+  （直し方: ponte explain <span class="ecode">E05</span>）</pre>
+  </article>
+
+  <article class="feat sticker">
+    <p class="num">2</p>
+    <h2>書いていない権限は、誰にもない</h2>
+    <p>誰が何を見られるか、変えられるかは <code>who</code> に書きます。書いていない操作は誰にもできません。書き忘れると「誰も使えないアプリ」になるので、エラーとしてすぐに見つかります。</p>
+    <pre class="code"><span class="head">thing</span> <span class="name">Task</span>
+  <span class="field">title</span>   <span class="type">text</span>
+  <span class="field">status</span>  <span class="op">[</span><span class="val">todo</span> <span class="op">|</span> <span class="val">done</span><span class="op">]</span>
+
+<span class="head">flow</span> <span class="name">Task</span>.status
+  <span class="val">todo</span> <span class="op">-&gt;</span> <span class="val">done</span></pre>
+    <pre class="term"><span class="prompt">$</span> ponte check nowho.ponte
+渡せません（1件）
+  nowho.ponte:1  <span class="ecode">E19</span>  thing Task: 誰が何をできるか（who）が1行もありません。書いてないことは誰もできません
+  （直し方: ponte explain <span class="ecode">E19</span>）</pre>
+  </article>
+
+  <article class="feat sticker">
+    <p class="num">3</p>
+    <h2>AI に任せる部分は、約束で囲む</h2>
+    <p>文章から日付を拾うような処理は <code>action</code> にして、中身を AI に書かせます。先に答えの例と、してはいけないことを書いておきます。AI が書いた中身は、この約束に照らして機械が確かめます。</p>
+    <pre class="code"><span class="head">action</span> <span class="name">FindMonthDay</span>
+  <span class="clause">in</span>       <span class="type">text</span> <span class="type">text</span>
+  <span class="clause">out</span>      <span class="val">found</span> <span class="type">monthday</span> <span class="op">|</span> <span class="val">missing</span>
+  <span class="clause">example</span>  <span class="val">"10/15(木)12:00まで"</span>      <span class="op">-&gt;</span> <span class="val">found</span> <span class="val">10/15</span> <span class="val">12:00</span>
+  <span class="clause">example</span>  <span class="val">"来週中にご提出ください"</span>  <span class="op">-&gt;</span> <span class="val">missing</span>
+  <span class="guard">never</span>    guess the year
+  <span class="guard">never</span>    fail
+  <span class="guard">else</span>     skip</pre>
+  </article>
+
+  <article class="feat sticker">
+    <p class="num">4</p>
+    <h2>例がそのままテストになる</h2>
+    <p>ルールの下に書いた <code>example</code> が、そのままテストになります。<code>ponte test</code> は例が通るかを確かめたうえで、まだどの例でも確かめていない状態の変化を一覧にします。</p>
+    <pre class="term"><span class="prompt">$</span> ponte test spec/hub_ready.ponte
+  通過  rule Remind（L57）
+  通過  rule MarkSubmitted（L68）
+example 2件中 2件通過
+穴（example で確かめていない所 2件）
+  spec/hub_ready.ponte:12  flow Application.status: submitted -&gt; passed をどの example も通っていません
+  spec/hub_ready.ponte:12  flow Application.status: submitted -&gt; failed をどの example も通っていません</pre>
+  </article>
+</section>
+
+<section class="compare">
+  <h2>AI に直接コードを書かせる場合との違い</h2>
+  <div class="table"><table>
+    <tr><th></th><th>AI に直接書かせる</th><th>Ponte</th></tr>
+    <tr><td>決めていないこと</td><td>AI が推測して埋める</td><td>エラーで止まり、人が決める</td></tr>
+    <tr><td>権限</td><td>書き忘れると、誰でも操作できる</td><td>書いた操作しかできない</td></tr>
+    <tr><td>確かめ方</td><td>動かして画面を目で見る</td><td>例がテストになり、確かめていない部分も一覧になる</td></tr>
+    <tr><td>読める人</td><td>コードが読める人だけ</td><td>仕様は誰でも読める。<code>ponte doc</code> で1枚の HTML にもなる</td></tr>
+  </table></div>
+</section>
+
+<section class="gets">
+  <h2>1つのファイルから動くもの</h2>
+  <p class="lead">画面やサーバーのコードは書きません。仕様を書けば、次のものがそろったアプリとして動きます。</p>
+  <ul class="chips">
+    <li>ログインと登録</li><li>一覧・ボード・カレンダー</li><li>入力フォームと確認</li><li>通知と定期実行</li>
+    <li>リアルタイム更新</li><li>画像のアップロード</li><li>スマートフォン表示</li><li>ダークモード</li><li>日本語と英語</li>
+  </ul>
+  <div class="shots">
+    <figure><img src="img/board.png" alt="ボード表示"><figcaption>ボード</figcaption></figure>
+    <figure><img src="img/lend_home.png" alt="備品の貸し出しアプリ"><figcaption>備品の貸し出し</figcaption></figure>
+    <figure><img src="img/kakeibo.png" alt="家計メモとグラフ"><figcaption>家計メモとグラフ</figcaption></figure>
+  </div>
+</section>
 
 <section class="show sticker" aria-label="書き方の見本">
+  <h2 class="show-h">書き方を6つの見本で見る</h2>
     <div class="slide">
       <pre class="code"><span class="c"># データの形：やることと、その持ち主</span>
 <span class="head">thing</span> <span class="name">Task</span>
@@ -199,7 +389,6 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
     <button type="button" id="next" aria-label="次の見本">›</button>
   </div>
 </section>
-
 
 <section class="cols">
   <div class="col sticker"><h3>はじめる</h3><p>入門では、やることアプリをエラーを見ながら少しずつ作ります。はじめての方は、ここから読んでください。</p><a class="more" href="learn.html">入門を読む ›</a></div>

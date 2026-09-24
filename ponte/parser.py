@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 DECLARATIONS = (
     "thing", "flow", "list", "match", "rule", "relate", "action", "group",
     "tbd", "never", "scene", "look", "part", "style", "input", "words",
-    "who", "change", "connect", "shape", "use", "model",
+    "who", "change", "connect", "shape", "use", "model", "job",
 )
 
 

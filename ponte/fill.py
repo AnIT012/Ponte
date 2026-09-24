@@ -343,16 +343,16 @@ class PythonBody:
     def __init__(self, action: Node, path: str):
         import importlib.util
         from .body import out_states_of
-        from .confirm import names, parse_with
         spec_ = importlib.util.spec_from_file_location(f"ponte_body_{action.name}", path)
         mod = importlib.util.module_from_spec(spec_)
         spec_.loader.exec_module(mod)
         if not hasattr(mod, "answer"):
             raise ValueError(f"{os.path.basename(path)} に answer(value, settings) がありません")
         self.fn, self.outs, self.name = mod.answer, out_states_of(action), action.name
-        w, c = action.child("with"), action.child("confirm")
-        self.settings, self.raw, _ = parse_with(w.text) if w is not None else ({}, {}, [])
-        self.confirm = names(c.text) if c is not None else []
+        from .confirm import declared, parts, within_of
+        self.settings, _, self.confirm = parts(action)
+        self.expect, self.raw = declared(action)
+        self.within = within_of(action)
 
     def run(self, inputs: dict) -> object:
         from .body import parse_expected
@@ -361,7 +361,7 @@ class PythonBody:
         value = next(iter(inputs.values()), None)
         with collect() as got:
             ans = self.fn(value, dict(self.settings))
-        bad = problems(self.settings, self.confirm, got, self.raw)
+        bad = problems(self.expect, self.confirm, got, self.raw, self.within)
         if bad:
             raise ConfirmError("; ".join(bad))
         return parse_expected(str(ans), self.outs)

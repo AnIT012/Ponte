@@ -57,6 +57,15 @@
     <p>ルールの下に書いた <code>example</code> が、そのままテストになります。<code>ponte test</code> は例が通るかを確かめたうえで、まだどの例でも確かめていない部分を一覧にします。example は書かなくても動きます。</p>
     {OUT:test}
   </article>
+  <article class="feat sticker wide" data-reveal>
+    <p class="num">下の層</p>
+    <h2>渡した値が、下で本当に効いたかを確かめる</h2>
+    <p>下の層（Python や PyTorch）に任せた部分でも、約束は届きます。<code>with</code> で渡した値を、下の層に「実際に使った値」として報告させ、<code>confirm</code> で照合します。学習率を渡したつもりが既定値のまま、のような事故は、学習を待たずにその場で止まります。<code>require</code>（結果の条件）と <code>suspect</code>（良すぎる数字など、おかしいときに止める条件）も書けます。</p>
+    <div class="pair">
+      <pre class="code">{CODE:job}</pre>
+      {OUT:job}
+    </div>
+  </article>
 </section>
 
 <section class="compare" data-reveal>

@@ -1,0 +1,6 @@
+job Train
+  run      python3 train_demo.py
+  with     learning_rate 1.25e-4, batch_size 32
+  confirm  learning_rate, batch_size
+  require  classes is 3
+  suspect  test_accuracy above 75

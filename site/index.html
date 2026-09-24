@@ -222,6 +222,10 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px dashed va
   html{scroll-padding-top:110px}
 }
 .feat .num{text-transform:none;letter-spacing:.06em}
+
+.feat.wide{grid-column:1 / -1}
+.feat .pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:14px;align-items:start}
+@media (max-width:900px){.feat .pair{grid-template-columns:minmax(0,1fr)}}
 </style>
 
 <div class="wrap">
@@ -357,6 +361,23 @@ Stopped: 1 error(s)
 Untested parts (not covered by any example: 2)
   spec/hub_ready.ponte:12  flow Application.status: no example covers submitted -&gt; passed
   spec/hub_ready.ponte:12  flow Application.status: no example covers submitted -&gt; failed</pre>
+  </article>
+  <article class="feat sticker wide" data-reveal>
+    <p class="num">下の層</p>
+    <h2>渡した値が、下で本当に効いたかを確かめる</h2>
+    <p>下の層（Python や PyTorch）に任せた部分でも、約束は届きます。<code>with</code> で渡した値を、下の層に「実際に使った値」として報告させ、<code>confirm</code> で照合します。学習率を渡したつもりが既定値のまま、のような事故は、学習を待たずにその場で止まります。<code>require</code>（結果の条件）と <code>suspect</code>（良すぎる数字など、おかしいときに止める条件）も書けます。</p>
+    <div class="pair">
+      <pre class="code"><span class="head">job</span> <span class="name">Train</span>
+  <span class="clause">run</span>      python3 train_demo.py
+  <span class="clause">with</span>     learning_rate <span class="val">1.25e-4</span>, batch_size <span class="val">32</span>
+  <span class="guard">confirm</span>  learning_rate, batch_size
+  <span class="clause">require</span>  classes is <span class="val">3</span>
+  <span class="clause">suspect</span>  test_accuracy above <span class="val">75</span></pre>
+      <pre class="term"><span class="prompt">$</span> ponte job job.ponte Train
+job Train: running
+  confirm learning_rate: declared 1.25e-4, but 0.001 was actually used (stopped the run)
+job Train: contract broken (1 problem(s))</pre>
+    </div>
   </article>
 </section>
 

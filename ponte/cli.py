@@ -611,6 +611,28 @@ def cmd_train(args) -> int:
         bad += not ok
     return 1 if bad else 0
 
+
+def cmd_job(args) -> int:
+    """job を走らせ、報告された事実を約束と照合する"""
+    from .job import read, run
+    spec = _load_checked(args.spec)
+    if spec is None:
+        return 1
+    jobs = [read(n) for n in spec.decls("job") if not args.name or n.name == args.name]
+    if not jobs:
+        print("job がありません")
+        return 1
+    base = os.path.dirname(os.path.abspath(args.spec))
+    bad = 0
+    for j in jobs:
+        print(f"job {j.name}: 走らせます")
+        ok, why, facts = run(j, base)
+        for w in why:
+            print(f"  {w}")
+        print(f"job {j.name}: 約束を守りました" if ok else f"job {j.name}: 約束を守れませんでした（{len(why)}件）")
+        bad += not ok
+    return 1 if bad else 0
+
 def _msgs(obj):
     """JSON に出す前に、メッセージだけを出力の言語にする（JSON の形は崩さない）"""
     from .i18n import tr
@@ -713,6 +735,10 @@ def build_parser() -> argparse.ArgumentParser:
     tr_.add_argument("--data", help="レコードのファイル（省略時はアプリのデータ）")
     tr_.add_argument("--csv", help="CSV から学ぶ（1行目は項目の名前）")
     tr_.set_defaults(fn=cmd_train)
+    jb = sub.add_parser("job", help="job を走らせ、報告された事実を約束と照合する")
+    jb.add_argument("spec")
+    jb.add_argument("name", nargs="?", help="この job だけ走らせる")
+    jb.set_defaults(fn=cmd_job)
     co = sub.add_parser("conform", help="IR の共通テストを、基準の実装（Python）で流す")
     co.add_argument("ir")
     co.set_defaults(fn=cmd_conform)
@@ -728,7 +754,7 @@ def main(argv: list[str] | None = None) -> int:
     return args.fn(args)
 
 
-TRANSLATED = {"check", "test", "explain", "conform", "train", "guide", "new", "user", "role", "fill", "build", "run", "lint"}
+TRANSLATED = {"check", "test", "explain", "conform", "train", "job", "guide", "new", "user", "role", "fill", "build", "run", "lint"}
 
 
 if __name__ == "__main__":

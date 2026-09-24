@@ -23,6 +23,7 @@ FULL = {
     "list": "list L\n  of     Task\n  where  status is todo\n",
     "match": "match Task.status to color\n  todo -> red\n  else -> blue\n",
     "model": "model M\n  learn    status from Task\n  using    score\n  require  accuracy at least 80%\n  else     skip\n",
+    "job": "job J\n  run      python train.py\n",
 }
 
 

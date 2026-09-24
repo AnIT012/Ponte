@@ -1490,6 +1490,7 @@ CLAUSES = {"rule": ("why", "when", "where", "do", "example"),
            "list": ("of", "where", "sort"),
            "action": ("in", "out", "example", "never", "else", "by", "ask", "how", "do", "with", "confirm"),
            "model": ("learn", "using", "require", "else", "how", "example"),
+           "job": ("run", "at", "with", "confirm", "require", "suspect"),
            "part": ("in", "do", "show", "mark"),
            "connect": ("gives", "needs", "does", "limit", "by", "with", "confirm"),
            "look": ("title", "sub", "mark", "lead", "image", "button", "empty", "heading", "search", "group", "take", "sum")}
@@ -1731,7 +1732,7 @@ def check_confirm(spec: Spec, opt: Options) -> list[Finding]:
         if not n.is_decl or (w is None and c is None):
             continue
         by = n.child("by")
-        lower = (n.keyword == "action" and by is not None and by.text.strip().startswith("python ")) or n.keyword == "connect"
+        lower = (n.keyword == "action" and by is not None and by.text.strip().startswith("python ")) or n.keyword in ("connect", "job")
         if not lower:
             out.append(Finding("E31", (w or c).line, f"{n.keyword} {n.name}: with と confirm は、中身を下の層に任せる部品（`by python \"x.py\"` の action、connect）に書きます"))
             continue
@@ -1746,6 +1747,19 @@ def check_confirm(spec: Spec, opt: Options) -> list[Finding]:
                     out.append(Finding("E32", c.line, f"{n.keyword} {n.name}: confirm の「{x}」は with にありません（{', '.join(declared) or 'with がありません'}）{did_you_mean(x, declared)}"))
     return out
 
+
+def check_job(spec: Spec, opt: Options) -> list[Finding]:
+    """job（仕様 5章 job）: 走らせるものと、報告された事実についての約束の形"""
+    from .job import read
+    out = []
+    for n in spec.decls("job"):
+        j = read(n)
+        for line, msg in j.problems:
+            out.append(Finding("E31", line, f"job {j.name}: {msg}"))
+        if not j.run:
+            out.append(Finding("E28", n.line, f"job {j.name}: run がありません（走らせるコマンドを `run python train.py` のように書く）"))
+    return out
+
 ALL_CHECKS = [
     check_match_else, check_until_limit, check_examples, check_else, check_tbd,
     check_blocking, check_when_is_event, check_move_narrowed, check_flow_coverage,
@@ -1754,7 +1768,7 @@ ALL_CHECKS = [
     check_double_else, check_match_states, check_who, check_gone, check_change,
     check_ask_ai_limit, check_connect_fallback, check_scene_move, check_words,
     check_a11y, check_money, check_undefined, check_single_do, check_do_form, check_roles, check_types, check_notify_recipient,
-    check_line_forms, check_model, check_confirm,
+    check_line_forms, check_model, check_confirm, check_job,
 ]
 
 

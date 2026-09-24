@@ -14,7 +14,7 @@ from pathlib import Path
 HERE = Path(__file__).parent
 SHOTS = HERE.parent / "docs" / "screenshots"
 PAGES = {"landing.html": "index.html", "learn.src.html": "learn.html", "reference.src.html": "reference.html",
-         "spec.src.html": "spec.html", "how.src.html": "how.html", "play.src.html": "play.html"}
+         "spec.src.html": "spec.html", "how.src.html": "how.html", "play.src.html": "play.html", "write.src.html": "write.html"}
 DESC = "Ponte：決めるのは人。守るのは言語。"
 
 

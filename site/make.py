@@ -12,6 +12,7 @@
 """
 import argparse
 import html
+import json
 import re
 import sys
 from pathlib import Path
@@ -411,7 +412,8 @@ def play() -> str:
 <script type="module">
 {{js}}</script>
 """
-    js = (HERE / "play.js").read_text(encoding="utf-8").replace("__PYODIDE__", PYODIDE)
+    from ponte.skeleton import REQUIRED
+    js = (HERE / "play.js").read_text(encoding="utf-8").replace("__PYODIDE__", PYODIDE).replace("__SKELETON__", json.dumps(REQUIRED))
     body = body.replace("{js}", js)
     return page("試す — Ponte", "play", body, DOCS_CSS + "\n" + (HERE / "play.css").read_text(encoding="utf-8"))
 

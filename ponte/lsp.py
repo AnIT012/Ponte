@@ -120,7 +120,12 @@ def completions(text: str, line: int) -> list[dict]:
     lines = text.split("\n")
     cur = lines[line] if line < len(lines) else ""
     if not cur.startswith((" ", "\t")):
-        items += [{"label": h, "kind": 14, "detail": d} for h, d in HEADS.items()]
+        from .skeleton import snippet               # 見出しは、必須の部品の名前までを入れる（中身は空のまま）
+        for h, d in HEADS.items():
+            it = {"label": h, "kind": 14, "detail": tr(d)}
+            if snippet(h):
+                it.update({"insertText": snippet(h), "insertTextFormat": 2})
+            items.append(it)
     try:
         spec = parse(text)
         names = {d.name for d in spec.decls() if d.name}
@@ -136,7 +141,7 @@ def completions(text: str, line: int) -> list[dict]:
     items += [{"label": s, "kind": 20} for s in sorted(states)]
     if cur.startswith((" ", "\t")):
         from .body import TOOLS
-        items += [{"label": form.split(" / ")[0], "kind": 3, "detail": meaning} for _, form, meaning, *_ in TOOLS]
+        items += [{"label": form.split(" / ")[0], "kind": 3, "detail": tr(meaning)} for _, form, meaning, *_ in TOOLS]
     return items
 
 

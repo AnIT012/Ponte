@@ -95,3 +95,65 @@ def test_running_app_does_not_use_an_answer_whose_values_did_not_take_effect(tmp
     ctx.payload = "x"
     assert eng.run_action("Train", ctx) == 'done "fallback"'                            # 答えは使わず else
     assert any("confirm lr" in n["text"] for n in eng.notifications)                    # 理由は知らせる
+
+
+
+PAY_SPEC = """thing Order
+  item    text
+  status  [new | paid]
+
+flow Order.status
+  new -> paid
+
+who
+  user  can see     Order
+  user  can change  Order
+
+connect Pay
+  does     charge amount  item text -> done | failed
+  by       python "pay.py"
+  with     timeout 5 seconds
+  confirm  timeout
+
+rule Checkout
+  when   user taps pay-button on Order
+  where  status is new
+  do     Pay charge amount {item}
+
+rule MarkPaid
+  do     move this to paid
+
+rule PayFailed
+  do     notify me "支払いに失敗しました"
+
+relate
+  Checkout  then  MarkPaid
+  Checkout  else  PayFailed
+"""
+
+PAY_PY = '''from ponte.report import report
+class Client:                                 # 本物の HTTP クライアントのように、使う値を自分で持つ
+    def __init__(self, timeout=30): self.timeout = timeout
+def charge_amount(text, settings):
+    c = CLIENT
+    report(timeout=c.timeout)
+    return "done"
+'''
+
+
+@pytest.mark.parametrize("client,status", [("Client(timeout=settings['timeout'])", "paid"), ("Client()", "new")])
+def test_connect_timeout_that_the_client_ignores_is_caught(tmp_path, client, status):
+    from ponte.runtime import Engine
+    (tmp_path / "pay.py").write_text(PAY_PY.replace("CLIENT", client), encoding="utf-8")
+    p = tmp_path / "pay.ponte"
+    p.write_text(PAY_SPEC, encoding="utf-8")
+    s = parse_file(str(p))
+    assert [f for f in check(s) if f.is_error] == []
+    eng = Engine(s)
+    me = eng.login("me")
+    o = eng.create("Order", {"item": "本", "status": "new"}, me, fire=False, check=False)
+    eng.tap(me, "pay-button", "Order", o.id)
+    assert eng.boxes["Order"][o.id].values["status"] == status
+    if status == "new":                                                                # 失敗の逃げ道に進み、理由も知らせる
+        texts = [n["text"] for n in eng.notifications]
+        assert "支払いに失敗しました" in texts and any("confirm timeout" in t and "30" in t for t in texts), texts

@@ -348,7 +348,7 @@ def check_list_cycle(spec: Spec, opt: Options) -> list[Finding]:
 # 12. 入れ子
 # ---------------------------------------------------------------------------
 
-LEAF = {"of", "where", "sort", "when", "why", "in", "out", "never", "else", "by", "ask",
+LEAF = {"of", "where", "sort", "when", "why", "in", "out", "never", "else", "by", "ask", "with", "confirm",
         "at", "says", "gets"}
 _COMPOUND = re.compile(r"\band\b|\bor\b|[()]")
 
@@ -1488,7 +1488,7 @@ WHO_VERBS = ("see", "change", "create", "remove", "move", "do")
 SLOTS = ("top", "main", "side", "bottom", "over")
 CLAUSES = {"rule": ("why", "when", "where", "do", "example"),
            "list": ("of", "where", "sort"),
-           "action": ("in", "out", "example", "never", "else", "by", "ask", "how", "do"),
+           "action": ("in", "out", "example", "never", "else", "by", "ask", "how", "do", "with", "confirm"),
            "model": ("learn", "using", "require", "else", "how", "example"),
            "part": ("in", "do", "show", "mark"),
            "connect": ("gives", "needs", "does", "limit"),
@@ -1718,6 +1718,34 @@ def check_model(spec: Spec, opt: Options) -> list[Finding]:
             out.append(Finding("E32", n.line, f"model {name} が当てるのは {' / '.join(cls)} です。「{state}」はありません"))
     return out
 
+
+# ---------------------------------------------------------------------------
+# with と confirm（仕様 5章）
+# ---------------------------------------------------------------------------
+
+def check_confirm(spec: Spec, opt: Options) -> list[Finding]:
+    from .confirm import names, parse_with
+    out = []
+    for n in spec.walk():
+        w, c = n.child("with"), n.child("confirm")
+        if not n.is_decl or (w is None and c is None):
+            continue
+        by = n.child("by")
+        lower = n.keyword == "action" and by is not None and by.text.strip().startswith("python ")
+        if not lower:
+            out.append(Finding("E31", (w or c).line, f"{n.keyword} {n.name}: with と confirm は、中身を下の層に任せる部品（`by python \"x.py\"` の action）に書きます"))
+            continue
+        declared = {}
+        if w is not None:
+            declared, _, bad = parse_with(w.text)
+            for b in bad:
+                out.append(Finding("E31", w.line, f"{n.keyword} {n.name}: with は `名前 値` を , で並べます: '{b}'"))
+        if c is not None:
+            for x in names(c.text):
+                if x not in declared:
+                    out.append(Finding("E32", c.line, f"{n.keyword} {n.name}: confirm の「{x}」は with にありません（{', '.join(declared) or 'with がありません'}）{did_you_mean(x, declared)}"))
+    return out
+
 ALL_CHECKS = [
     check_match_else, check_until_limit, check_examples, check_else, check_tbd,
     check_blocking, check_when_is_event, check_move_narrowed, check_flow_coverage,
@@ -1726,7 +1754,7 @@ ALL_CHECKS = [
     check_double_else, check_match_states, check_who, check_gone, check_change,
     check_ask_ai_limit, check_connect_fallback, check_scene_move, check_words,
     check_a11y, check_money, check_undefined, check_single_do, check_do_form, check_roles, check_types, check_notify_recipient,
-    check_line_forms, check_model,
+    check_line_forms, check_model, check_confirm,
 ]
 
 

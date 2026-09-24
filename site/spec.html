@@ -441,7 +441,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px dashed va
 <div class="table"><table><tr><th>never</th><th>確かめ方</th></tr><tr><td><code>guess the year</code></td><td>例の入力と、年のない入力をいくつか流して、答えに年（4桁の数）が出ないか</td></tr><tr><td><code>depend on width</code></td><td>例の入力を全角にして流し、半角のときと同じ答えになるか</td></tr><tr><td><code>return empty</code></td><td>例の入力とおかしな入力を流して、値が空の答えを返さないか</td></tr><tr><td><code>fail</code></td><td>おかしな入力（空、長すぎる、絵文字、ありえない日付など）でも止まらないか</td></tr></table></div>
 <ul><li>失敗や「見つからない」も、out の状態で表します（<code>found ... | missing</code>）。</li></ul>
 <h4 id="by-誰が中身を埋めるか">by（誰が中身を埋めるか）</h4>
-<div class="table"><table><tr><th>書き方</th><th>いつ</th><th>中身</th></tr><tr><td>（書かない）</td><td>なし</td><td>action の中にその場で書いた do。AI も別ファイルも使わない</td></tr><tr><td><code>by ai</code></td><td>ビルドのときに1回</td><td>AI が do を書いて固定する。人も読めて直せる</td></tr><tr><td><code>ask ai</code></td><td>実行のたびに毎回</td><td>AI に聞く。do はない。how に時間かお金の上限が必須</td></tr><tr><td><code>by code &quot;extract.ponte&quot;</code></td><td>なし</td><td>自分で書いた do</td></tr><tr><td><code>by Gmail</code></td><td>実行のたびに</td><td>connect 先が行う</td></tr></table></div>
+<div class="table"><table><tr><th>書き方</th><th>いつ</th><th>中身</th></tr><tr><td>（書かない）</td><td>なし</td><td>action の中にその場で書いた do。AI も別ファイルも使わない</td></tr><tr><td><code>by ai</code></td><td>ビルドのときに1回</td><td>AI が do を書いて固定する。人も読めて直せる</td></tr><tr><td><code>ask ai</code></td><td>実行のたびに毎回</td><td>AI に聞く。do はない。how に時間かお金の上限が必須</td></tr><tr><td><code>by code &quot;extract.ponte&quot;</code></td><td>なし</td><td>自分で書いた do</td></tr><tr><td><code>by python &quot;extract.py&quot;</code></td><td>なし</td><td>下の層の言語（Python）で書いた中身。約束と <code>confirm</code> で確かめる（5章 with と confirm）</td></tr><tr><td><code>by Gmail</code></td><td>実行のたびに</td><td>connect 先が行う</td></tr></table></div>
 <p>誰が埋めても、同じ example、never、else で検証されます。</p>
 <h4 id="do-action-の中身">do（action の中身）</h4>
 <pre class="term">  do
@@ -466,6 +466,19 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px dashed va
   hour   digits <span class="val">1</span>..<span class="val">2</span>
   <span class="val">":"</span>
   minute digits <span class="val">2</span></pre>
+<h3 id="with-と-confirm-宣言した値が-下の層で本当に効いたか">with と confirm（宣言した値が、下の層で本当に効いたか）</h3>
+<p>上の層で値を宣言しても、下の層で黙って捨てられることがあります。タイムアウトを渡したのにライブラリが無視していた、学習率を渡したのに既定値のまま学習していた、などです。 <code>confirm</code> は、下の層に「実際に使った値」を報告させ、宣言と照合します。一致しなければ止まります。</p>
+<pre class="code"><span class="head">action</span> <span class="name">Summarize</span>
+  <span class="clause">in</span>       <span class="val">text</span> <span class="val">text</span>
+  <span class="clause">out</span>      <span class="val">found</span> <span class="val">text</span> <span class="op">|</span> <span class="val">missing</span>
+  <span class="clause">example</span>  <span class="val">"長い文"</span> <span class="op">-&gt;</span> <span class="val">found</span> <span class="val">"短い文"</span>
+  <span class="guard">else</span>     skip
+  <span class="clause">by</span>       python <span class="val">"summarize.py"</span>
+  with     max_words <span class="val">20</span>, timeout <span class="val">5 seconds</span>
+  <span class="guard">confirm</span>  max_words, timeout</pre>
+<div class="table"><table><tr><th>部品</th><th>意味</th></tr><tr><td><code>with 名前 値, 名前 値</code></td><td>下の層に渡す値の宣言。値は数、<code>5 seconds</code> のような期間、<code>yes</code> / <code>no</code>、<code>&quot;文字&quot;</code> のどれか</td></tr><tr><td><code>confirm 名前, 名前</code></td><td>下の層が実際に使った値を報告させ、<code>with</code> と照合する名前</td></tr></table></div>
+<h4 id="決まり">決まり</h4>
+<ul><li><code>confirm</code> に書けるのは、<code>with</code> にある名前だけです。</li><li>下の層は、1回動くたびに、使った値を報告します。Python では <code>from ponte.report import report</code> の <code>report(名前=値)</code> です。報告は、渡された値ではなく、実際に使っている物から読みます（学習率なら、引数ではなく optimizer が持っている値）。</li><li>照合は1回動くたびに行います。次のどれかなら、その回は失敗です。</li><li><code>confirm</code> の名前が報告されていない（確かめられないものは、効いたとみなさない）</li><li>報告された値が宣言と違う</li><li>数は、差が大きい方の値の 1e-9 倍以下なら同じとみなします。期間は秒にそろえて比べます（<code>5 seconds</code> と <code>5000 ms</code> は同じ）。</li><li>失敗した回は、<code>ponte test</code> では失敗になり、動いているアプリでは中身が答えを出せなかったものとして <code>else</code> に従います。理由は「どの名前が、宣言ではいくつで、実際はいくつだったか」で示します。</li><li><code>with</code> と <code>confirm</code> は、下の層に中身を任せる部品（<code>by python</code> の action。<code>connect</code> と <code>model</code> もこれから同じ形にします）に書けます。</li></ul>
 <h3 id="model-レコードから学んで当てる部品">model（レコードから学んで当てる部品）</h3>
 <p>model は、thing のレコードから学んで、状態の項目を当てる部品です。書くのは「何を学ぶか」「何を見てよいか」「どこまでできれば合格か」「使えないときにどうするか」で、学び方は書きません。</p>
 <pre class="term">model Churn

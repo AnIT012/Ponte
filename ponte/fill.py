@@ -331,6 +331,42 @@ def body_path(spec: Spec, action: Node) -> str | None:
     return None
 
 
+class ConfirmError(Exception):
+    """宣言した値と、下の層が実際に使った値が違う（または報告がない）"""
+
+
+class PythonBody:
+    """`by python "x.py"`: 中身を下の層（Python）で書いた action。x.py の `answer(value, settings)` を呼ぶ。
+    答えは example の右側と同じ書き方の文字（`found 10/15`、`missing` など）で返す。
+    1回呼ぶたびに、`confirm` の名前を下の層が報告した値と照合する（仕様 5章 with と confirm）。"""
+
+    def __init__(self, action: Node, path: str):
+        import importlib.util
+        from .body import out_states_of
+        from .confirm import names, parse_with
+        spec_ = importlib.util.spec_from_file_location(f"ponte_body_{action.name}", path)
+        mod = importlib.util.module_from_spec(spec_)
+        spec_.loader.exec_module(mod)
+        if not hasattr(mod, "answer"):
+            raise ValueError(f"{os.path.basename(path)} に answer(value, settings) がありません")
+        self.fn, self.outs, self.name = mod.answer, out_states_of(action), action.name
+        w, c = action.child("with"), action.child("confirm")
+        self.settings, self.raw, _ = parse_with(w.text) if w is not None else ({}, {}, [])
+        self.confirm = names(c.text) if c is not None else []
+
+    def run(self, inputs: dict) -> object:
+        from .body import parse_expected
+        from .confirm import problems
+        from .report import collect
+        value = next(iter(inputs.values()), None)
+        with collect() as got:
+            ans = self.fn(value, dict(self.settings))
+        bad = problems(self.settings, self.confirm, got, self.raw)
+        if bad:
+            raise ConfirmError("; ".join(bad))
+        return parse_expected(str(ans), self.outs)
+
+
 def load_body(spec: Spec, action: Node):
     """by が無く do がある → その do。by ai → <spec>.ai/<名前>.ponte、by code "x.ponte" → spec と同じ場所の x.ponte。無ければ None。"""
     by = action.child("by")
@@ -339,6 +375,11 @@ def load_body(spec: Spec, action: Node):
         if do is None:
             return None
         return body_of(action, do, {s.name: s for s in spec.decls("shape")})
+    by = action.child("by")
+    m = re.match(r'^python\s+"([^"]+)"$', by.text.strip()) if by is not None else None
+    if m:                                        # 下の層（Python）で書いた中身
+        path = os.path.join(os.path.dirname(spec.where(action.line)[0]), m.group(1))
+        return PythonBody(action, path) if os.path.exists(path) else None
     path = body_path(spec, action)
     if path is None or not os.path.exists(path):
         return None

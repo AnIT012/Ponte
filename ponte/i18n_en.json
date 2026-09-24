@@ -77,7 +77,7 @@
  "API エラー {}: {}": "API error {}: {}",
  "ASCII の英数字と指定した記号だけ（メールアドレスなどに使用）": "Only ASCII letters, digits and the given symbols (for email addresses and similar)",
  "Fw: 件名": null,
- "Ponte — 人は決めて、AIが書いて、言語が守る（v0.3）": "Ponte: people decide, AI writes, the language enforces (v0.3)",
+ "Ponte：決めるのは人。守るのは言語。（v0.3）": "Ponte: people decide, the language guards (v0.3)",
  "X contains \"a\"（リスト）": "X contains \"a\" (list)",
  "[\"朝\", \"昼\", \"夜\"] contains \"昼\"": null,
  "]` を書きます": "]` to thing User",

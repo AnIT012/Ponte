@@ -157,3 +157,17 @@ def test_connect_timeout_that_the_client_ignores_is_caught(tmp_path, client, sta
     if status == "new":                                                                # 失敗の逃げ道に進み、理由も知らせる
         texts = [n["text"] for n in eng.notifications]
         assert "支払いに失敗しました" in texts and any("confirm timeout" in t and "30" in t for t in texts), texts
+
+
+def test_within_allows_only_the_written_tolerance():
+    from ponte.confirm import problems, tolerances
+    t = tolerances("pretrained_checksum 1234.5 within 0.01%")
+    decl, shown = {"pretrained_checksum": 1234.5}, {"pretrained_checksum": "1234.5"}
+    assert problems(decl, ["pretrained_checksum"], {"pretrained_checksum": 1234.55}, shown, t) == []   # GPU の揺れ
+    bad = problems(decl, ["pretrained_checksum"], {"pretrained_checksum": 1240.2}, shown, t)            # 重みが変わった
+    assert bad and "1234.5" in bad[0] and "1240.2" in bad[0]                                           # 実測値を必ず出す
+    assert problems(decl, ["pretrained_checksum"], {"pretrained_checksum": 1234.55}, shown)            # within が無ければほぼ完全一致
+
+
+def test_within_is_readable_by_check():
+    assert codes('job J\n  run  python t.py\n  confirm  pretrained_checksum 1234.5 within 0.01%\n') == []

@@ -40,7 +40,19 @@ def parse_with(text: str) -> tuple[dict, dict, list[str]]:
 
 
 def names(text: str) -> list[str]:
-    return [x.strip() for x in text.split(",") if x.strip()]
+    """confirm の名前（`名前 値` と書いたものも、名前だけを返す）"""
+    return [x.split()[0] for x in [p.strip() for p in text.split(",")] if x]
+
+
+def expected(text: str) -> tuple[dict, dict]:
+    """confirm の `名前 値`（渡さないが、こうなっているはずの値）→ (値, 書いたままの値)"""
+    out, raw = {}, {}
+    for part in [p.strip() for p in text.split(",") if p.strip()]:
+        w = part.split(None, 1)
+        if len(w) == 2:
+            out[w[0]] = value(w[1])
+            raw[w[0]] = w[1].strip()
+    return out, raw
 
 
 def _same(a, b) -> bool:
@@ -73,3 +85,14 @@ def parts(node) -> tuple[dict, dict, list[str]]:
     for c in node.children_of("confirm"):
         wanted += names(c.text)
     return settings, raw, wanted
+
+
+def declared(node) -> tuple[dict, dict]:
+    """照合に使う値: with の値と、confirm に書いた `名前 値`（こちらは下の層に渡さない）"""
+    settings, raw, _ = parts(node)
+    vals, shown = dict(settings), dict(raw)
+    for c in node.children_of("confirm"):
+        e, r = expected(c.text)
+        vals.update(e)
+        shown.update(r)
+    return vals, shown

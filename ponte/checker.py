@@ -867,6 +867,13 @@ def check_undefined(spec: Spec, opt: Options) -> list[Finding]:
             w = so.text.split()
             if len(w) > 2 or (len(w) == 2 and w[1] not in ("asc", "desc")):
                 out.append(Finding("E28", so.line, f"list {l.name}: sort は `sort 項目` か `sort 項目 desc` です: '{so.raw}'"))
+    for r in spec.decls("rule"):                      # 何もしない rule は、することを決めていない
+        if r.child("do") is None:
+            out.append(Finding("E28", r.line, f"rule {r.name}: することがありません（`do move this to done` のように書く）"))
+    for a in spec.decls("action"):                    # 入るものと答えの形がない action は、約束が決まっていない
+        for part, eg in (("in", "in  text text"), ("out", "out  found monthday | missing")):
+            if a.child(part) is None:
+                out.append(Finding("E28", a.line, f"action {a.name}: {part} がありません（`{eg}` のように書く）"))
     for a, rel, b, line in relate_lines(spec):
         if rel != "before":          # before の左は E16 が見る
             need(a, callables, line, "relate")

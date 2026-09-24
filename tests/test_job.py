@@ -63,6 +63,11 @@ def test_command_line_is_built_from_with():
                           "--start_from_pretrained", "-j", "24"]
 
 
+def test_home_folder_in_paths_is_expanded():
+    j = read(parse('job J\n  run  python t.py\n  with  fails_path "~/data"\n').find("job", "J"))
+    assert command(j)[-1] == os.path.expanduser("~/data")
+
+
 def test_a_run_that_keeps_the_contract_passes(tmp_path):
     ok, why, facts = go(tmp_path)
     assert ok, why

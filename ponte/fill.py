@@ -349,8 +349,9 @@ class PythonBody:
         if not hasattr(mod, "answer"):
             raise ValueError(f"{os.path.basename(path)} に answer(value, settings) がありません")
         self.fn, self.outs, self.name = mod.answer, out_states_of(action), action.name
-        from .confirm import parts
-        self.settings, self.raw, self.confirm = parts(action)
+        from .confirm import declared, parts
+        self.settings, _, self.confirm = parts(action)
+        self.expect, self.raw = declared(action)
 
     def run(self, inputs: dict) -> object:
         from .body import parse_expected
@@ -359,7 +360,7 @@ class PythonBody:
         value = next(iter(inputs.values()), None)
         with collect() as got:
             ans = self.fn(value, dict(self.settings))
-        bad = problems(self.settings, self.confirm, got, self.raw)
+        bad = problems(self.expect, self.confirm, got, self.raw)
         if bad:
             raise ConfirmError("; ".join(bad))
         return parse_expected(str(ans), self.outs)

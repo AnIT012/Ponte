@@ -1725,7 +1725,7 @@ def check_model(spec: Spec, opt: Options) -> list[Finding]:
 # ---------------------------------------------------------------------------
 
 def check_confirm(spec: Spec, opt: Options) -> list[Finding]:
-    from .confirm import names, parse_with
+    from .confirm import expected, names, parse_with
     out = []
     for n in spec.walk():
         w, c = n.child("with"), n.child("confirm")
@@ -1743,8 +1743,9 @@ def check_confirm(spec: Spec, opt: Options) -> list[Finding]:
             for b in bad:
                 out.append(Finding("E31", w.line, f"{n.keyword} {n.name}: with は `名前 値` を , で並べます: '{b}'"))
         for c in n.children_of("confirm"):
+            given = expected(c.text)[0]                   # `名前 値` は、その値と照合する（with は要らない）
             for x in names(c.text):
-                if x not in declared:
+                if x not in declared and x not in given:
                     out.append(Finding("E32", c.line, f"{n.keyword} {n.name}: confirm の「{x}」は with にありません（{', '.join(declared) or 'with がありません'}）{did_you_mean(x, declared)}"))
     return out
 

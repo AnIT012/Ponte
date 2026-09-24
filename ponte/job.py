@@ -7,7 +7,8 @@
       confirm  learning_rate, batch_size, start_from_pretrained
       require  classes is 3
       require  clips_mismatch is 0
-      suspect  test_accuracy above 90
+      require  test_accuracy at least 52
+      suspect  test_accuracy above 75
 
 `ponte job spec.ponte Anticipate` passes every `with` value as a command-line option
 (`--learning_rate 1.25e-4`; `yes` becomes a bare `--start_from_pretrained`, `no` is left out;
@@ -31,7 +32,7 @@ import tempfile
 import time
 from dataclasses import dataclass, field
 
-from .confirm import _same, names, parse_with, problems, value
+from .confirm import _same, expected, names, parse_with, problems, value
 from .parser import Node
 
 CONDITION = re.compile(r"^(\w+)\s+(is|at least|at most|above|below)\s+(.+)$")
@@ -43,8 +44,10 @@ class Job:
     line: int
     run: str = ""
     at: str | None = None
-    settings: dict = field(default_factory=dict)
+    settings: dict = field(default_factory=dict)        # 渡す値（引数になる）
     raw: dict = field(default_factory=dict)
+    expect: dict = field(default_factory=dict)          # 照合に使う値（with と、confirm の `名前 値`）
+    shown: dict = field(default_factory=dict)
     confirm: list[str] = field(default_factory=list)
     require: list[tuple[str, str, object, int]] = field(default_factory=list)
     suspect: list[tuple[str, str, object, int]] = field(default_factory=list)
@@ -63,9 +66,14 @@ def read(node: Node) -> Job:
             s, r, bad = parse_with(t)
             j.settings.update(s)
             j.raw.update(r)
+            j.expect.update(s)
+            j.shown.update(r)
             j.problems += [(c.line, f"with は `名前 値` を , で並べます: '{b}'") for b in bad]
         elif k == "confirm":
             j.confirm += names(t)
+            e, r = expected(t)
+            j.expect.update(e)
+            j.shown.update(r)
         elif k in ("require", "suspect"):
             m = CONDITION.match(t)
             if not m:
@@ -102,7 +110,7 @@ def command(j: Job) -> list[str]:
 
 def judge(j: Job, facts: dict) -> list[str]:
     """Everything the facts break, after the run."""
-    out = problems(j.settings, j.confirm, facts, j.raw)
+    out = problems(j.expect, j.confirm, facts, j.shown)
     for name, op, want, line in j.require:
         if name not in facts:
             out.append(f"require {name}（L{line}）: 報告されていません")
@@ -143,7 +151,7 @@ def run(j: Job, base_dir: str, poll: float = 0.5, out=None) -> tuple[bool, list[
         while proc.poll() is None:                     # confirm は走っている間に見る。ズレたらすぐ止める
             time.sleep(poll)
             facts = _read_facts(report)
-            early = [p for p in problems(j.settings, [n for n in j.confirm if n in facts], facts, j.raw)]
+            early = [p for p in problems(j.expect, [n for n in j.confirm if n in facts], facts, j.shown)]
             early += [f"suspect {n} {op} {want}（L{line}）: 実際は {facts[n]}。良すぎる／おかしい結果なので止めます。確かめてください"
                       for n, op, want, line in j.suspect if n in facts and holds(facts[n], op, want)]
             if early:

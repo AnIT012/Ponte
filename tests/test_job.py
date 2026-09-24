@@ -130,3 +130,26 @@ def test_suspicious_score_stops_the_run_early(tmp_path):
     ok, why, _ = run(j, str(tmp_path), poll=0.05)
     assert not ok and "suspect test_accuracy" in why[0] and "途中で止めました" in why[0]
     assert time.time() - t < 15
+
+
+def test_confirm_with_a_value_is_checked_but_not_passed(tmp_path):
+    """⑤: 事前学習の重みの合計。引数には渡さず、報告された値と即座に照合する"""
+    (tmp_path / "t.py").write_text(
+        f"import sys, time\nsys.path.insert(0, {ROOT!r})\nfrom ponte.report import report\n"
+        "assert '--pretrained_checksum' not in sys.argv\n"
+        "report(pretrained_checksum=float(sys.argv[-1]))\ntime.sleep(30)\n", encoding="utf-8")
+    for got, ok_expected in (("1234.5", True), ("-87.25", False)):         # スクラッチなら違う値
+        src = f"job J\n  run      {sys.executable} t.py {got}\n  confirm  pretrained_checksum 1234.5\n"
+        assert codes(src) == []
+        j = read(parse(src).find("job", "J"))
+        assert "--pretrained_checksum" not in command(j)
+        if ok_expected:
+            continue                                                        # 正しい値なら 30 秒走り切るので流さない
+        t = time.time()
+        ok, why, _ = run(j, str(tmp_path), poll=0.05)
+        assert not ok and "confirm pretrained_checksum" in why[0] and "1234.5" in why[0]
+        assert time.time() - t < 15
+
+
+def test_confirm_name_without_value_still_needs_with():
+    assert "E32" in codes("job J\n  run  python t.py\n  confirm  pretrained_checksum\n")

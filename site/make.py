@@ -44,7 +44,7 @@ DOCS_CSS = (HERE / "docs.css").read_text(encoding="utf-8")
 
 def header(current: str) -> str:
     h = (HERE / "header.html").read_text(encoding="utf-8").replace("{REPO}", REPO).replace("{DOC}", DOC)
-    for name in ("learn", "reference", "spec", "play"):
+    for name in ("learn", "reference", "spec", "play", "write"):
         h = h.replace("{CUR_%s}" % name, ' aria-current="page"' if name == current else "")
     return h
 
@@ -380,26 +380,37 @@ def run_doc(src):
 """
 
 
-def play() -> str:
+def play(mode: str = "play") -> str:
+    """試す（見本から）と 書く（白紙から）。エディタと、下に結果"""
     assert "</" not in PLAY_PY                    # <script> の中身はそのまま読まれる（エスケープされない）
     samples = {n: (HERE / "samples" / f"{n}.ponte").read_text(encoding="utf-8") for n in "123456"}
     full = "\n".join(samples[n].rstrip("\n") + "\n" for n in "12345")
-    choices = [("todo", "やることアプリ（完成形）", full)] + [(f"s{n}", f"見本 {n}: {h}", samples[n] + ("" if n == "6" else "")) for n, h, _ in SLIDES]
+    choices = [("todo", "やることアプリ（完成形）", full)] + [(f"s{n}", f"見本 {n}: {h}", samples[n]) for n, h, _ in SLIDES]
     choices[-1] = ("s6", "見本 6: 決めていないことは tbd に（1〜5 と一緒に）", full + "\n" + samples["6"])
     import json as _json
     data = _json.dumps({k: v for k, _, v in choices}, ensure_ascii=False).replace("</", "<\\/")
     opts = "".join(f'<option value="{k}">{html.escape(t)}</option>' for k, t, _ in choices)
-    body = f"""<div class="wrap">
+    if mode == "write":
+        head = """<div><p class="eyebrow">WRITE</p><h1>書く</h1>
+  <p class="lead">白紙から Ponte を書けます。書いたものはこのブラウザに残り、書き換えるたびに <code>ponte check</code> が流れます。<code>rule</code> などの見出しを書いて Enter を押すと、必須の部品の名前が入ります。</p></div>
+  <a class="switch" href="play.html">見本から試す ›</a>"""
+        extra = ""
+        holder = ' placeholder="thing、rule、who などの見出しから書き始めます"'
+    else:
+        head = f"""<div><p class="eyebrow">PLAYGROUND</p><h1>試す</h1>
+  <p class="lead">見本を書き換えて、ブラウザの中で確かめられます。書き換えると <code>ponte check</code> が流れ、「test」を押すと example を動かします。インストールは必要ありません。</p></div>
+  <div class="head-acts"><label class="pick">見本 <select id="pick">{opts}</select></label><a class="switch" href="write.html">白紙から書く ›</a></div>"""
+        extra = f'<script type="application/json" id="samples">{data}</script>\n'
+        holder = ""
+    body = f"""<div class="wrap" data-mode="{mode}">
 {{HEADER}}
 <div class="play-head">
-  <div><p class="eyebrow">PLAYGROUND</p><h1>試す</h1>
-  <p class="lead">ここに書いた Ponte を、ブラウザの中で確かめられます。書き換えると <code>ponte check</code> が流れ、「test」を押すと example を動かします。インストールは必要ありません。</p></div>
-  <label class="pick">見本 <select id="pick">{opts}</select></label>
+  {head}
 </div>
 <div class="play">
   <div class="editor sticker">
     <pre class="code hl" id="hl" aria-hidden="true"></pre>
-    <textarea id="src" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Ponte のコード"></textarea>
+    <textarea id="src" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Ponte のコード"{holder}></textarea>
   </div>
   <div class="panel sticker" aria-live="polite">
     <div class="panel-bar"><span id="state" class="state">準備しています…</span><span class="acts"><button type="button" id="share" class="quiet">共有</button><button type="button" id="doc" class="quiet" disabled>仕様のまとめ</button><button type="button" id="test" disabled>test</button></span></div>
@@ -408,15 +419,16 @@ def play() -> str:
 </div>
 <footer><p>check と test は、Ponte の本体を <a href="https://pyodide.org/">Pyodide</a> でブラウザ上で動かしています。書いた内容はどこにも送信しません。</p></footer>
 </div>
-<script type="application/json" id="samples">{data}</script>
-<script type="text/plain" id="playpy">{PLAY_PY}</script>
+{extra}<script type="text/plain" id="playpy">{PLAY_PY}</script>
+<script>document.body.dataset.mode = "{mode}";</script>
 <script type="module">
 {{js}}</script>
 """
     from ponte.skeleton import REQUIRED
     js = (HERE / "play.js").read_text(encoding="utf-8").replace("__PYODIDE__", PYODIDE).replace("__SKELETON__", json.dumps(REQUIRED))
     body = body.replace("{js}", js)
-    return page("試す — Ponte", "play", body, DOCS_CSS + "\n" + (HERE / "play.css").read_text(encoding="utf-8"))
+    title = "書く — Ponte" if mode == "write" else "試す — Ponte"
+    return page(title, mode, body, DOCS_CSS + "\n" + (HERE / "play.css").read_text(encoding="utf-8"))
 
 
 DOCS = [("spec", "言語仕様_v0.3.md", "仕様書 v0.3", 2), ("how", "仕組み.md", "しくみ（ponte/ の中）", 2)]
@@ -424,6 +436,7 @@ DOCS = [("spec", "言語仕様_v0.3.md", "仕様書 v0.3", 2), ("how", "仕組�
 
 if __name__ == "__main__":
     (HERE / "landing.html").write_text(landing(), encoding="utf-8")
+    (HERE / "write.src.html").write_text(play("write"), encoding="utf-8")
     (HERE / "learn.src.html").write_text(doc_page(ROOT / "docs" / "入門.md", "入門 — やることアプリを作る", "learn"), encoding="utf-8")
     (HERE / "reference.src.html").write_text(reference(), encoding="utf-8")
     (HERE / "play.src.html").write_text(play(), encoding="utf-8")

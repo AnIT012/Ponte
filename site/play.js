@@ -1,5 +1,5 @@
 const $ = id => document.getElementById(id);
-const SAMPLES = JSON.parse($("samples").textContent);
+const SAMPLES = $("samples") ? JSON.parse($("samples").textContent) : {};
 const src = $("src"), hl = $("hl"), out = $("out"), state = $("state"), testBtn = $("test"), docBtn = $("doc");
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
 const md = s => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>");
@@ -9,7 +9,10 @@ const b64 = t => btoa(String.fromCharCode(...new TextEncoder().encode(t))).repla
 const unb64 = t => new TextDecoder().decode(Uint8Array.from(atob(t.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0)));
 let shared = null;
 try { const m = location.hash.match(/^#code=([\w-]+)$/); if (m) shared = unb64(m[1]); } catch (e) {}
-try { src.value = shared ?? localStorage.getItem("ponte-play") ?? SAMPLES.todo; } catch (e) { src.value = shared ?? SAMPLES.todo; }
+const MODE = document.body.dataset.mode || "play";          // play: 見本から / write: 白紙から
+const KEY = MODE === "write" ? "ponte-write" : "ponte-play";
+const START = MODE === "write" ? "" : SAMPLES.todo;
+try { src.value = shared ?? localStorage.getItem(KEY) ?? START; } catch (e) { src.value = shared ?? START; }
 
 // 色分け（highlight.py と同じ決め方。Python の読み込みを待たずに、すぐ色が付く）
 const HL = (() => {
@@ -87,7 +90,7 @@ function showCheck(r) {
 }
 async function run() {
   const my = ++seq, text = src.value;
-  try { localStorage.setItem("ponte-play", text); } catch (e) {}
+  try { localStorage.setItem(KEY, text); } catch (e) {}
   paintPlain();
   if (!py) return;
   const r = JSON.parse(py.globals.get("run_check")(text));
@@ -105,32 +108,111 @@ function put(text, caret) {
   if (caret != null) src.setSelectionRange(s + caret, s + caret);
   src.dispatchEvent(new Event("input"));
 }
-src.addEventListener("keydown", e => {
-  const v = src.value, s = src.selectionStart, e0 = src.selectionEnd;
+const OPENERS = new Set(["example", "do", "how", "given", "taps", "expect", "adds"]);   // 下に字下げして書く部品
+const indentOf = l => l.length - l.replace(/^ +/, "").length;
+function lineAt(v, s) {
   const ls = v.lastIndexOf("\n", s - 1) + 1, le = v.indexOf("\n", s) < 0 ? v.length : v.indexOf("\n", s);
-  const line = v.slice(ls, le), next = v.slice(le + 1).split("\n")[0] || "";
-  if (e.key === "Enter" && !e.shiftKey && s === e0 && s === le && !next.startsWith(" ")) {
+  return [ls, le, v.slice(ls, le)];
+}
+function replaceRange(from, to, text, caret) {        // 元に戻す（Ctrl+Z）が効く書き換え
+  src.focus();
+  src.setSelectionRange(from, to);
+  if (!document.execCommand || !document.execCommand("insertText", false, text)) src.setRangeText(text, from, to, "end");
+  if (caret != null) src.setSelectionRange(caret, caret);
+  src.dispatchEvent(new Event("input"));
+}
+function shiftLines(dir) {                            // 選んだ行（なければ今の行）を 2つずつ字下げ / 字上げ
+  const v = src.value, s = src.selectionStart, e0 = src.selectionEnd;
+  const from = v.lastIndexOf("\n", s - 1) + 1;
+  const endIdx = v.indexOf("\n", e0 > s && v[e0 - 1] === "\n" ? e0 - 1 : e0);
+  const to = endIdx < 0 ? v.length : endIdx;
+  const lines = v.slice(from, to).split("\n");
+  let first = 0, total = 0;
+  const out = lines.map((l, i) => {
+    let d;
+    if (dir > 0) { d = l.trim() ? 2 : 0; l = " ".repeat(d) + l; }
+    else { d = -Math.min(2, indentOf(l)); l = l.slice(-d); }
+    if (i === 0) first = d;
+    total += d;
+    return l;
+  });
+  replaceRange(from, to, out.join("\n"));
+  if (e0 > s) src.setSelectionRange(Math.max(from, s + first), e0 + total);
+  else src.setSelectionRange(Math.max(from, s + first), Math.max(from, s + first));
+}
+src.addEventListener("keydown", e => {
+  if (e.isComposing || e.keyCode === 229) return;    // 日本語の変換中の Enter などは、何もしない
+  const v = src.value, s = src.selectionStart, e0 = src.selectionEnd;
+  const [ls, le, line] = lineAt(v, s);
+  const next = v.slice(le + 1).split("\n")[0] || "";
+  if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    e.preventDefault();
     const word = /^[a-z]+ \S/.test(line) ? line.split(" ")[0] : "";
-    if (REQUIRED[word]) {
-      e.preventDefault();
+    if (s === e0 && s === le && REQUIRED[word] && !next.startsWith(" ")) {   // 見出しの後: 必須の部品の名前だけ
       const parts = REQUIRED[word].map(p => "  " + p + " ");
-      put("\n" + parts.join("\n"), 1 + parts[0].length);
+      replaceRange(s, s, "\n" + parts.join("\n"), s + 1 + parts[0].length);
       return;
     }
+    const before = v.slice(ls, s), ind = indentOf(line);
+    if (!line.trim() && ind > 0) {                    // 空の字下げだけの行で Enter → 空行を残して1段戻る（2回押すと塊から出る）
+      const d = Math.max(0, ind - 2);
+      replaceRange(ls, le, "\n" + " ".repeat(d), ls + 1 + d);
+      return;
+    }
+    let n = Math.min(ind, indentOf(before) === before.length ? before.length : ind);
+    const head = before.trim();
+    if (ind === 0 && head && !head.startsWith("#")) n = 2;                 // 見出しの下は 2つ字下げ
+    else if (OPENERS.has(head.split(/\s+/)[0]) && s === le && (head.split(/\s+/).length === 1 || ["given", "taps", "expect", "adds"].includes(head.split(/\s+/)[0]))) n = ind + 2;
+    const after = v.slice(e0, le);
+    const trail = before.length - before.replace(/ +$/, "").length;       // 区切った所の前の空白は残さない
+    const from = before.trim() ? s - trail : s;
+    const to = e0 === s ? s + (after.length - after.replace(/^ +/, "").length) : e0;
+    replaceRange(from, to, "\n" + " ".repeat(n), from + 1 + n);
+    return;
   }
-  if (e.key === "Tab" && !e.shiftKey) {
+  if (e.key === "Backspace" && s === e0 && s > ls && /^ +$/.test(v.slice(ls, s))) {   // 字下げの中の Backspace は 2つずつ
     e.preventDefault();
+    const col = s - ls, to = col % 2 ? col - 1 : col - 2;
+    replaceRange(ls + Math.max(0, to), s, "", ls + Math.max(0, to));
+    return;
+  }
+  if (e.key === "Tab") {
+    e.preventDefault();
+    if (e.shiftKey) { shiftLines(-1); return; }
+    if (e0 > s && v.slice(s, e0).includes("\n")) { shiftLines(1); return; }
     const m = /^  (\S+)\s*$/.exec(next);                        // 次の行がまだ空の部品なら、そこへ移る
     if (s === le && m && (PARTS.has(m[1]) || next.trim() === "else ->")) {
       const to = le + 1 + next.length;
       src.setSelectionRange(to, to);
       return;
     }
-    put("  ");
+    replaceRange(s, e0, (s - ls) % 2 ? " " : "  ");
+  }
+});
+// 見出しを消したら、その見出しのために入れた「まだ空の部品」も消す（書き込んだ部品は消さない）
+src.addEventListener("input", e => {
+  if (!e.inputType || !e.inputType.startsWith("delete")) return;
+  const lines = src.value.split("\n");
+  const empty = l => { const m = /^  (\S+)\s*$/.exec(l); return m && (PARTS.has(m[1]) || l.trim() === "else ->"); };
+  for (let i = 0; i < lines.length; i++) {
+    if (!empty(lines[i])) continue;
+    let j = i;
+    while (j < lines.length && empty(lines[j])) j++;
+    const above = i === 0 ? "" : lines[i - 1];
+    if (!above.trim()) {                             // 上に見出しがない、空の部品だけの塊
+      const start = lines.slice(0, i).join("\n").length + (i ? 1 : 0);
+      const end = lines.slice(0, j).join("\n").length;
+      const caret = src.selectionStart;
+      const cut = end - start + (j < lines.length ? 1 : 0);
+      replaceRange(start, Math.min(src.value.length, end + (j < lines.length ? 1 : 0)), "",
+                   caret > start ? Math.max(start, caret - cut) : caret);
+      return;
+    }
+    i = j;
   }
 });
 out.addEventListener("click", e => { const b = e.target.closest("[data-line]"); if (b) gotoLine(+b.dataset.line); });
-$("pick").addEventListener("change", e => { src.value = SAMPLES[e.target.value]; src.scrollTop = 0; src.dispatchEvent(new Event("input")); });
+$("pick") && $("pick").addEventListener("change", e => { src.value = SAMPLES[e.target.value]; src.scrollTop = 0; src.dispatchEvent(new Event("input")); });
 testBtn.addEventListener("click", () => {
   const r = JSON.parse(py.globals.get("run_test")(src.value));
   if (r.error) { out.innerHTML = `<p class="bad">${esc(r.error)}</p>`; return; }

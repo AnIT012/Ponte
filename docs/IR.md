@@ -50,7 +50,7 @@ IR は1つの JSON です。`ponte_ir` は形の版で、今は `1` です。
 | `rules` | ルール。`when`、`where`、`do`、`examples`（手順の形。4章） |
 | `relate` | ルール同士の関係 |
 | `actions` | action の約束。`in`、`out`、`examples`、`never`、`else`、`by`、その場で書いた `do` |
-| `bodies` | 別のファイルに書いた action の中身（`by code` / `by ai`）。IR だけで完結させるために入れています |
+| `bodies` | 別のファイルに書いた action の中身（`by code` / `by ai`）。IR だけで完結させるために入れています。`by python` の中身は下の層のコードです。IR には入れず、`by` の文字だけを持ちます |
 | `matches` | 値ごとの結果 |
 | `cases` | 共通テスト（4章） |
 | `tree` | すべての行を `{keyword, text, line, children}` の木にしたもの |

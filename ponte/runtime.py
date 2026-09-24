@@ -799,9 +799,14 @@ class Engine:
         body = self.bodies.get(name)
         if body is not None:
             from .body import Tagged, input_names, out_states_of
-            result = body.run({input_names(a)[0]: inp})
+            from .fill import ConfirmError
+            try:
+                result = body.run({input_names(a)[0]: inp})
+            except ConfirmError as e:                 # 宣言した値が下の層で効いていない → 答えは使わず else へ
+                self.notify(name, f"うまくいきませんでした: {e}", ctx.user)
+                result = None
             outs = out_states_of(a)
-            if not (isinstance(result, Tagged) and result.state in outs and not outs[result.state]):
+            if result is not None and not (isinstance(result, Tagged) and result.state in outs and not outs[result.state]):
                 return result
             # 値を持たない状態（missing など）は「決められなかった」→ else へ（QUESTIONS_v0.2 A2）
         els = a.child("else")

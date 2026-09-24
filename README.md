@@ -106,6 +106,8 @@ pip install -e .                           # 入れると `ponte run spec/todo.p
 | `python -m ponte explain E32` | エラーの意味と直し方を出す。コードを省くと一覧を出す |
 | `python -m ponte fill 仕様.ponte` | AI に action の中身を書かせ、機械で確かめる。`ANTHROPIC_API_KEY` が必要 |
 | `python -m ponte guide` | AI に渡す書き方の説明を出す。実装から作るため、実装とずれない。`--rules` で rule の書き方を出す |
+| `python -m ponte ir 仕様.ponte` | check を通った仕様を、下の層の言語に渡す中間の形（IR、JSON）にする。`--cases` で共通テストだけを出す（[docs/IR.md](docs/IR.md)） |
+| `python -m ponte conform IR.json` | IR の共通テストを、基準の実装（Python）で流す |
 | `python -m ponte fmt 仕様.ponte` | 見た目を整える。意味が変わる場合は書き換えない |
 | `python -m ponte build 仕様.ponte` | 1つのファイル（.pyz）にまとめる。`python app.pyz` で動く |
 | `python -m ponte role 仕様.ponte 名前 admin` | 最初の管理者を決める |

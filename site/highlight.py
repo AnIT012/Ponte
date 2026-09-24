@@ -10,7 +10,7 @@ CLAUSE = ("of where sort when do why in out example by ask how given at says tap
           "title sub mark button lead heading empty search take top main side bottom over").split()
 GUARD = "never else tbd gone limit confirm".split()
 TYPES = "text number count money percent date monthday duration file image pdf".split()
-TOKEN = re.compile(r'"[^"]*"|->|\||>|\[|\]|\d+(?:[:/.]\d+)*(?:\s+(?:days?|hours?|minutes?|seconds?|weeks?))?|[A-Za-z_][\w-]*|\s+|.')
+TOKEN = re.compile(r'"[^"]*"|->|\||>|\[|\]|\d+(?:[:/.]\d+)*(?:[eE][-+]?\d+)?(?:\s+(?:days?|hours?|minutes?|seconds?|weeks?))?|[A-Za-z_][\w-]*|\s+|.')
 
 
 def _span(cls, text):

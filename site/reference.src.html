@@ -214,6 +214,10 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px dashed va
   html{scroll-padding-top:110px}
 }
 .feat .num{text-transform:none;letter-spacing:.06em}
+
+.feat.wide{grid-column:1 / -1}
+.feat .pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:14px;align-items:start}
+@media (max-width:900px){.feat .pair{grid-template-columns:minmax(0,1fr)}}
 /* ---- 読みものページ（入門・道具とエラー） ---- */
 .nav a[aria-current="page"]{border-bottom-color:var(--sky)}
 .doc{display:grid;grid-template-columns:200px minmax(0,1fr);gap:40px;padding-block:18px 40px;align-items:start}

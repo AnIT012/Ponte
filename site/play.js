@@ -18,7 +18,7 @@ const HL = (() => {
   const CLAUSE = w("of where sort when do why in out example by ask how given at says taps gets expect adds learn using require run with confirm suspect title sub mark button lead heading empty search take top main side bottom over");
   const GUARD = w("never else tbd gone limit confirm");
   const TYPES = w("text number count money percent date monthday duration file image pdf");
-  const TOKEN = /"[^"]*"|->|\||>|\[|\]|\d+(?:[:/.]\d+)*(?:\s+(?:days?|hours?|minutes?|seconds?|weeks?))?|[A-Za-z_][\p{L}\p{N}_-]*|\s+|./gu;
+  const TOKEN = /"[^"]*"|->|\||>|\[|\]|\d+(?:[:/.]\d+)*(?:[eE][-+]?\d+)?(?:\s+(?:days?|hours?|minutes?|seconds?|weeks?))?|[A-Za-z_][\p{L}\p{N}_-]*|\s+|./gu;
   const e = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const span = (c, t) => `<span class="${c}">${e(t)}</span>`;
   function line(src, inFields, states) {

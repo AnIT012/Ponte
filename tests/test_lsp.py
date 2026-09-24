@@ -52,3 +52,10 @@ def test_hover_explains_codes_and_heads():
     from ponte.lsp import hover
     assert "tbd" in hover("# E05 のこと", 0, 3)
     assert "データの形" in hover("thing Task", 0, 2)
+
+
+def test_heading_completion_puts_in_required_parts_only():
+    from ponte.lsp import completions
+    items = {i["label"]: i for i in completions("", 0)}
+    assert items["rule"]["insertText"] == "rule $1\n  when $2\n  do $3" and items["rule"]["insertTextFormat"] == 2
+    assert "insertText" not in items["thing"]

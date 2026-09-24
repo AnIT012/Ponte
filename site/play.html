@@ -516,8 +516,39 @@ async function run() {
 }
 src.addEventListener("input", () => { paintPlain(); clearTimeout(timer); timer = setTimeout(run, 350); });
 src.addEventListener("scroll", sync);
+// 見出しの行で Enter を押すと、その見出しに必須の部品の名前だけを入れる（中身は書く人が埋める）
+const REQUIRED = {"rule": ["when", "do"], "action": ["in", "out", "example", "example", "else"], "list": ["of"], "match": ["else ->"]};
+const PARTS = new Set(Object.values(REQUIRED).flat().map(p => p.split(" ")[0]));
+function put(text, caret) {
+  const s = src.selectionStart;
+  src.focus();
+  if (!document.execCommand || !document.execCommand("insertText", false, text)) src.setRangeText(text, s, src.selectionEnd, "end");
+  if (caret != null) src.setSelectionRange(s + caret, s + caret);
+  src.dispatchEvent(new Event("input"));
+}
 src.addEventListener("keydown", e => {
-  if (e.key === "Tab") { e.preventDefault(); const s = src.selectionStart; src.setRangeText("  ", s, src.selectionEnd, "end"); src.dispatchEvent(new Event("input")); }
+  const v = src.value, s = src.selectionStart, e0 = src.selectionEnd;
+  const ls = v.lastIndexOf("\n", s - 1) + 1, le = v.indexOf("\n", s) < 0 ? v.length : v.indexOf("\n", s);
+  const line = v.slice(ls, le), next = v.slice(le + 1).split("\n")[0] || "";
+  if (e.key === "Enter" && !e.shiftKey && s === e0 && s === le && !next.startsWith(" ")) {
+    const word = /^[a-z]+ \S/.test(line) ? line.split(" ")[0] : "";
+    if (REQUIRED[word]) {
+      e.preventDefault();
+      const parts = REQUIRED[word].map(p => "  " + p + " ");
+      put("\n" + parts.join("\n"), 1 + parts[0].length);
+      return;
+    }
+  }
+  if (e.key === "Tab" && !e.shiftKey) {
+    e.preventDefault();
+    const m = /^  (\S+)\s*$/.exec(next);                        // 次の行がまだ空の部品なら、そこへ移る
+    if (s === le && m && (PARTS.has(m[1]) || next.trim() === "else ->")) {
+      const to = le + 1 + next.length;
+      src.setSelectionRange(to, to);
+      return;
+    }
+    put("  ");
+  }
 });
 out.addEventListener("click", e => { const b = e.target.closest("[data-line]"); if (b) gotoLine(+b.dataset.line); });
 $("pick").addEventListener("change", e => { src.value = SAMPLES[e.target.value]; src.scrollTop = 0; src.dispatchEvent(new Event("input")); });

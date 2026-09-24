@@ -2,9 +2,82 @@
 
 {HEADER}
 
-<p class="tagline">Ponte は、アプリの仕様を書き、それをそのまま動かすためのプログラミング言語です。決まっていないことがあれば、動かす前にエラーとして示します。 <a href="spec.html">詳しく ›</a> <a href="play.html">ブラウザで試す ›</a></p>
+<section class="hero">
+  <div class="hero-text">
+    <p class="eyebrow">AI と一緒にアプリを作るための言語</p>
+    <h1><span>仕様を書けば、</span><span>そのままアプリになる。</span></h1>
+    <p class="lead">Ponte で書くのは「どう作るか」ではなく「何を作るか」です。データの形、誰が何をできるか、ボタンを押したら何が起きるかを書くと、ログイン付きの Web アプリとして動きます。決めていないことが残っていれば、動かす前にエラーで止まります。</p>
+    <p class="cta"><a class="btn main" href="play.html">ブラウザで試す</a><a class="btn" href="learn.html">入門を読む</a></p>
+    <p class="note">Python 3.11 だけで動きます。ほかに入れるものはありません。</p>
+  </div>
+  <div class="hero-demo">
+    <div class="demo-code"><div class="demo-label">todo.ponte</div><pre class="code">{CODE:hero}</pre></div>
+    <div class="demo-arrow" aria-hidden="true">↓ <code>ponte run todo.ponte</code></div>
+    <img class="demo-shot" src="{{IMG:todo}}" alt="この仕様から動いた、やることアプリの画面" loading="lazy">
+  </div>
+</section>
+
+<p class="motto">人は決めて、AI が書いて、言語が守る。</p>
+
+<section class="feats" aria-label="特徴">
+  <article class="feat sticker">
+    <p class="num">1</p>
+    <h2>決め忘れは、動かす前に止まる</h2>
+    <p>AI にアプリを頼むと、決めていないことは AI が勝手に補って進みます。Ponte では、まだ決めていないことを <code>tbd</code> に書いておけます。1つでも残っていれば <code>ponte check</code> が通らず、アプリは動きません。</p>
+    <pre class="code">{CODE:order}</pre>
+    {OUT:order}
+  </article>
+
+  <article class="feat sticker">
+    <p class="num">2</p>
+    <h2>書いていない権限は、誰にもない</h2>
+    <p>誰が何を見られるか、変えられるかは <code>who</code> に書きます。書いていない操作は誰にもできません。書き忘れると「誰も使えないアプリ」になるので、エラーとしてすぐに見つかります。</p>
+    <pre class="code">{CODE:nowho}</pre>
+    {OUT:nowho}
+  </article>
+
+  <article class="feat sticker">
+    <p class="num">3</p>
+    <h2>AI に任せる部分は、約束で囲む</h2>
+    <p>文章から日付を拾うような処理は <code>action</code> にして、中身を AI に書かせます。先に答えの例と、してはいけないことを書いておきます。AI が書いた中身は、この約束に照らして機械が確かめます。</p>
+    <pre class="code">{CODE:action}</pre>
+  </article>
+
+  <article class="feat sticker">
+    <p class="num">4</p>
+    <h2>例がそのままテストになる</h2>
+    <p>ルールの下に書いた <code>example</code> が、そのままテストになります。<code>ponte test</code> は例が通るかを確かめたうえで、まだどの例でも確かめていない状態の変化を一覧にします。</p>
+    {OUT:test}
+  </article>
+</section>
+
+<section class="compare">
+  <h2>AI に直接コードを書かせる場合との違い</h2>
+  <div class="table"><table>
+    <tr><th></th><th>AI に直接書かせる</th><th>Ponte</th></tr>
+    <tr><td>決めていないこと</td><td>AI が推測して埋める</td><td>エラーで止まり、人が決める</td></tr>
+    <tr><td>権限</td><td>書き忘れると、誰でも操作できる</td><td>書いた操作しかできない</td></tr>
+    <tr><td>確かめ方</td><td>動かして画面を目で見る</td><td>例がテストになり、確かめていない部分も一覧になる</td></tr>
+    <tr><td>読める人</td><td>コードが読める人だけ</td><td>仕様は誰でも読める。<code>ponte doc</code> で1枚の HTML にもなる</td></tr>
+  </table></div>
+</section>
+
+<section class="gets">
+  <h2>1つのファイルから動くもの</h2>
+  <p class="lead">画面やサーバーのコードは書きません。仕様を書けば、次のものがそろったアプリとして動きます。</p>
+  <ul class="chips">
+    <li>ログインと登録</li><li>一覧・ボード・カレンダー</li><li>入力フォームと確認</li><li>通知と定期実行</li>
+    <li>リアルタイム更新</li><li>画像のアップロード</li><li>スマートフォン表示</li><li>ダークモード</li><li>日本語と英語</li>
+  </ul>
+  <div class="shots">
+    <figure><img src="{{IMG:board}}" alt="ボード表示"><figcaption>ボード</figcaption></figure>
+    <figure><img src="{{IMG:lend_home}}" alt="備品の貸し出しアプリ"><figcaption>備品の貸し出し</figcaption></figure>
+    <figure><img src="{{IMG:kakeibo}}" alt="家計メモとグラフ"><figcaption>家計メモとグラフ</figcaption></figure>
+  </div>
+</section>
 
 <section class="show sticker" aria-label="書き方の見本">
+  <h2 class="show-h">書き方を6つの見本で見る</h2>
 {SLIDES}
   <div class="ctrl">
     <button type="button" id="prev" aria-label="前の見本">‹</button>
@@ -12,7 +85,6 @@
     <button type="button" id="next" aria-label="次の見本">›</button>
   </div>
 </section>
-
 
 <section class="cols">
   <div class="col sticker"><h3>はじめる</h3><p>入門では、やることアプリをエラーを見ながら少しずつ作ります。はじめての方は、ここから読んでください。</p><a class="more" href="learn.html">入門を読む ›</a></div>

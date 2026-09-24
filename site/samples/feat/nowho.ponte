@@ -1,0 +1,6 @@
+thing Task
+  title   text
+  status  [todo | done]
+
+flow Task.status
+  todo -> done

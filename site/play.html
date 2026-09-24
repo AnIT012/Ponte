@@ -308,8 +308,8 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px dashed va
 .play-head .lead{max-width:40em;color:var(--muted);line-height:1.9;margin:0}
 .pick{font-family:var(--pop);font-size:14px;color:var(--muted);display:flex;align-items:center;gap:8px}
 .pick select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 10px;max-width:70vw}
-.play{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:18px;padding-block:18px 10px;align-items:stretch}
-.editor{position:relative;height:min(72vh,720px);overflow:hidden;padding:0;background:var(--code)}
+.play{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;padding-block:18px 10px}
+.editor{position:relative;height:min(62vh,640px);min-height:320px;overflow:hidden;padding:0;background:var(--code)}
 .editor .hl,.editor textarea{position:absolute;inset:0;margin:0;border:0;border-radius:14px;padding:18px 20px;
   font-family:var(--mono);font-size:14px;line-height:1.75;tab-size:2;white-space:pre;overflow:auto;box-sizing:border-box;letter-spacing:0}
 .editor .hl{pointer-events:none;color:var(--codeink);overflow:hidden}
@@ -317,18 +317,19 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px dashed va
 .editor textarea{background:transparent;color:transparent;caret-color:#fff;resize:none;outline:none}
 .editor textarea::selection{background:rgba(131,195,255,.35);color:transparent}
 .editor:focus-within{outline:3px solid var(--sky);outline-offset:2px}
-.panel{display:flex;flex-direction:column;height:min(72vh,720px);overflow:hidden}
-.panel-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.panel{display:flex;flex-direction:column;min-height:140px;max-height:none}
+.panel-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .state{font-family:var(--pop);font-weight:700;font-size:15px;color:var(--muted)}
 .state.good{color:var(--ok)}.state.bad{color:var(--err)}
-.panel-bar button{font-family:var(--pop);font-weight:700;border:0;border-radius:999px;background:var(--ink);color:var(--panel);padding:7px 18px;cursor:pointer}
+.panel-bar button{font-family:var(--pop);font-weight:700;border:0;border-radius:999px;background:var(--ink);color:var(--panel);padding:7px 18px;cursor:pointer;white-space:nowrap}
 .panel-bar button:disabled{opacity:.35;cursor:default}
 .panel-bar .acts{display:flex;gap:8px}
 .panel-bar button.quiet{background:transparent;color:var(--ink);border:1px solid var(--line)}
-.out{overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
-.out p{margin:4px 2px;font-size:14px;line-height:1.8}
+.out{padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr));gap:10px;align-items:start}
+.out > p{grid-column:1 / -1}
+.out p{margin:4px 2px;font-size:14px;line-height:1.8;overflow-wrap:anywhere}
 .out .ok{color:var(--ok);font-weight:700}.out .bad{color:var(--err);font-weight:700}.out .holes{color:var(--muted);font-weight:700;margin-top:10px}
-.finding{all:unset;display:flex;flex-direction:column;gap:3px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--ground);cursor:pointer;font-size:13.5px;line-height:1.7}
+.finding{all:unset;overflow-wrap:anywhere;min-width:0;display:flex;flex-direction:column;gap:3px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--ground);cursor:pointer;font-size:13.5px;line-height:1.7}
 .finding:hover,.finding:focus-visible{border-color:var(--sky)}
 .finding .where{font-family:var(--pop);font-weight:700;font-size:12.5px;color:var(--muted)}
 .finding .fix{color:var(--muted);font-size:12.5px}
@@ -338,13 +339,17 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px dashed va
 .out .info{color:var(--muted);font-size:13.5px;margin:2px 0 8px}.out .info-h{font-weight:700;margin-bottom:2px}
 @media (max-width:860px){
   .play{grid-template-columns:minmax(0,1fr)}
-  .editor{height:56vh}.panel{height:auto;max-height:60vh}
+  .editor{height:56vh}
   .editor .hl,.editor textarea{font-size:12.5px;padding:14px}
 }
 
+.head-acts{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.switch{font-family:var(--pop);font-size:14px;color:var(--sky);text-decoration:none;white-space:nowrap}
+.editor textarea::placeholder{color:#7C83BA;opacity:1}
+
 </style>
 
-<div class="wrap">
+<div class="wrap" data-mode="play">
 <header class="bar">
   <a class="logo" href="index.html" aria-label="Ponte">
     <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="pg" x1="0" x2="1"><stop offset=".15" stop-color="#FF5A36"/><stop offset=".85" stop-color="#2F6FD6"/></linearGradient></defs><rect x="2" y="2" width="96" height="96" rx="24" fill="#fff" stroke="#DADCE8" stroke-width="2"/><path d="M24 62 C 38 28, 62 28, 76 62" stroke="url(#pg)" stroke-width="11" fill="none" stroke-linecap="round"/><circle cx="24" cy="62" r="13" fill="#FF5A36"/><circle cx="76" cy="62" r="13" fill="#2F6FD6"/></svg>
@@ -352,6 +357,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px dashed va
   </a>
   <nav class="nav">
     <a href="play.html" aria-current="page">試す</a>
+    <a href="write.html">書く</a>
     <a href="learn.html">入門</a>
     <a href="reference.html">道具とエラー</a>
     <a href="spec.html">仕様書</a>
@@ -361,8 +367,8 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px dashed va
 
 <div class="play-head">
   <div><p class="eyebrow">PLAYGROUND</p><h1>試す</h1>
-  <p class="lead">ここに書いた Ponte を、ブラウザの中で確かめられます。書き換えると <code>ponte check</code> が流れ、「test」を押すと example を動かします。インストールは必要ありません。</p></div>
-  <label class="pick">見本 <select id="pick"><option value="todo">やることアプリ（完成形）</option><option value="s1">見本 1: データの形を書く</option><option value="s2">見本 2: 状態の流れと権限</option><option value="s3">見本 3: きっかけとすること</option><option value="s4">見本 4: 例がテストになる</option><option value="s5">見本 5: AI に任せる部分には約束を書く</option><option value="s6">見本 6: 決めていないことは tbd に（1〜5 と一緒に）</option></select></label>
+  <p class="lead">見本を書き換えて、ブラウザの中で確かめられます。書き換えると <code>ponte check</code> が流れ、「test」を押すと example を動かします。インストールは必要ありません。</p></div>
+  <div class="head-acts"><label class="pick">見本 <select id="pick"><option value="todo">やることアプリ（完成形）</option><option value="s1">見本 1: データの形を書く</option><option value="s2">見本 2: 状態の流れと権限</option><option value="s3">見本 3: きっかけとすること</option><option value="s4">見本 4: 例がテストになる</option><option value="s5">見本 5: AI に任せる部分には約束を書く</option><option value="s6">見本 6: 決めていないことは tbd に（1〜5 と一緒に）</option></select></label><a class="switch" href="write.html">白紙から書く ›</a></div>
 </div>
 <div class="play">
   <div class="editor sticker">
@@ -422,9 +428,10 @@ def run_doc(src):
     except ParseError as e:
         return None
 </script>
+<script>document.body.dataset.mode = "play";</script>
 <script type="module">
 const $ = id => document.getElementById(id);
-const SAMPLES = JSON.parse($("samples").textContent);
+const SAMPLES = $("samples") ? JSON.parse($("samples").textContent) : {};
 const src = $("src"), hl = $("hl"), out = $("out"), state = $("state"), testBtn = $("test"), docBtn = $("doc");
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
 const md = s => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>");
@@ -434,7 +441,10 @@ const b64 = t => btoa(String.fromCharCode(...new TextEncoder().encode(t))).repla
 const unb64 = t => new TextDecoder().decode(Uint8Array.from(atob(t.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0)));
 let shared = null;
 try { const m = location.hash.match(/^#code=([\w-]+)$/); if (m) shared = unb64(m[1]); } catch (e) {}
-try { src.value = shared ?? localStorage.getItem("ponte-play") ?? SAMPLES.todo; } catch (e) { src.value = shared ?? SAMPLES.todo; }
+const MODE = document.body.dataset.mode || "play";          // play: 見本から / write: 白紙から
+const KEY = MODE === "write" ? "ponte-write" : "ponte-play";
+const START = MODE === "write" ? "" : SAMPLES.todo;
+try { src.value = shared ?? localStorage.getItem(KEY) ?? START; } catch (e) { src.value = shared ?? START; }
 
 // 色分け（highlight.py と同じ決め方。Python の読み込みを待たずに、すぐ色が付く）
 const HL = (() => {
@@ -512,7 +522,7 @@ function showCheck(r) {
 }
 async function run() {
   const my = ++seq, text = src.value;
-  try { localStorage.setItem("ponte-play", text); } catch (e) {}
+  try { localStorage.setItem(KEY, text); } catch (e) {}
   paintPlain();
   if (!py) return;
   const r = JSON.parse(py.globals.get("run_check")(text));
@@ -530,32 +540,111 @@ function put(text, caret) {
   if (caret != null) src.setSelectionRange(s + caret, s + caret);
   src.dispatchEvent(new Event("input"));
 }
-src.addEventListener("keydown", e => {
-  const v = src.value, s = src.selectionStart, e0 = src.selectionEnd;
+const OPENERS = new Set(["example", "do", "how", "given", "taps", "expect", "adds"]);   // 下に字下げして書く部品
+const indentOf = l => l.length - l.replace(/^ +/, "").length;
+function lineAt(v, s) {
   const ls = v.lastIndexOf("\n", s - 1) + 1, le = v.indexOf("\n", s) < 0 ? v.length : v.indexOf("\n", s);
-  const line = v.slice(ls, le), next = v.slice(le + 1).split("\n")[0] || "";
-  if (e.key === "Enter" && !e.shiftKey && s === e0 && s === le && !next.startsWith(" ")) {
+  return [ls, le, v.slice(ls, le)];
+}
+function replaceRange(from, to, text, caret) {        // 元に戻す（Ctrl+Z）が効く書き換え
+  src.focus();
+  src.setSelectionRange(from, to);
+  if (!document.execCommand || !document.execCommand("insertText", false, text)) src.setRangeText(text, from, to, "end");
+  if (caret != null) src.setSelectionRange(caret, caret);
+  src.dispatchEvent(new Event("input"));
+}
+function shiftLines(dir) {                            // 選んだ行（なければ今の行）を 2つずつ字下げ / 字上げ
+  const v = src.value, s = src.selectionStart, e0 = src.selectionEnd;
+  const from = v.lastIndexOf("\n", s - 1) + 1;
+  const endIdx = v.indexOf("\n", e0 > s && v[e0 - 1] === "\n" ? e0 - 1 : e0);
+  const to = endIdx < 0 ? v.length : endIdx;
+  const lines = v.slice(from, to).split("\n");
+  let first = 0, total = 0;
+  const out = lines.map((l, i) => {
+    let d;
+    if (dir > 0) { d = l.trim() ? 2 : 0; l = " ".repeat(d) + l; }
+    else { d = -Math.min(2, indentOf(l)); l = l.slice(-d); }
+    if (i === 0) first = d;
+    total += d;
+    return l;
+  });
+  replaceRange(from, to, out.join("\n"));
+  if (e0 > s) src.setSelectionRange(Math.max(from, s + first), e0 + total);
+  else src.setSelectionRange(Math.max(from, s + first), Math.max(from, s + first));
+}
+src.addEventListener("keydown", e => {
+  if (e.isComposing || e.keyCode === 229) return;    // 日本語の変換中の Enter などは、何もしない
+  const v = src.value, s = src.selectionStart, e0 = src.selectionEnd;
+  const [ls, le, line] = lineAt(v, s);
+  const next = v.slice(le + 1).split("\n")[0] || "";
+  if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    e.preventDefault();
     const word = /^[a-z]+ \S/.test(line) ? line.split(" ")[0] : "";
-    if (REQUIRED[word]) {
-      e.preventDefault();
+    if (s === e0 && s === le && REQUIRED[word] && !next.startsWith(" ")) {   // 見出しの後: 必須の部品の名前だけ
       const parts = REQUIRED[word].map(p => "  " + p + " ");
-      put("\n" + parts.join("\n"), 1 + parts[0].length);
+      replaceRange(s, s, "\n" + parts.join("\n"), s + 1 + parts[0].length);
       return;
     }
+    const before = v.slice(ls, s), ind = indentOf(line);
+    if (!line.trim() && ind > 0) {                    // 空の字下げだけの行で Enter → 空行を残して1段戻る（2回押すと塊から出る）
+      const d = Math.max(0, ind - 2);
+      replaceRange(ls, le, "\n" + " ".repeat(d), ls + 1 + d);
+      return;
+    }
+    let n = Math.min(ind, indentOf(before) === before.length ? before.length : ind);
+    const head = before.trim();
+    if (ind === 0 && head && !head.startsWith("#")) n = 2;                 // 見出しの下は 2つ字下げ
+    else if (OPENERS.has(head.split(/\s+/)[0]) && s === le && (head.split(/\s+/).length === 1 || ["given", "taps", "expect", "adds"].includes(head.split(/\s+/)[0]))) n = ind + 2;
+    const after = v.slice(e0, le);
+    const trail = before.length - before.replace(/ +$/, "").length;       // 区切った所の前の空白は残さない
+    const from = before.trim() ? s - trail : s;
+    const to = e0 === s ? s + (after.length - after.replace(/^ +/, "").length) : e0;
+    replaceRange(from, to, "\n" + " ".repeat(n), from + 1 + n);
+    return;
   }
-  if (e.key === "Tab" && !e.shiftKey) {
+  if (e.key === "Backspace" && s === e0 && s > ls && /^ +$/.test(v.slice(ls, s))) {   // 字下げの中の Backspace は 2つずつ
     e.preventDefault();
+    const col = s - ls, to = col % 2 ? col - 1 : col - 2;
+    replaceRange(ls + Math.max(0, to), s, "", ls + Math.max(0, to));
+    return;
+  }
+  if (e.key === "Tab") {
+    e.preventDefault();
+    if (e.shiftKey) { shiftLines(-1); return; }
+    if (e0 > s && v.slice(s, e0).includes("\n")) { shiftLines(1); return; }
     const m = /^  (\S+)\s*$/.exec(next);                        // 次の行がまだ空の部品なら、そこへ移る
     if (s === le && m && (PARTS.has(m[1]) || next.trim() === "else ->")) {
       const to = le + 1 + next.length;
       src.setSelectionRange(to, to);
       return;
     }
-    put("  ");
+    replaceRange(s, e0, (s - ls) % 2 ? " " : "  ");
+  }
+});
+// 見出しを消したら、その見出しのために入れた「まだ空の部品」も消す（書き込んだ部品は消さない）
+src.addEventListener("input", e => {
+  if (!e.inputType || !e.inputType.startsWith("delete")) return;
+  const lines = src.value.split("\n");
+  const empty = l => { const m = /^  (\S+)\s*$/.exec(l); return m && (PARTS.has(m[1]) || l.trim() === "else ->"); };
+  for (let i = 0; i < lines.length; i++) {
+    if (!empty(lines[i])) continue;
+    let j = i;
+    while (j < lines.length && empty(lines[j])) j++;
+    const above = i === 0 ? "" : lines[i - 1];
+    if (!above.trim()) {                             // 上に見出しがない、空の部品だけの塊
+      const start = lines.slice(0, i).join("\n").length + (i ? 1 : 0);
+      const end = lines.slice(0, j).join("\n").length;
+      const caret = src.selectionStart;
+      const cut = end - start + (j < lines.length ? 1 : 0);
+      replaceRange(start, Math.min(src.value.length, end + (j < lines.length ? 1 : 0)), "",
+                   caret > start ? Math.max(start, caret - cut) : caret);
+      return;
+    }
+    i = j;
   }
 });
 out.addEventListener("click", e => { const b = e.target.closest("[data-line]"); if (b) gotoLine(+b.dataset.line); });
-$("pick").addEventListener("change", e => { src.value = SAMPLES[e.target.value]; src.scrollTop = 0; src.dispatchEvent(new Event("input")); });
+$("pick") && $("pick").addEventListener("change", e => { src.value = SAMPLES[e.target.value]; src.scrollTop = 0; src.dispatchEvent(new Event("input")); });
 testBtn.addEventListener("click", () => {
   const r = JSON.parse(py.globals.get("run_test")(src.value));
   if (r.error) { out.innerHTML = `<p class="bad">${esc(r.error)}</p>`; return; }

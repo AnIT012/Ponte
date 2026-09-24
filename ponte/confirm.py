@@ -40,14 +40,29 @@ def parse_with(text: str) -> tuple[dict, dict, list[str]]:
 
 
 def names(text: str) -> list[str]:
-    """confirm の名前（`名前 値` と書いたものも、名前だけを返す）"""
+    """confirm の名前（`名前 値` や `within` を書いたものも、名前だけを返す）"""
     return [x.split()[0] for x in [p.strip() for p in text.split(",")] if x]
+
+
+_WITHIN = re.compile(r"^(.*?)\s+within\s+(\d+(?:\.\d+)?)%$")
+
+
+def tolerances(text: str) -> dict:
+    """confirm の `名前 [値] within N%` → {名前: 許す相対誤差}"""
+    out = {}
+    for part in [p.strip() for p in text.split(",") if p.strip()]:
+        m = _WITHIN.match(part)
+        if m:
+            out[m.group(1).split()[0]] = float(m.group(2)) / 100
+    return out
 
 
 def expected(text: str) -> tuple[dict, dict]:
     """confirm の `名前 値`（渡さないが、こうなっているはずの値）→ (値, 書いたままの値)"""
     out, raw = {}, {}
     for part in [p.strip() for p in text.split(",") if p.strip()]:
+        m = _WITHIN.match(part)
+        part = m.group(1) if m else part
         w = part.split(None, 1)
         if len(w) == 2:
             out[w[0]] = value(w[1])
@@ -55,22 +70,22 @@ def expected(text: str) -> tuple[dict, dict]:
     return out, raw
 
 
-def _same(a, b) -> bool:
+def _same(a, b, rel: float = 1e-9) -> bool:
     if isinstance(a, bool) or isinstance(b, bool):
         return a is b or (isinstance(a, bool) and isinstance(b, bool) and a == b)
     if isinstance(a, (int, float)) and isinstance(b, (int, float)):
-        return abs(a - b) <= 1e-9 * max(abs(a), abs(b), 1e-300)
+        return abs(a - b) <= rel * max(abs(a), abs(b), 1e-300)
     return str(a) == str(b)
 
 
-def problems(declared: dict, wanted: list[str], reported: dict, raw: dict | None = None) -> list[str]:
+def problems(declared: dict, wanted: list[str], reported: dict, raw: dict | None = None, within: dict | None = None) -> list[str]:
     """Every name in confirm whose reported value is missing or differs from the declaration."""
     out = []
     for n in wanted:
         shown = (raw or {}).get(n, declared.get(n))
         if n not in reported:
             out.append(f"confirm {n}: 下の層が使った値を報告していません（宣言は {shown}）")
-        elif not _same(declared.get(n), value(reported[n])):
+        elif not _same(declared.get(n), value(reported[n]), (within or {}).get(n, 1e-9)):
             out.append(f"confirm {n}: 宣言は {shown} なのに、実際に使われたのは {reported[n]} です")
     return out
 
@@ -96,3 +111,10 @@ def declared(node) -> tuple[dict, dict]:
         vals.update(e)
         shown.update(r)
     return vals, shown
+
+
+def within_of(node) -> dict:
+    out = {}
+    for c in node.children_of("confirm"):
+        out.update(tolerances(c.text))
+    return out

@@ -32,7 +32,7 @@ import tempfile
 import time
 from dataclasses import dataclass, field
 
-from .confirm import _same, expected, names, parse_with, problems, value
+from .confirm import _same, expected, names, parse_with, problems, tolerances, value
 from .parser import Node
 
 CONDITION = re.compile(r"^(\w+)\s+(is|at least|at most|above|below)\s+(.+)$")
@@ -48,6 +48,7 @@ class Job:
     raw: dict = field(default_factory=dict)
     expect: dict = field(default_factory=dict)          # 照合に使う値（with と、confirm の `名前 値`）
     shown: dict = field(default_factory=dict)
+    within: dict = field(default_factory=dict)          # confirm の within（許す相対誤差）
     confirm: list[str] = field(default_factory=list)
     require: list[tuple[str, str, object, int]] = field(default_factory=list)
     suspect: list[tuple[str, str, object, int]] = field(default_factory=list)
@@ -74,6 +75,7 @@ def read(node: Node) -> Job:
             e, r = expected(t)
             j.expect.update(e)
             j.shown.update(r)
+            j.within.update(tolerances(t))
         elif k in ("require", "suspect"):
             m = CONDITION.match(t)
             if not m:
@@ -110,7 +112,7 @@ def command(j: Job) -> list[str]:
 
 def judge(j: Job, facts: dict) -> list[str]:
     """Everything the facts break, after the run."""
-    out = problems(j.expect, j.confirm, facts, j.shown)
+    out = problems(j.expect, j.confirm, facts, j.shown, j.within)
     for name, op, want, line in j.require:
         if name not in facts:
             out.append(f"require {name}（L{line}）: 報告されていません")
@@ -151,7 +153,7 @@ def run(j: Job, base_dir: str, poll: float = 0.5, out=None) -> tuple[bool, list[
         while proc.poll() is None:                     # confirm は走っている間に見る。ズレたらすぐ止める
             time.sleep(poll)
             facts = _read_facts(report)
-            early = [p for p in problems(j.expect, [n for n in j.confirm if n in facts], facts, j.shown)]
+            early = [p for p in problems(j.expect, [n for n in j.confirm if n in facts], facts, j.shown, j.within)]
             early += [f"suspect {n} {op} {want}（L{line}）: 実際は {facts[n]}。良すぎる／おかしい結果なので止めます。確かめてください"
                       for n, op, want, line in j.suspect if n in facts and holds(facts[n], op, want)]
             if early:

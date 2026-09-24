@@ -774,7 +774,7 @@ class Engine:
         words = text.split()
         if words and (words[0], " ".join(words[1:3])) in self.connectors:
             fn = self.connectors[(words[0], " ".join(words[1:3]))]
-            from .confirm import declared, parts, problems
+            from .confirm import declared, parts, problems, within_of
             from .report import collect
             node = self.spec.find("connect", words[0])
             settings, _, wanted = parts(node)
@@ -782,7 +782,7 @@ class Engine:
             arg = self._fill(" ".join(words[3:]), ctx)
             with collect() as got:                    # with がある connect は、宣言した値も渡す
                 result = fn(arg, dict(settings)) if settings else fn(arg)
-            bad = problems(expect, wanted, got, raw)
+            bad = problems(expect, wanted, got, raw, within_of(node))
             if bad:                                   # 宣言した値が下の層で効いていない → 失敗として扱う（仕様 5章 with と confirm）
                 raise ConfirmFailed(f"{words[0]} {' '.join(words[1:3])}: " + "; ".join(bad))
             if result == "failed":

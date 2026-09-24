@@ -61,3 +61,11 @@ def test_data_is_never_translated(tmp_path):
     # 利用者のデータ（日本語）はそのまま出す
     out = run("--lang", "en", "fmt", "--check", "site/samples/feat/order.ponte").stdout
     assert out  # fmt は訳さないコマンド。落ちずに動くことだけ確かめる
+
+
+def test_english_is_the_default():
+    env = {k: v for k, v in os.environ.items() if k != "PONTE_LANG"}
+    env.update({"PYTHONPATH": ROOT, "LANG": "ja_JP.UTF-8"})          # システムが日本語でも英語
+    out = subprocess.run([sys.executable, "-m", "ponte", "check", "site/samples/feat/nowho.ponte"],
+                         cwd=ROOT, env=env, capture_output=True, text=True).stdout
+    assert out.startswith("Stopped") and "E19" in out

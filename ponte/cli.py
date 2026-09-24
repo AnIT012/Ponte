@@ -549,7 +549,7 @@ def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="ponte", description="Ponte：決めるのは人。守るのは言語。（v0.3）")
     from . import __version__
     p.add_argument("--version", action="version", version=f"ponte {__version__}")
-    p.add_argument("--lang", choices=["ja", "en"], help="出力の言語（省略時は PONTE_LANG、なければシステムの言語）")
+    p.add_argument("--lang", choices=["ja", "en"], help="出力の言語（省略時は PONTE_LANG、なければ英語）")
     sub = p.add_subparsers(dest="cmd", required=True)
     c = sub.add_parser("check", help="決めてないことを探す")
     c.add_argument("spec")

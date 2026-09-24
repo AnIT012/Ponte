@@ -30,7 +30,8 @@
 .finding .fix{color:var(--muted);font-size:12.5px}
 .finding .fix code{font-size:12px;background:var(--panel);border:1px solid var(--line);padding:0 4px;border-radius:5px}
 .finding.pass .where{color:var(--ok)}
-.finding.err{border-left:4px solid var(--err)}.finding.warn{border-left:4px solid var(--muted)}.finding.pass{border-left:4px solid var(--ok)}
+.finding.err{border-left:4px solid var(--err)}.finding.warn{border-left:4px solid var(--muted)}.finding.pass{border-left:4px solid var(--ok)}.finding.info-row{border-left:4px solid var(--sky)}
+.out .info{color:var(--muted);font-size:13.5px;margin:2px 0 8px}.out .info-h{font-weight:700;margin-bottom:2px}
 @media (max-width:860px){
   .play{grid-template-columns:minmax(0,1fr)}
   .editor{height:56vh}.panel{height:auto;max-height:60vh}

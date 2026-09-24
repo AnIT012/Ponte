@@ -35,11 +35,18 @@ section{padding-block:56px}
 .eyebrow{font-family:var(--pop);font-size:13px;letter-spacing:.08em;color:var(--tomato)}
 
 /* ---- top bar ---- */
-.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-block:18px}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:14px;
+  position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--ground) 86%,transparent);
+  -webkit-backdrop-filter:saturate(1.4) blur(10px);backdrop-filter:saturate(1.4) blur(10px);
+  box-shadow:0 0 0 100vmax color-mix(in srgb,var(--ground) 86%,transparent);clip-path:inset(0 -100vmax);transition:box-shadow .2s,border-color .2s;border-bottom:1px solid transparent}
+.bar.scrolled{border-bottom-color:var(--line)}
+.nav a[aria-current="page"]{border-bottom-color:var(--sky);color:var(--ink)}
 .logo{display:flex;align-items:center;gap:10px;text-decoration:none}
 .logo svg{width:44px;height:auto}
 .logo .word{font-size:28px}
-.nav{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--pop);font-size:14px}
+.nav{display:flex;gap:18px;font-family:var(--pop);font-size:14px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.nav::-webkit-scrollbar{display:none}
+.nav a{white-space:nowrap}
 .nav a{text-decoration:none;padding:4px 2px;border-bottom:3px solid transparent}
 .nav a:hover{border-bottom-color:var(--ink)}
 .word{font-family:var(--pop);letter-spacing:.02em;line-height:1}
@@ -77,7 +84,16 @@ section{padding-block:56px}
 .col a.more{font-family:var(--pop);font-size:13px;color:var(--sky);text-decoration:none;margin-top:auto}
 .col pre{margin:0;font-family:var(--mono);font-size:13px;background:var(--code);color:var(--codeink);border-radius:10px;padding:8px 10px;overflow-x:auto}
 
-footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13.5px}
+footer{padding-block:40px 60px;color:var(--muted);font-size:13.5px;border-top:1px solid var(--line);margin-top:56px}
+.foot{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:32px}
+.foot-brand b{font-family:var(--pop);font-size:20px;color:var(--ink)}
+.foot-brand p{margin-top:8px;line-height:1.9;max-width:34em}
+.foot-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.foot-links div{display:flex;flex-direction:column;gap:6px}
+.foot-links p{font-family:var(--pop);font-weight:700;color:var(--ink);margin-bottom:2px}
+.foot-links a{text-decoration:none}.foot-links a:hover{color:var(--sky)}
+.foot-ver{margin-top:28px;font-size:12.5px}
+@media (max-width:640px){.foot{grid-template-columns:minmax(0,1fr)}}
 
 @media (max-width:1100px){
   .slide{grid-template-columns:minmax(0,1fr);min-height:0}
@@ -154,11 +170,57 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
   .term,.feat .code{font-size:11px;white-space:pre-wrap;overflow-wrap:anywhere}
   .table td:first-child{white-space:normal}
 }
+
+/* ---- 全ページ共通の小物 ---- */
+html{scroll-padding-top:84px}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px dashed var(--tomato);outline-offset:3px;border-radius:6px}
+.totop{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:30;
+  width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:18px;cursor:pointer;
+  box-shadow:0 4px 16px rgba(20,24,50,.14)}
+.totop:hover{border-color:var(--sky);color:var(--sky)}
+@media (prefers-reduced-motion:no-preference){
+  .pre{opacity:0;transform:translateY(18px)}
+  .pre.in{opacity:1;transform:none;transition:opacity .6s ease,transform .6s cubic-bezier(.2,.7,.2,1)}
+  .hero-text > *,.hero-demo{animation:rise .7s cubic-bezier(.2,.7,.2,1) both}
+  .hero-text > :nth-child(2){animation-delay:.06s}.hero-text > :nth-child(3){animation-delay:.12s}
+  .hero-text > :nth-child(4){animation-delay:.18s}.hero-text > :nth-child(5){animation-delay:.24s}
+  .hero-demo{animation-delay:.2s}
+  .demo-shot{animation:rise .7s .75s cubic-bezier(.2,.7,.2,1) both}
+  .demo-arrow{animation:rise .5s .6s both}
+  .feat,.col,.shots figure{transition:transform .2s ease,box-shadow .2s ease}
+  .feat:hover,.col:hover{transform:translateY(-3px);box-shadow:0 10px 30px rgba(20,24,50,.10)}
+}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.copy{position:absolute;top:8px;right:8px;font-family:var(--pop);font-size:12px;border:1px solid #3a4068;background:#252a48;color:#D7DBF5;border-radius:999px;padding:3px 10px;cursor:pointer}
+.copyable{position:relative}
+.copyable pre{padding-top:32px!important;overflow-x:auto;white-space:pre}
+.copy{top:6px!important;right:6px!important}
+
+/* ---- 層 ---- */
+.layers{display:grid;gap:8px;max-width:760px;margin:28px auto 0}
+.layer{display:grid;grid-template-columns:minmax(0,19em) minmax(0,1fr);gap:16px;align-items:center;padding:12px 18px;border-radius:12px;border:1px solid var(--line);background:var(--panel);font-size:14px}
+.layer b{font-family:var(--pop)}
+.layer span{color:var(--muted)}
+.layer.top{background:var(--ink);border-color:var(--ink);color:var(--panel);transform:scale(1.02)}
+.layer.top span{color:color-mix(in srgb,var(--panel) 75%,var(--ink))}
+.layer.soon{border-style:dashed}
+.layer.base{background:transparent}
+@media (max-width:600px){.layer{grid-template-columns:minmax(0,1fr);gap:2px}}
+@media (max-width:600px){
+  .bar{flex-wrap:wrap;gap:6px 12px;padding-block:8px}
+  .logo svg{width:32px}.logo .word{font-size:22px}
+  .nav{width:100%;gap:16px;font-size:13.5px}
+  html{scroll-padding-top:110px}
+}
+.feat .num{text-transform:none;letter-spacing:.06em}
 /* ---- 読みものページ（入門・道具とエラー） ---- */
 .nav a[aria-current="page"]{border-bottom-color:var(--sky)}
 .doc{display:grid;grid-template-columns:200px minmax(0,1fr);gap:40px;padding-block:18px 40px;align-items:start}
-.toc{position:sticky;top:16px;font-size:13.5px;max-height:calc(100vh - 32px);overflow:auto}
-.toc-h{font-family:var(--pop);font-weight:700;color:var(--muted);margin-bottom:6px}
+.toc{position:sticky;top:calc(84px + env(safe-area-inset-top,0px));font-size:13.5px;max-height:calc(100vh - 104px);overflow:auto;overscroll-behavior:contain}
+.toc-d summary{list-style:none;pointer-events:none}.toc-d summary::-webkit-details-marker{display:none}
+.toc-now{display:none}
+.toc-h{font-family:var(--pop);font-weight:700;color:var(--muted);margin-bottom:6px;display:flex;gap:8px;align-items:baseline}
 .toc ol{list-style:none;margin:0;padding:0;border-left:2px solid var(--line)}
 .toc li a{display:block;padding:4px 0 4px 12px;text-decoration:none;color:var(--muted);line-height:1.5}
 .toc li.d3 a{padding-left:24px;font-size:12.5px}
@@ -169,8 +231,8 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 .prose .eyebrow{margin-bottom:6px}
 .prose h1{font-size:clamp(26px,4vw,36px);margin-bottom:12px}
 .prose .lead{font-size:17px;color:var(--muted);margin-bottom:28px;line-height:1.9}
-.prose h2{font-size:clamp(21px,3vw,26px);margin:44px 0 14px;padding-top:6px;scroll-margin-top:16px}
-.prose h3{font-size:18px;margin:30px 0 10px;scroll-margin-top:16px}
+.prose h2{font-size:clamp(21px,3vw,26px);margin:44px 0 14px;padding-top:6px}
+.prose h3{font-size:18px;margin:30px 0 10px}
 .prose p{margin:0 0 14px;line-height:1.95}
 .prose ul,.prose ol{margin:0 0 16px;padding-left:1.4em;line-height:1.9}
 .prose li{margin:4px 0}
@@ -209,13 +271,20 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 
 @media (max-width:860px){
   .doc{grid-template-columns:minmax(0,1fr);gap:8px}
-  .toc{position:static;max-height:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:18px}
+  .toc{top:calc(68px + env(safe-area-inset-top,0px));z-index:15;max-height:70vh;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:18px;box-shadow:0 6px 18px rgba(20,24,50,.08)}
+  .toc-d summary{pointer-events:auto;cursor:pointer;margin:0}
+  .toc-d summary::after{content:"▾";margin-left:auto;transition:transform .2s}
+  .toc-d[open] summary::after{transform:rotate(180deg)}
+  .toc-now{display:inline;color:var(--ink);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .toc-d[open] .toc-now{display:none}
+  .toc-d[open] ol{margin-top:8px}
   .toc ol{columns:2;column-gap:16px;border-left:0}
   .toc li a{padding-left:0}
   .toc li.d3{display:none}
   .errs{grid-template-columns:minmax(0,1fr)}
 }
-@media (max-width:520px){
+@media (max-width:600px){
+  .toc{top:calc(92px + env(safe-area-inset-top,0px))}
   .toc ol{columns:1}
   .prose .code,.term{font-size:12px;padding:12px}
   .table td:first-child{white-space:normal}
@@ -239,20 +308,20 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 </header>
 
 <div class="doc">
-  <aside class="toc" aria-label="目次"><p class="toc-h">目次</p><ol><li class="d2"><a href="#0-コンセプト">0. コンセプト</a></li><li class="d2"><a href="#1-設計原則">1. 設計原則</a></li><li class="d2"><a href="#2-型">2. 型</a></li><li class="d2"><a href="#3-記号とコメント">3. 記号とコメント</a></li><li class="d2"><a href="#4-パーツ一覧">4. パーツ一覧</a></li><li class="d2"><a href="#5-各パーツ">5. 各パーツ</a></li><li class="d2"><a href="#6-画面">6. 画面</a></li><li class="d2"><a href="#7-データと人">7. データと人</a></li><li class="d2"><a href="#8-外とつながる-connect">8. 外とつながる（connect）</a></li><li class="d2"><a href="#9-テスト-example">9. テスト（example）</a></li><li class="d2"><a href="#9-5-標準ライブラリ">9.5 標準ライブラリ</a></li><li class="d2"><a href="#10-do-で使える道具">10. do で使える道具</a></li><li class="d2"><a href="#11-実行モデル">11. 実行モデル</a></li><li class="d2"><a href="#11-5-確定した細かいルール">11.5 確定した細かいルール</a></li><li class="d2"><a href="#12-ビルド手順">12. ビルド手順</a></li><li class="d2"><a href="#12-5-道具">12.5 道具</a></li><li class="d2"><a href="#13-エラー一覧-決めていないことはエラー">13. エラー一覧（決めていないことはエラー）</a></li><li class="d2"><a href="#14-色分け">14. 色分け</a></li><li class="d2"><a href="#15-未決-次に決めること">15. 未決（次に決めること）</a></li><li class="d2"><a href="#16-変更の記録">16. 変更の記録</a></li><li class="d2"><a href="#付録-就活hub-メール-締切-通知-を-v0-3-で書いたもの">付録: 就活Hub（メール→締切→通知）を v0.3 で書いたもの</a></li><li class="d2"><a href="#v0-3-整理メモ">v0.3 整理メモ</a></li></ol></aside>
+  <aside class="toc" aria-label="目次"><details class="toc-d" open><summary class="toc-h"><span>目次</span><span class="toc-now" aria-hidden="true"></span></summary><ol><li class="d2"><a href="#0-コンセプト">0. コンセプト</a></li><li class="d2"><a href="#1-設計原則">1. 設計原則</a></li><li class="d2"><a href="#2-型">2. 型</a></li><li class="d2"><a href="#3-記号とコメント">3. 記号とコメント</a></li><li class="d2"><a href="#4-パーツ一覧">4. パーツ一覧</a></li><li class="d2"><a href="#5-各パーツ">5. 各パーツ</a></li><li class="d2"><a href="#6-画面">6. 画面</a></li><li class="d2"><a href="#7-データと人">7. データと人</a></li><li class="d2"><a href="#8-外とつながる-connect">8. 外とつながる（connect）</a></li><li class="d2"><a href="#9-テスト-example">9. テスト（example）</a></li><li class="d2"><a href="#9-5-標準ライブラリ">9.5 標準ライブラリ</a></li><li class="d2"><a href="#10-do-で使える道具">10. do で使える道具</a></li><li class="d2"><a href="#11-実行モデル">11. 実行モデル</a></li><li class="d2"><a href="#11-5-確定した細かいルール">11.5 確定した細かいルール</a></li><li class="d2"><a href="#12-ビルド手順">12. ビルド手順</a></li><li class="d2"><a href="#12-5-道具">12.5 道具</a></li><li class="d2"><a href="#13-エラー一覧-決めていないことはエラー">13. エラー一覧（決めていないことはエラー）</a></li><li class="d2"><a href="#14-色分け">14. 色分け</a></li><li class="d2"><a href="#15-未決-次に決めること">15. 未決（次に決めること）</a></li><li class="d2"><a href="#16-変更の記録">16. 変更の記録</a></li><li class="d2"><a href="#付録-就活hub-メール-締切-通知-を-v0-3-で書いたもの">付録: 就活Hub（メール→締切→通知）を v0.3 で書いたもの</a></li><li class="d2"><a href="#v0-3-整理メモ">v0.3 整理メモ</a></li></ol></details></aside>
   <article class="prose">
     <p class="eyebrow">SPEC</p>
     <h1>仕様書 v0.3</h1>
 <p class="lead">v0.2 と、その後の追補を1つにまとめたものです。内容（ルールと書き方）は v0.2 から変えていません。 0〜2章、5章の主なパーツ、6章の「画面の小さな部品」、11〜12章、14章は確定しています。</p>
 <hr>
 <h2 id="0-コンセプト">0. コンセプト</h2>
-<p>Ponte は、人と AI の間に立つ言語です。<strong>人は決めて、AIが書いて、言語が守る。</strong></p>
-<ul><li>これまでの言語は「人と機械の間」に立ち、どうやるかを書くものでした。</li><li>この言語は「人と AI の間」に立ち、何が欲しいか、何をしてはいけないか、何がまだ決まっていないかを書きます。</li><li>この言語で書いたものが、そのまま動くプロダクトになります。Python や Go は、利用者からは見えない下の層に置きます。</li><li>if、for、true/false はありません。これらは「どうやるか」を書くための道具だからです。</li></ul>
-<p>目標は次の2つです。</p>
-<ul><li>9割は言語の中で自由に書けるようにします。普通のアプリは、画面も含めてこの言語だけで作れます。</li><li>残りの1割は action の中身に閉じ込めます。契約だけを書き、中身は AI か自分が埋めます。</li></ul>
+<p>Ponte は、プログラムのいちばん上の層に書く言語です。</p>
+<ul><li>書くのは、何が欲しいか、何をしてはいけないか、何がまだ決まっていないかです。どうやるかは書きません。</li><li>Python や Java などの今までの言語は、Ponte の下で動く層になります。今の高級言語にとってのアセンブリと同じ位置です。</li><li>書いたことは必ず守られる約束です。決めていないことが残っていれば動かず、書いていない操作はできず、例に合わないものは通りません。</li><li>自分だけで書いても完結します。中身も Ponte の do で書けます。AI と作るときは、同じ仕様が AI への指示であり、AI が守る約束になります。</li><li>if、for、true/false はありません。これらは「どうやるか」を書くための道具だからです。</li></ul>
+<p>目標は次の3つです。</p>
+<ul><li>覚える言葉を少なくし、読めばわかる言語にします。</li><li>9割は言語の中で書けるようにします。データとルールがあるもの（アプリ、API、定期処理、業務の流れ）は、この言語だけで作れます。</li><li>残りの1割は action の中身に閉じ込めます。約束（example、never、else）を先に書き、中身は自分で書くか、下の層の言語で書くか、AI に任せます。どれを選んでも、同じ約束で確かめます。</li></ul>
 <hr>
 <h2 id="1-設計原則">1. 設計原則</h2>
-<ol><li>パーツは少なくし、1つのパーツには1つの仕事だけを持たせます。複雑さはパーツを増やして出すのではなく、組み合わせで出します。</li><li>「何を」は必須、「どうやるか」は任意です。どうやるかは how と style にだけ書けます。書かなければ AI が決め、書いたらその通りにしか作れません。</li><li>順序は書きません。並列が標準です。thing の1件は、それぞれ独立した1つのレコードです。レコードをまたぐ処理はすべて並列に、同じレコードの中の処理は1つずつ行います。順序が必要なときは、flow（状態）か relate（ルールの関係）で表します。</li><li>決めていないことはエラーになります。曖昧なまま渡すことはできません。</li><li>入れ子は禁止です。条件の中に条件を書かず、名前を付けて段階的に積み上げます。</li><li>何でも作れますが、危ないことは action の中身に閉じ込めます。外側（仕様と契約）は絞り、内側（action の中身）は契約を守れば何を書いてもかまいません。</li><li>同じ意味の語は1つだけにします。else はどこでも「逃げ道」、do はどこでも「やること」を表します。<code>&gt;</code> はどこでも「ぶつかったらこちらが勝つ」、<code>|</code> はどこでも「どれか1つ」を表します。</li></ol>
+<ol><li>パーツは少なくし、1つのパーツには1つの仕事だけを持たせます。複雑さはパーツを増やして出すのではなく、組み合わせで出します。</li><li>「何を」は必須、「どうやるか」は任意です。どうやるかは how と style にだけ書けます。書かなければ実行エンジンの標準の動きになり、書いたらその通りにしか作れません。</li><li>順序は書きません。並列が標準です。thing の1件は、それぞれ独立した1つのレコードです。レコードをまたぐ処理はすべて並列に、同じレコードの中の処理は1つずつ行います。順序が必要なときは、flow（状態）か relate（ルールの関係）で表します。</li><li>決めていないことはエラーになります。曖昧なまま渡すことはできません。</li><li>入れ子は禁止です。条件の中に条件を書かず、名前を付けて段階的に積み上げます。</li><li>何でも作れますが、危ないことは action の中身に閉じ込めます。外側（仕様と契約）は絞り、内側（action の中身）は契約を守れば何を書いてもかまいません。</li><li>同じ意味の語は1つだけにします。else はどこでも「逃げ道」、do はどこでも「やること」を表します。<code>&gt;</code> はどこでも「ぶつかったらこちらが勝つ」、<code>|</code> はどこでも「どれか1つ」を表します。</li></ol>
 <hr>
 <h2 id="2-型">2. 型</h2>
 <div class="table"><table><tr><th>型</th><th>意味</th></tr><tr><td>text</td><td>文字</td></tr><tr><td>number</td><td>数</td></tr><tr><td>count</td><td>0以上の整数</td></tr><tr><td>money</td><td>お金。通貨付きで、小数の誤差なし。<code>money yen</code></td></tr><tr><td>percent</td><td>割合</td></tr><tr><td>date</td><td>日時</td></tr><tr><td>monthday</td><td>年のない月日と時刻。<code>10/15 12:00</code></td></tr><tr><td>duration</td><td>期間。<code>3 days</code> <code>5 seconds</code></td></tr><tr><td>file / image / pdf</td><td>ファイル</td></tr><tr><td><code>[a | b | c]</code></td><td>決まった状態のどれか1つ（旧 <code>one of [a, b, c]</code>）</td></tr><tr><td>thing の名前</td><td>別のレコードを1つ指す。<code>owner User</code>（旧 <code>ref User</code>）</td></tr><tr><td><code>list of thing の名前</code></td><td>別のレコードを複数指す（旧 <code>many</code>）</td></tr></table></div>
@@ -280,7 +349,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
   <span class="field">owner</span>     <span class="name">User</span>      <span class="guard">gone</span><span class="guard">[</span><span class="guard">remove</span> <span class="guard">too</span><span class="guard">]</span>
   <span class="field">memo</span>      <span class="val">text</span>
   <span class="field">status</span>    <span class="op">[</span><span class="val">draft</span> <span class="op">|</span> <span class="val">submitted</span> <span class="op">|</span> <span class="val">passed</span> <span class="op">|</span> <span class="val">failed</span><span class="op">]</span></pre>
-<ul><li>1件が1つのレコードです。レコードの中の書き換えは1つずつ処理されます。</li><li>項目は <code>名前 型</code> を並べて書きます。<code>:</code> は付けません。名前と型は色分けで見分けます。</li><li>状態は <code>名前[a | b]</code> と書きます。</li><li>別のレコードを指す項目には、指した先が消えたときにどうするかを <code>gone[...]</code> で必ず書きます（7.3）。</li></ul>
+<ul><li>1件が1つのレコードです。レコードの中の書き換えは1つずつ処理されます。</li><li>項目は <code>名前 型</code> を並べて書きます。<code>:</code> は付けません。名前と型は色分けで見分けます。</li><li>状態は <code>名前 [a | b]</code> と書きます。</li><li>別のレコードを指す項目には、指した先が消えたときにどうするかを <code>gone[...]</code> で必ず書きます（7.3）。</li></ul>
 <h3 id="flow-状態の流れ">flow（状態の流れ）</h3>
 <pre class="code"><span class="head">flow</span> <span class="name">Application</span>.status
   <span class="val">draft</span> <span class="op">-&gt;</span> <span class="val">submitted</span> <span class="op">-&gt;</span> <span class="val">passed</span> <span class="op">|</span> <span class="val">failed</span>
@@ -364,7 +433,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 <div class="table"><table><tr><th>never</th><th>確かめ方</th></tr><tr><td><code>guess the year</code></td><td>例の入力と、年のない入力をいくつか流して、答えに年（4桁の数）が出ないか</td></tr><tr><td><code>depend on width</code></td><td>例の入力を全角にして流し、半角のときと同じ答えになるか</td></tr><tr><td><code>return empty</code></td><td>例の入力とおかしな入力を流して、値が空の答えを返さないか</td></tr><tr><td><code>fail</code></td><td>おかしな入力（空、長すぎる、絵文字、ありえない日付など）でも止まらないか</td></tr></table></div>
 <ul><li>失敗や「見つからない」も、out の状態で表します（<code>found ... | missing</code>）。</li></ul>
 <h4 id="by-誰が中身を埋めるか">by（誰が中身を埋めるか）</h4>
-<div class="table"><table><tr><th>書き方</th><th>いつ</th><th>中身</th></tr><tr><td><code>by ai</code>（標準）</td><td>ビルドのときに1回</td><td>AI が do を書いて固定する。人も読めて直せる</td></tr><tr><td><code>ask ai</code></td><td>実行のたびに毎回</td><td>AI に聞く。do はない。how に時間かお金の上限が必須</td></tr><tr><td><code>by code &quot;extract.ponte&quot;</code></td><td>なし</td><td>自分で書いた do</td></tr><tr><td><code>by Gmail</code></td><td>実行のたびに</td><td>connect 先が行う</td></tr></table></div>
+<div class="table"><table><tr><th>書き方</th><th>いつ</th><th>中身</th></tr><tr><td>（書かない）</td><td>なし</td><td>action の中にその場で書いた do。AI も別ファイルも使わない</td></tr><tr><td><code>by ai</code></td><td>ビルドのときに1回</td><td>AI が do を書いて固定する。人も読めて直せる</td></tr><tr><td><code>ask ai</code></td><td>実行のたびに毎回</td><td>AI に聞く。do はない。how に時間かお金の上限が必須</td></tr><tr><td><code>by code &quot;extract.ponte&quot;</code></td><td>なし</td><td>自分で書いた do</td></tr><tr><td><code>by Gmail</code></td><td>実行のたびに</td><td>connect 先が行う</td></tr></table></div>
 <p>誰が埋めても、同じ example、never、else で検証されます。</p>
 <h4 id="do-action-の中身">do（action の中身）</h4>
 <pre class="term">  do
@@ -587,7 +656,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 <div class="table"><table><tr><th>使い方</th><th>すること</th></tr><tr><td><code>python -m ponte check x.ponte</code></td><td>13章のエラーをすべて確かめる。<code>--publish</code> で公開するときの検査、<code>--save-shape</code> で thing の形を残す</td></tr><tr><td><code>python -m ponte test x.ponte</code></td><td>rule と action の example、機械が確かめる never をすべて流す</td></tr><tr><td><code>python -m ponte fill x.ponte</code></td><td>by ai の action の中身を AI に書かせる。通るまで問題を返して書き直させ、<code>x.ponte.ai/</code> に残す</td></tr><tr><td><code>python -m ponte fmt x.ponte</code></td><td>誰が書いても同じ見た目に整える。意味が変わる場合は書き換えない</td></tr><tr><td><code>python -m ponte run x.ponte</code></td><td>動かす。ブラウザで画面が出る</td></tr><tr><td><code>python -m ponte build x.ponte -o app.pyz</code></td><td>spec と中身と実行エンジンを1つのファイルにまとめる。<code>python app.pyz</code> で動く</td></tr><tr><td><code>editor/vscode/</code></td><td>エディタ（VS Code）で 14章の色分けを出す</td></tr></table></div>
 <p>エラーは <code>x.ponte:行  コード  中身</code> の形で出ます。エディタで押すと、その行へ移動できます。</p>
 <h2 id="13-エラー一覧-決めていないことはエラー">13. エラー一覧（決めていないことはエラー）</h2>
-<div class="table"><table><tr><th>コード</th><th>何が起きたか</th><th>なぜ止めるか</th><th>どう直すか</th></tr><tr><td>E01</td><td>match に else がない</td><td>書いていない値が来たときに、何をするかが決まっていないためです。</td><td>最後に <code>else -&gt; 結果</code> を書きます。宣言した状態をすべて書いた場合、else は不要です。</td></tr><tr><td>E02</td><td>until に上限がない</td><td>終わらない可能性のある待ちは、アプリを止めてしまうためです。</td><td><code>repeat ... until 〇〇 or 1 hour passed</code> のように、回数か時間の上限を書きます。</td></tr><tr><td>E03</td><td>action の example が2つ未満</td><td>例が1つだけでは、AI が書いた中身が正しいかを確かめられないためです。</td><td>当たる例と当たらない例（<code>-&gt; missing</code> など）を、少なくとも1つずつ書きます。</td></tr><tr><td>E04</td><td>action に else がない</td><td>AI の担当部分が答えを出せなかったときの動きが必要なためです。</td><td><code>else skip</code> や <code>else ask user</code> のように、答えが出なかったときの動きを書きます。</td></tr><tr><td>E05</td><td>tbd が残っている</td><td>決まっていないことを残したまま動かすと、AI がその部分を独自に決めてしまうためです。</td><td>内容を決めて tbd を消します。決められない場合は、その部分を使わない形に書き換えます。</td></tr><tr><td>E06</td><td><code>##</code> が残っている</td><td><code>##</code> は、書いた人が確認を保留している箇所を示す印です。</td><td>内容を確かめてから、<code>##</code> を消すか <code>#</code>（通常のコメント）に変えます。</td></tr><tr><td>E07</td><td>when に状態を書いている</td><td>「期限が近い」のような状態は、いつ起きるかが決まっていないためです。</td><td>when には出来事（<code>every day at 8:00</code> や <code>user taps ...</code>）を書き、状態は where か list で絞り込みます。</td></tr><tr><td>E08</td><td>move の対象が絞り込まれていない</td><td>どの1件を動かすかが決まらないまま、複数のレコードがまとめて動いてしまうためです。</td><td><code>move this to 状態</code> にするか、list で1件に絞り込みます。</td></tr><tr><td>E10</td><td>競合する move の優先順位が決まっていない</td><td>同じ1件に異なる move が同時に届いたとき、どちらを優先するかが決まらないためです。</td><td>flow に <code>failed &gt; passed</code> のように優先順位を書きます。</td></tr><tr><td>E11</td><td>list の参照が循環している</td><td>A の元が B で、B の元が A だと、中身が決まらないためです。</td><td>どちらかを thing から直接絞り込む形に変えます。</td></tr><tr><td>E12</td><td>入れ子</td><td>入れ子は読む人にも AI にも誤解されやすいため、1段で書く決まりにしています。</td><td>内側の部分に名前を付けて外に出し、その名前を使います。</td></tr><tr><td>E13</td><td>action の約束が食い違っている</td><td>example の答えや never が out の形に合っていないと、確かめることができないためです。</td><td>out に書いた形（<code>found monthday | missing</code> など）に合わせて、example と never を書き直します。</td></tr><tr><td>E14</td><td>relate の then / before が循環している</td><td>A の後に B、B の後に A が動くと、処理が終わらないためです。</td><td>どこかの then を外すか、条件付きの rule に分けます。</td></tr><tr><td>E15</td><td>relate の優先順位が双方向になっている</td><td><code>A &gt; B</code> と <code>B &gt; A</code> が両方あると、どちらも優先されないためです。</td><td>どちらか一方だけを残します。</td></tr><tr><td>E16</td><td>before の前の rule が起きない</td><td><code>A before B</code> と書いても A が起きる経路がなければ、B はいつまでも起きないためです。</td><td>A のきっかけ（when）を書くか、before を外します。</td></tr><tr><td>E17</td><td>失敗したときの動きが2つある</td><td>action の else と relate の else が両方あると、どちらが動くかが決まらないためです。</td><td>どちらか1つにします。</td></tr><tr><td>E18</td><td>match に宣言されていない状態がある</td><td>宣言にない状態の枝は、打ち間違いであることが多いためです。</td><td>宣言にある状態名に直すか、宣言に状態を追加します。</td></tr><tr><td>E19</td><td>who がない thing がある</td><td>書いていない操作は誰にもできない決まりのため、このままでは誰も見ることができません。</td><td><code>who</code> に <code>user can see Thing where ...</code> などを書きます。</td></tr><tr><td>E20</td><td>他のレコードを指す項目に gone がない</td><td>指している先が消えたときに、こちらのレコードをどうするかが決まっていないためです。</td><td><code>gone[remove too]</code>、<code>gone[leave empty]</code>、<code>gone[block]</code> のいずれかを付けます。</td></tr><tr><td>E21</td><td>thing の形を変えたのに change がない</td><td>保存済みのデータを新しい形にどう合わせるかが、決まっていないためです。</td><td><code>change Thing to v2</code> に、追加した項目の初期値（<code>add memo text = </code>）や名前の変更を書きます。</td></tr><tr><td>E22</td><td>ask ai に上限がない</td><td>AI への問い合わせが止まらないと、費用と時間がかかり続けるためです。</td><td>how に時間か費用の上限（<code>limit 5 seconds</code> や <code>limit 1 yen</code>）を書きます。</td></tr><tr><td>E23</td><td>connect が失敗したときの動きがない</td><td>外部サービスは失敗することがあり、そのときの動きが決まっていないためです。</td><td>relate に <code>rule名 else 〇〇</code> を書きます。</td></tr><tr><td>E24</td><td>flow scene にない画面の移動</td><td>画面の移動も flow と同じく、書いた経路しか通れないためです。</td><td><code>flow scene</code> に矢印を追加するか、移動先を直します。</td></tr><tr><td>E25</td><td>words の訳が足りない</td><td>一方の言語だけ文字が欠けていると、その言語の利用者に意味が伝わらないためです。</td><td>words ja と words en の両方に、同じ名前で書きます。1つの言語だけのアプリでは、words を書かずに <code>&quot;文字&quot;</code> と直接書くこともできます。</td></tr><tr><td>E26</td><td>名前のないボタンまたは説明のない画像</td><td>読み上げ機能の利用者に、ボタンの役割が伝わらないためです。公開するときだけエラーになります。</td><td>ボタンには <code>named 名前</code> を、画像には説明を付けます。</td></tr><tr><td>E27</td><td>通貨の異なる money の足し算</td><td>円とドルをそのまま足すと、意味のない数になるためです。</td><td>同じ通貨どうしで足すか、通貨ごとに分けて表示します。</td></tr><tr><td>E28</td><td>定義されていない名前、または知らない言葉</td><td>存在しない部品、list、項目、アイコンを指したり、節や操作の言葉を打ち間違えたりすると、その行は無視されます。書いたつもりの動きが起きないため、エラーにします。</td><td>エラーに表示された「もしかして」の名前に直すか、定義を追加します。</td></tr><tr><td>E29</td><td>rule に do が2つ以上ある</td><td>1つの rule には1つの処理だけを書きます。2つあると、片方だけ失敗したときの結果が決まらないためです。</td><td>rule を2つに分けて、relate の <code>A then B</code> でつなぎます。</td></tr><tr><td>E30</td><td>通知の宛先がない</td><td>誰に知らせるかが決まっていないと、通知が誰にも届かないためです。</td><td><code>notify owner ...</code> のように、人を指す項目か me を書きます。</td></tr><tr><td>E31</td><td>書き方が正しくない（do、example の手順、読めない行）</td><td>決まった形以外は、実行エンジンが動かせないためです。また、example の手順の打ち間違いを見逃すと、確かめていない例が通ってしまいます。</td><td>do は <code>ponte guide --rules</code> の表にある形で書きます。example の手順は given / adds / at / says / taps / gets / expect のいずれかです。</td></tr><tr><td>E32</td><td>型が合わない、または存在しない状態や項目</td><td>存在しない状態や項目、型の違う値は、空の一覧や起きない rule になります。動かす前に見つけるため、エラーにします。</td><td>エラーに表示された候補（「todo / done」など）から選んで直します。</td></tr><tr><td>W09</td><td>（注意）flow の状態に対応する rule がない</td><td>他の状態には rule があるのに、その状態のときの rule だけがありません。考慮漏れの可能性があります。</td><td>その状態のときに起きることを rule に書きます。何もしない場合は、この注意は無視してかまいません。</td></tr><tr><td>W26</td><td>（注意）名前のないボタンまたは説明のない画像</td><td>試作中は注意だけを表示します。公開するとき（<code>--publish</code>）はエラーになります。</td><td>ボタンには <code>named 名前</code> を、画像には説明を付けます。</td></tr></table></div>
+<div class="table"><table><tr><th>コード</th><th>何が起きたか</th><th>なぜ止めるか</th><th>どう直すか</th></tr><tr><td>E01</td><td>match に else がない</td><td>書いていない値が来たときに、何をするかが決まっていないためです。</td><td>最後に <code>else -&gt; 結果</code> を書きます。宣言した状態をすべて書いた場合、else は不要です。</td></tr><tr><td>E02</td><td>until に上限がない</td><td>終わらない可能性のある待ちは、アプリを止めてしまうためです。</td><td><code>repeat ... until 〇〇 or 1 hour passed</code> のように、回数か時間の上限を書きます。</td></tr><tr><td>E03</td><td>action の example が2つ未満</td><td>例が1つだけでは、中身（自分で書いても AI が書いても）が正しいかを確かめられないためです。</td><td>当たる例と当たらない例（<code>-&gt; missing</code> など）を、少なくとも1つずつ書きます。</td></tr><tr><td>E04</td><td>action に else がない</td><td>action の中身が答えを出せなかったときの動きが必要なためです。</td><td><code>else skip</code> や <code>else ask user</code> のように、答えが出なかったときの動きを書きます。</td></tr><tr><td>E05</td><td>tbd が残っている</td><td>決まっていないことを残したまま動かすと、その部分を誰かが推測で決めてしまうためです。</td><td>内容を決めて tbd を消します。決められない場合は、その部分を使わない形に書き換えます。</td></tr><tr><td>E06</td><td><code>##</code> が残っている</td><td><code>##</code> は、書いた人が確認を保留している箇所を示す印です。</td><td>内容を確かめてから、<code>##</code> を消すか <code>#</code>（通常のコメント）に変えます。</td></tr><tr><td>E07</td><td>when に状態を書いている</td><td>「期限が近い」のような状態は、いつ起きるかが決まっていないためです。</td><td>when には出来事（<code>every day at 8:00</code> や <code>user taps ...</code>）を書き、状態は where か list で絞り込みます。</td></tr><tr><td>E08</td><td>move の対象が絞り込まれていない</td><td>どの1件を動かすかが決まらないまま、複数のレコードがまとめて動いてしまうためです。</td><td><code>move this to 状態</code> にするか、list で1件に絞り込みます。</td></tr><tr><td>E10</td><td>競合する move の優先順位が決まっていない</td><td>同じ1件に異なる move が同時に届いたとき、どちらを優先するかが決まらないためです。</td><td>flow に <code>failed &gt; passed</code> のように優先順位を書きます。</td></tr><tr><td>E11</td><td>list の参照が循環している</td><td>A の元が B で、B の元が A だと、中身が決まらないためです。</td><td>どちらかを thing から直接絞り込む形に変えます。</td></tr><tr><td>E12</td><td>入れ子</td><td>入れ子は読み違えやすいため、1段で書く決まりにしています。</td><td>内側の部分に名前を付けて外に出し、その名前を使います。</td></tr><tr><td>E13</td><td>action の約束が食い違っている</td><td>example の答えや never が out の形に合っていないと、確かめることができないためです。</td><td>out に書いた形（<code>found monthday | missing</code> など）に合わせて、example と never を書き直します。</td></tr><tr><td>E14</td><td>relate の then / before が循環している</td><td>A の後に B、B の後に A が動くと、処理が終わらないためです。</td><td>どこかの then を外すか、条件付きの rule に分けます。</td></tr><tr><td>E15</td><td>relate の優先順位が双方向になっている</td><td><code>A &gt; B</code> と <code>B &gt; A</code> が両方あると、どちらも優先されないためです。</td><td>どちらか一方だけを残します。</td></tr><tr><td>E16</td><td>before の前の rule が起きない</td><td><code>A before B</code> と書いても A が起きる経路がなければ、B はいつまでも起きないためです。</td><td>A のきっかけ（when）を書くか、before を外します。</td></tr><tr><td>E17</td><td>失敗したときの動きが2つある</td><td>action の else と relate の else が両方あると、どちらが動くかが決まらないためです。</td><td>どちらか1つにします。</td></tr><tr><td>E18</td><td>match に宣言されていない状態がある</td><td>宣言にない状態の枝は、打ち間違いであることが多いためです。</td><td>宣言にある状態名に直すか、宣言に状態を追加します。</td></tr><tr><td>E19</td><td>who がない thing がある</td><td>書いていない操作は誰にもできない決まりのため、このままでは誰も見ることができません。</td><td><code>who</code> に <code>user can see Thing where ...</code> などを書きます。</td></tr><tr><td>E20</td><td>他のレコードを指す項目に gone がない</td><td>指している先が消えたときに、こちらのレコードをどうするかが決まっていないためです。</td><td><code>gone[remove too]</code>、<code>gone[leave empty]</code>、<code>gone[block]</code> のいずれかを付けます。</td></tr><tr><td>E21</td><td>thing の形を変えたのに change がない</td><td>保存済みのデータを新しい形にどう合わせるかが、決まっていないためです。</td><td><code>change Thing to v2</code> に、追加した項目の初期値（<code>add memo text = </code>）や名前の変更を書きます。</td></tr><tr><td>E22</td><td>ask ai に上限がない</td><td>AI への問い合わせが止まらないと、費用と時間がかかり続けるためです。</td><td>how に時間か費用の上限（<code>limit 5 seconds</code> や <code>limit 1 yen</code>）を書きます。</td></tr><tr><td>E23</td><td>connect が失敗したときの動きがない</td><td>外部サービスは失敗することがあり、そのときの動きが決まっていないためです。</td><td>relate に <code>rule名 else 〇〇</code> を書きます。</td></tr><tr><td>E24</td><td>flow scene にない画面の移動</td><td>画面の移動も flow と同じく、書いた経路しか通れないためです。</td><td><code>flow scene</code> に矢印を追加するか、移動先を直します。</td></tr><tr><td>E25</td><td>words の訳が足りない</td><td>一方の言語だけ文字が欠けていると、その言語の利用者に意味が伝わらないためです。</td><td>words ja と words en の両方に、同じ名前で書きます。1つの言語だけのアプリでは、words を書かずに <code>&quot;文字&quot;</code> と直接書くこともできます。</td></tr><tr><td>E26</td><td>名前のないボタンまたは説明のない画像</td><td>読み上げ機能の利用者に、ボタンの役割が伝わらないためです。公開するときだけエラーになります。</td><td>ボタンには <code>named 名前</code> を、画像には説明を付けます。</td></tr><tr><td>E27</td><td>通貨の異なる money の足し算</td><td>円とドルをそのまま足すと、意味のない数になるためです。</td><td>同じ通貨どうしで足すか、通貨ごとに分けて表示します。</td></tr><tr><td>E28</td><td>定義されていない名前、または知らない言葉</td><td>存在しない部品、list、項目、アイコンを指したり、節や操作の言葉を打ち間違えたりすると、その行は無視されます。書いたつもりの動きが起きないため、エラーにします。</td><td>エラーに表示された「もしかして」の名前に直すか、定義を追加します。</td></tr><tr><td>E29</td><td>rule に do が2つ以上ある</td><td>1つの rule には1つの処理だけを書きます。2つあると、片方だけ失敗したときの結果が決まらないためです。</td><td>rule を2つに分けて、relate の <code>A then B</code> でつなぎます。</td></tr><tr><td>E30</td><td>通知の宛先がない</td><td>誰に知らせるかが決まっていないと、通知が誰にも届かないためです。</td><td><code>notify owner ...</code> のように、人を指す項目か me を書きます。</td></tr><tr><td>E31</td><td>書き方が正しくない（do、example の手順、読めない行）</td><td>決まった形以外は、実行エンジンが動かせないためです。また、example の手順の打ち間違いを見逃すと、確かめていない例が通ってしまいます。</td><td>do は <code>ponte guide --rules</code> の表にある形で書きます。example の手順は given / adds / at / says / taps / gets / expect のいずれかです。</td></tr><tr><td>E32</td><td>型が合わない、または存在しない状態や項目</td><td>存在しない状態や項目、型の違う値は、空の一覧や起きない rule になります。動かす前に見つけるため、エラーにします。</td><td>エラーに表示された候補（「todo / done」など）から選んで直します。</td></tr><tr><td>W09</td><td>（注意）flow の状態に対応する rule がない</td><td>他の状態には rule があるのに、その状態のときの rule だけがありません。考慮漏れの可能性があります。</td><td>その状態のときに起きることを rule に書きます。何もしない場合は、この注意は無視してかまいません。</td></tr><tr><td>W26</td><td>（注意）名前のないボタンまたは説明のない画像</td><td>試作中は注意だけを表示します。公開するとき（<code>--publish</code>）はエラーになります。</td><td>ボタンには <code>named 名前</code> を、画像には説明を付けます。</td></tr></table></div>
 <p>E32 の中身は下に書きます。1つずつの説明は <code>ponte explain E32</code> でも見られます。</p>
 <h3 id="警告">警告</h3>
 <ul><li>W09（flow の状態の rule の抜け）と W26（試作中の読み上げ対応の漏れ）は警告です。</li><li><code>ponte test</code> の穴さがし（9章）も警告です。<code>--strict</code> を付けると失敗になります。</li></ul>
@@ -718,7 +787,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 
 <span class="guard">tbd</span>
   timezone <span class="val">of</span> deadline</pre>
-<p>※ 付録には tbd が残っているので、このままでは「渡せません」になります。これは意図したとおりです。</p>
+<p>※ 付録には tbd が残っているので、このままでは「止まります」になります。これは意図したとおりです。</p>
 <hr>
 <h2 id="v0-3-整理メモ">v0.3 整理メモ</h2>
 <h3 id="動かしたところ">動かしたところ</h3>
@@ -730,12 +799,56 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 <footer><p>10章の道具と13章のエラーの表は、実装から作っています。</p></footer>
 </div>
 <script>
-(() => {   // 目次の、いま読んでいる所に印を付ける
-  const links = [...document.querySelectorAll(".toc a")], map = new Map(links.map(a => [a.hash.slice(1), a]));
-  const io = new IntersectionObserver(es => es.forEach(e => {
-    if(!e.isIntersecting) return;
-    links.forEach(a => a.classList.remove("on")); const a = map.get(e.target.id); if(a) a.classList.add("on");
-  }), {rootMargin: "0px 0px -70% 0px"});
-  document.querySelectorAll(".prose h2[id], .prose h3[id], .prose section[id]").forEach(h => map.has(h.id) && io.observe(h));
+(() => {   // 目次: いま読んでいる所に印を付ける。狭い画面では畳んで、見出しを上に出す
+  const links = [...document.querySelectorAll(".toc a")], map = new Map(links.map(a => [decodeURIComponent(a.hash.slice(1)), a]));
+  const d = document.querySelector(".toc-d"), now = document.querySelector(".toc-now");
+  const narrow = matchMedia("(max-width:860px)");
+  const fit = () => { if (d) d.open = !narrow.matches; };
+  fit(); narrow.addEventListener("change", fit);
+  if (now && links[0]) now.textContent = links[0].textContent;
+  const heads = [...document.querySelectorAll(".prose h2[id], .prose h3[id], .prose section[id]")].filter(h => map.has(h.id));
+  let cur = null, tick = false;
+  const update = () => {
+    tick = false;
+    const line = (narrow.matches ? 150 : 110);
+    let h = heads[0];
+    for (const x of heads) { if (x.getBoundingClientRect().top <= line) h = x; else break; }
+    if (!h || h === cur) return;
+    cur = h;
+    links.forEach(a => a.classList.remove("on"));
+    const a = map.get(h.id);
+    a.classList.add("on"); if (now) now.textContent = a.textContent;
+    if (!narrow.matches) a.scrollIntoView({block: "nearest"});
+  };
+  addEventListener("scroll", () => { if (!tick) { tick = true; requestAnimationFrame(update); } }, {passive: true});
+  update();
+  links.forEach(a => a.addEventListener("click", () => { if (narrow.matches && d) d.open = false; }));
+})();
+</script><button type="button" class="totop" aria-label="ページの先頭へ" hidden>↑</button>
+<script>
+(() => {
+  const bar = document.querySelector(".bar"), top = document.querySelector(".totop");
+  const onScroll = () => {
+    const y = scrollY;
+    bar && bar.classList.toggle("scrolled", y > 8);
+    if (top) top.hidden = y < 600;
+  };
+  addEventListener("scroll", onScroll, {passive: true}); onScroll();
+  top && top.addEventListener("click", () => scrollTo({top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"}));
+  // 下にあるものは、見えたときにふわっと出す（最初から見えているものは動かさない。動きを減らす設定なら何もしない）
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches && "IntersectionObserver" in window) {
+    const els = [...document.querySelectorAll("[data-reveal]")].filter(el => el.getBoundingClientRect().top > innerHeight);
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }),
+                                        {rootMargin: "0px 0px -8% 0px"});
+    els.forEach(el => { el.classList.add("pre"); io.observe(el); });
+  }
+  // コードの写しボタン
+  document.querySelectorAll("[data-copy]").forEach(b => b.addEventListener("click", async () => {
+    const t = document.getElementById(b.dataset.copy).innerText;
+    try { await navigator.clipboard.writeText(t); b.textContent = "写しました"; }
+    catch (e) { const r = document.createRange(); r.selectNodeContents(document.getElementById(b.dataset.copy));
+                const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = "選びました"; }
+    setTimeout(() => b.textContent = "写す", 1600);
+  }));
 })();
 </script>

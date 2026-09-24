@@ -1,7 +1,7 @@
 """チェッカー（仕様 v0.3 13章「エラー一覧」32個）。1つ1関数。
 
 判定の細かい定義で仕様に書いてないものは QUESTIONS_v0.2.md に書いた（仮の扱い）。
-コードが W で始まるものは警告（渡せる判定には数えない）。
+コードが W で始まるものは警告（止まる判定には数えない）。
 """
 from __future__ import annotations
 
@@ -193,7 +193,7 @@ def check_tbd(spec: Spec, opt: Options) -> list[Finding]:
         items = t.children or [t]
         for it in items:
             label = it.raw if it is not t else t.text
-            out.append(Finding("E05", it.line, f"tbd が残っています: 「{label}」— 決めてから渡してください"))
+            out.append(Finding("E05", it.line, f"tbd が残っています: 「{label}」。決めてから動かしてください"))
     return out
 
 

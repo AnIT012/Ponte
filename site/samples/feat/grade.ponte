@@ -1,0 +1,11 @@
+action Grade
+  in       score number
+  out      pass | fail
+  example  80 -> pass
+  example  59 -> fail
+  never    fail
+  else     skip
+  do
+    answer = match score
+      60.. -> pass
+      else -> fail

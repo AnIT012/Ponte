@@ -93,7 +93,8 @@ def command(j: Job) -> list[str]:
         elif v is False:
             continue
         else:
-            cmd += [flag, j.raw.get(k, str(v)).strip('"')]
+            arg = j.raw.get(k, str(v)).strip('"')
+            cmd += [flag, os.path.expanduser(arg) if arg.startswith("~") else arg]   # シェルを通さないので ~ はここで広げる
     return cmd
 
 

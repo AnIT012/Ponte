@@ -299,6 +299,7 @@ example 0件中 0件通過
   todo.ponte:18  rule Finish: when があるのに example がありません
   todo.ponte:10  flow Task.status: todo -&gt; done をどの example も通っていません
   todo.ponte:10  flow Task.status: done -&gt; todo をどの example も通っていません</pre>
+<p>これはエラーではありません。example がなくても <code>ponte check</code> は通り、アプリも動きます。<code>ponte test</code> は、まだ example で確かめていない部分を一覧にしているだけです（<code>--strict</code> を付けたときだけ、1件でも残ると失敗になります）。ただし action だけは、AI が書いた中身を確かめるために example が2つ以上必要です。</p>
 <p>example を書きます。「前の状態」「出来事」「期待する結果」の順に書きます。</p>
 <pre class="code"><span class="head">rule</span> <span class="name">Finish</span>
   <span class="clause">why</span>   終わったら消えてほしい

@@ -17,6 +17,7 @@ from urllib.parse import unquote, urlparse
 
 from .checker import check
 from .errors import BY_CODE
+from .i18n import tr
 from .parser import ParseError, parse, parse_file
 
 HEADS = {
@@ -86,7 +87,7 @@ def _diag(line: int, code: str, msg: str, error: bool, text: str) -> dict:
     i = max(0, min(line - 1, len(lines) - 1))
     s = len(lines[i]) - len(lines[i].lstrip()) if lines else 0
     return {"range": {"start": {"line": i, "character": s}, "end": {"line": i, "character": len(lines[i]) if lines else 0}},
-            "severity": 1 if error else 2, "code": code, "source": "ponte", "message": msg}
+            "severity": 1 if error else 2, "code": code, "source": "ponte", "message": tr(msg)}
 
 
 def _word_at(text: str, line: int, ch: int) -> str:
@@ -186,7 +187,7 @@ def serve(inp=None, out=None) -> int:
                 pos, uri = p["position"], p["textDocument"]["uri"]
                 h = hover(docs.get(uri, ""), pos["line"], pos["character"])
                 _write(out, {"jsonrpc": "2.0", "id": mid,
-                             "result": {"contents": {"kind": "markdown", "value": h}} if h else None})
+                             "result": {"contents": {"kind": "markdown", "value": tr(h)}} if h else None})
             elif method == "textDocument/completion":
                 pos, uri = p["position"], p["textDocument"]["uri"]
                 _write(out, {"jsonrpc": "2.0", "id": mid, "result": completions(docs.get(uri, ""), pos["line"])})

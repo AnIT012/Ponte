@@ -29,6 +29,7 @@ HEADS = {
     "relate": "rule 同士の関係（then / then no / before / > / else）",
     "action": "計算や判定の部品（example、never、else による約束付き。中身は do か by）",
     "model": "レコードから学んで状態を当てる部品（learn、using、require、else による約束付き）",
+    "job": "下の層のプログラムを約束付きで走らせる（with、confirm、require、suspect）",
     "match": "値ごとの結果",
     "scene": "画面", "look": "一覧の見せ方", "part": "自分で作る部品", "input": "入力",
     "style": "見た目", "words": "画面の文字（言語ごと）", "shape": "正規表現の代わり",

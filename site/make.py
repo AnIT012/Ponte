@@ -143,6 +143,7 @@ FEAT_RUNS = {
     "order": ("check order.ponte", HERE / "samples" / "feat"),
     "nowho": ("check nowho.ponte", HERE / "samples" / "feat"),
     "grade": ("test grade.ponte", HERE / "samples" / "feat"),
+    "job": ("job job.ponte Train", HERE / "samples" / "feat"),
     "test": ("test spec/hub_ready.ponte", ROOT),
 }
 

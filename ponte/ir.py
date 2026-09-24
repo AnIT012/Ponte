@@ -123,6 +123,13 @@ def to_ir(spec: Spec) -> dict:
         t = load_model(spec, d.name)
         if t is not None:
             trained[d.name] = t
+    from .job import read as read_job
+    jobs = {}
+    for n in spec.decls("job"):
+        jb = read_job(n)
+        jobs[jb.name] = {"line": jb.line, "run": jb.run, "at": jb.at, "with": jb.raw, "confirm": jb.confirm,
+                         "require": [{"fact": f, "op": o, "value": v} for f, o, v, _ in jb.require],
+                         "suspect": [{"fact": f, "op": o, "value": v} for f, o, v, _ in jb.suspect]}
     matches = {m.text.strip(): {"line": m.line, "arms": [{"when": lefts, "then": right} for lefts, right, _ in match_arms(m)]}
                for m in spec.decls("match")}
     return {
@@ -131,7 +138,7 @@ def to_ir(spec: Spec) -> dict:
         "source": source,
         "things": things, "flows": flows, "who": who, "lists": lists, "rules": rules,
         "relate": [{"a": a, "kind": k, "b": b, "line": ln} for a, k, b, ln in relate_lines(spec)],
-        "actions": actions, "bodies": bodies, "models": models, "trained": trained, "matches": matches,
+        "actions": actions, "bodies": bodies, "models": models, "trained": trained, "jobs": jobs, "matches": matches,
         "cases": cases(spec),
         "tree": [_tree(n) for n in spec.roots],
     }

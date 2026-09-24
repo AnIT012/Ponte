@@ -13,6 +13,7 @@ REQUIRED: dict[str, list[str]] = {
     "list": ["of"],
     "match": ["else ->"],
     "model": ["learn", "using", "require", "else"],
+    "job": ["run"],
 }
 
 

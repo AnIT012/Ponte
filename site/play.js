@@ -14,8 +14,8 @@ try { src.value = shared ?? localStorage.getItem("ponte-play") ?? SAMPLES.todo; 
 // 色分け（highlight.py と同じ決め方。Python の読み込みを待たずに、すぐ色が付く）
 const HL = (() => {
   const w = s => new Set(s.split(" "));
-  const HEAD = w("thing flow list match rule relate action group tbd scene look part style input words who change connect use shape");
-  const CLAUSE = w("of where sort when do why in out example by ask how given at says taps gets expect adds title sub mark button lead heading empty search take top main side bottom over");
+  const HEAD = w("thing flow list match rule relate action group tbd scene look part style input words who change connect use shape model");
+  const CLAUSE = w("of where sort when do why in out example by ask how given at says taps gets expect adds learn using require title sub mark button lead heading empty search take top main side bottom over");
   const GUARD = w("never else tbd gone limit confirm");
   const TYPES = w("text number count money percent date monthday duration file image pdf");
   const TOKEN = /"[^"]*"|->|\||>|\[|\]|\d+(?:[:/.]\d+)*(?:\s+(?:days?|hours?|minutes?|seconds?|weeks?))?|[A-Za-z_][\p{L}\p{N}_-]*|\s+|./gu;

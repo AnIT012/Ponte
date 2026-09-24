@@ -11,3 +11,6 @@ site/artifact.html
 site/ponte.zip
 .coverage
 *.data.jsonl.files/
+
+# model の学んだ結果（ponte train が作る）
+*.ponte.models/

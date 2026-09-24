@@ -1,0 +1,27 @@
+# 来なくなりそうなお客さんを見つける。model（仕様 5章）の見本
+# 学ぶ: python -m ponte train spec/churn.ponte --csv spec/churn.csv
+
+thing Customer
+  name        text
+  visits      count
+  spend       number
+  months      count
+  plan        [basic | premium]
+  will_leave  [yes | no]
+
+who
+  user  can see     Customer
+  user  can change  Customer
+  user  can create  Customer
+
+model Churn
+  learn    will_leave from Customer
+  using    visits, spend, months, plan
+  require  accuracy at least 80%
+  else     skip
+  example  visits 0, spend 0, months 1, plan basic -> yes
+  example  visits 20, spend 30000, months 36, plan premium -> no
+
+list AtRisk
+  of     Customer
+  where  predict Churn for it is yes

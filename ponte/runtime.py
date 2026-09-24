@@ -110,6 +110,16 @@ class Engine:
         self.trace: list[tuple] = []      # 起きたこと（("move", thing, 項目, 前, 後) / ("rule", 名前)）。ponte test の穴さがしに使う
         self._read_spec()
         self.bodies = {}
+        from .model import decls as model_decls, load as load_model, verdict   # model（仕様 5章）
+        self.models = model_decls(self.spec)
+        self.trained = {}
+        for name, d in self.models.items():
+            try:
+                t = load_model(self.spec, name)
+            except (OSError, ValueError):
+                t = None
+            if verdict(self.spec, d, t)[0]:           # 約束を満たすモデルだけを使う。満たさなければ else
+                self.trained[name] = t
         from .fill import load_body     # action の中身（by ai / by code）
         for name, a in self.actions.items():
             try:
@@ -421,7 +431,19 @@ class Engine:
         except (ValueError, AttributeError):
             return None
 
+    def predict(self, name: str, box: Box) -> str | None:
+        """model の答え。使えないモデルなら else に従う（skip → None、use default 状態 → その状態）"""
+        from .model import predict
+        t = self.trained.get(name)
+        if t is not None:
+            return predict(t, box.values)
+        m = re.fullmatch(r"use default (\w+)", self.models[name].else_ or "")
+        return m.group(1) if m else None
+
     def _where(self, box: Box, cond: str, ctx: Ctx) -> bool:
+        m = re.match(r"^predict\s+(\w+)\s+for\s+(?:it|this)\s+is\s+(\w+)$", cond.strip())
+        if m:
+            return self.predict(m.group(1), box) == m.group(2)
         kind, fld, arg = _parse_cond(cond)
         if kind == "me":
             return ctx.user is not None and box.id == ctx.user.id

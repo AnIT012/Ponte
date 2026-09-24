@@ -14,7 +14,7 @@ def copy(tmp_path, name="todo"):
 
 def test_check_outputs(tmp_path, capsys):
     assert main(["check", "spec/todo.ponte"]) == 0
-    assert "決めてないことなし" in capsys.readouterr().out
+    assert "決めていないことはありません" in capsys.readouterr().out
     assert main(["check", str(tmp_path / "none.ponte")]) == 2
     assert "ありません" in capsys.readouterr().out
     bad = tmp_path / "bad.ponte"

@@ -372,7 +372,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 <div class="table"><table><tr><th>never</th><th>確かめ方</th></tr><tr><td><code>guess the year</code></td><td>例の入力と、年のない入力をいくつか流して、答えに年（4桁の数）が出ないか</td></tr><tr><td><code>depend on width</code></td><td>例の入力を全角にして流し、半角のときと同じ答えになるか</td></tr><tr><td><code>return empty</code></td><td>例の入力とおかしな入力を流して、値が空の答えを返さないか</td></tr><tr><td><code>fail</code></td><td>おかしな入力（空、長すぎる、絵文字、ありえない日付など）でも止まらないか</td></tr></table></div>
 <ul><li>失敗や「見つからない」も、out の状態で表します（<code>found ... | missing</code>）。</li></ul>
 <h4 id="by-誰が中身を埋めるか">by（誰が中身を埋めるか）</h4>
-<div class="table"><table><tr><th>書き方</th><th>いつ</th><th>中身</th></tr><tr><td><code>by ai</code>（標準）</td><td>ビルドのときに1回</td><td>AI が do を書いて固定する。人も読めて直せる</td></tr><tr><td><code>ask ai</code></td><td>実行のたびに毎回</td><td>AI に聞く。do はない。how に時間かお金の上限が必須</td></tr><tr><td><code>by code &quot;extract.ponte&quot;</code></td><td>なし</td><td>自分で書いた do</td></tr><tr><td><code>by Gmail</code></td><td>実行のたびに</td><td>connect 先が行う</td></tr></table></div>
+<div class="table"><table><tr><th>書き方</th><th>いつ</th><th>中身</th></tr><tr><td>（書かない）</td><td>なし</td><td>action の中にその場で書いた do。AI も別ファイルも使わない</td></tr><tr><td><code>by ai</code></td><td>ビルドのときに1回</td><td>AI が do を書いて固定する。人も読めて直せる</td></tr><tr><td><code>ask ai</code></td><td>実行のたびに毎回</td><td>AI に聞く。do はない。how に時間かお金の上限が必須</td></tr><tr><td><code>by code &quot;extract.ponte&quot;</code></td><td>なし</td><td>自分で書いた do</td></tr><tr><td><code>by Gmail</code></td><td>実行のたびに</td><td>connect 先が行う</td></tr></table></div>
 <p>誰が埋めても、同じ example、never、else で検証されます。</p>
 <h4 id="do-action-の中身">do（action の中身）</h4>
 <pre class="term">  do
@@ -726,7 +726,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 
 <span class="guard">tbd</span>
   timezone <span class="val">of</span> deadline</pre>
-<p>※ 付録には tbd が残っているので、このままでは「渡せません」になります。これは意図したとおりです。</p>
+<p>※ 付録には tbd が残っているので、このままでは「止まります」になります。これは意図したとおりです。</p>
 <hr>
 <h2 id="v0-3-整理メモ">v0.3 整理メモ</h2>
 <h3 id="動かしたところ">動かしたところ</h3>

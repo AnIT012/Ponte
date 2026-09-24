@@ -223,7 +223,9 @@ def compile_shape(shape: Node, shapes: dict[str, Node] | None = None) -> re.Patt
 def in_range(key, text: str) -> bool:
     """match の左の `1..3` / `..-1` / `4..`（数の範囲。両端を含む）"""
     m = re.fullmatch(r"(-?\d+)?\.\.(-?\d+)?", text)
-    if not m or not isinstance(key, int) or (m.group(1) is None and m.group(2) is None):
+    if isinstance(key, str) and re.fullmatch(r"-?\d+(\.\d+)?", key):   # number の入力は文字で来ることがある（example の 80 など）
+        key = float(key)
+    if not m or isinstance(key, bool) or not isinstance(key, (int, float)) or (m.group(1) is None and m.group(2) is None):
         return False
     lo = int(m.group(1)) if m.group(1) is not None else None
     hi = int(m.group(2)) if m.group(2) is not None else None

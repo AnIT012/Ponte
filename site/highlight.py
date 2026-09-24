@@ -5,8 +5,8 @@
 import html
 import re
 
-HEAD = "thing flow list match rule relate action group tbd scene look part style input words who change connect use shape model".split()
-CLAUSE = ("of where sort when do why in out example by ask how given at says taps gets expect adds learn using require "
+HEAD = "thing flow list match rule relate action group tbd scene look part style input words who change connect use shape model job".split()
+CLAUSE = ("of where sort when do why in out example by ask how given at says taps gets expect adds learn using require run with confirm suspect "
           "title sub mark button lead heading empty search take top main side bottom over").split()
 GUARD = "never else tbd gone limit confirm".split()
 TYPES = "text number count money percent date monthday duration file image pdf".split()

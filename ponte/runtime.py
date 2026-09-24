@@ -31,6 +31,10 @@ class RuleError(Exception):
     """rule がやり遂げられなかった（relate の else に進む）"""
 
 
+class ConfirmFailed(RuleError):
+    """宣言した値（with）が、下の層で本当に効いていなかった（仕様 5章 with と confirm）"""
+
+
 class NoResult(Exception):
     """result を使う rule の前で、action が答えを出さなかった"""
 
@@ -110,6 +114,23 @@ class Engine:
         self.trace: list[tuple] = []      # 起きたこと（("move", thing, 項目, 前, 後) / ("rule", 名前)）。ponte test の穴さがしに使う
         self._read_spec()
         self.bodies = {}
+        for cn in self.spec.decls("connect"):            # by python "x.py" の connect: does ごとに x.py の関数を使う
+            by = cn.child("by")
+            m = re.match(r'^python\s+"([^"]+)"$', by.text.strip()) if by is not None else None
+            if not m:
+                continue
+            import importlib.util
+            path = os.path.join(os.path.dirname(self.spec.where(cn.line)[0]), m.group(1))
+            if not os.path.exists(path):
+                continue
+            sp = importlib.util.spec_from_file_location(f"ponte_connect_{cn.name}", path)
+            mod = importlib.util.module_from_spec(sp)
+            sp.loader.exec_module(mod)
+            for g in cn.children_of("does"):
+                verb = " ".join(g.text.split()[:2])
+                fn = getattr(mod, verb.replace(" ", "_"), None)
+                if fn is not None:
+                    self.connectors[(cn.name, verb)] = fn
         from .model import decls as model_decls, load as load_model, verdict   # model（仕様 5章）
         self.models = model_decls(self.spec)
         self.trained = {}
@@ -608,6 +629,8 @@ class Engine:
             return
         except RuleError as e:
             fallbacks = [b for a, rel, b, _ in self.relates if rel == "else" and a == rule.name]
+            if fallbacks and isinstance(e, ConfirmFailed):   # 逃げ道があっても、宣言が効かなかった理由は必ず知らせる
+                self.notify(rule.name, f"うまくいきませんでした: {e}", ctx.user)
             if not fallbacks:
                 self.notify(rule.name, f"うまくいきませんでした: {e}", ctx.user)
                 return
@@ -751,7 +774,15 @@ class Engine:
         words = text.split()
         if words and (words[0], " ".join(words[1:3])) in self.connectors:
             fn = self.connectors[(words[0], " ".join(words[1:3]))]
-            result = fn(self._fill(" ".join(words[3:]), ctx))
+            from .confirm import parts, problems
+            from .report import collect
+            settings, raw, wanted = parts(self.spec.find("connect", words[0]))
+            arg = self._fill(" ".join(words[3:]), ctx)
+            with collect() as got:                    # with がある connect は、宣言した値も渡す
+                result = fn(arg, dict(settings)) if settings else fn(arg)
+            bad = problems(settings, wanted, got, raw)
+            if bad:                                   # 宣言した値が下の層で効いていない → 失敗として扱う（仕様 5章 with と confirm）
+                raise ConfirmFailed(f"{words[0]} {' '.join(words[1:3])}: " + "; ".join(bad))
             if result == "failed":
                 raise RuleError(f"{words[0]} {' '.join(words[1:3])} が failed を返しました")
             return

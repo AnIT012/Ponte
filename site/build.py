@@ -39,7 +39,7 @@ import zipfile
 ROOT = HERE.parent
 with zipfile.ZipFile(HERE / "ponte.zip", "w", zipfile.ZIP_DEFLATED) as z:
     for p in sorted((ROOT / "ponte").rglob("*")):
-        if p.suffix in (".py", ".ponte") and "__pycache__" not in p.parts:
+        if (p.suffix in (".py", ".ponte") or p.name == "i18n_en.json") and "__pycache__" not in p.parts:
             info = zipfile.ZipInfo(str(p.relative_to(ROOT)), date_time=(2026, 1, 1, 0, 0, 0))   # 中身が同じなら同じ zip
             z.writestr(info, p.read_bytes(), zipfile.ZIP_DEFLATED)
     z.writestr(zipfile.ZipInfo("highlight.py", date_time=(2026, 1, 1, 0, 0, 0)), (HERE / "highlight.py").read_bytes(), zipfile.ZIP_DEFLATED)

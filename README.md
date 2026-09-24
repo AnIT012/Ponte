@@ -17,7 +17,7 @@ Python や Java のような今までの言語は、Ponte の下で動く層に�
 - AI と作るときは、同じ仕様が AI への指示になり、AI が守る約束になります。日本語の指示と違って、解釈がずれればエラーで止まります。
 
 いまは Python 3.11 の標準機能だけで動きます（ライブラリは必要ありません）。JavaScript / TypeScript、Go、Java を下の層として選べるようにする準備を進めています。
-エラーや出力は日本語と英語に対応しています（`--lang en`、または `PONTE_LANG=en`）。
+エラーや出力は英語で出ます。日本語にしたいときは `--lang ja` を付けるか、`PONTE_LANG=ja` にします。
 
 ![備品かしだし](docs/screenshots/lend_home.png)
 
@@ -51,18 +51,18 @@ rule Borrow
 
 ```
 $ python -m ponte check todo.ponte
-止まります（1件）
-  todo.ponte:20  E32  rule Finish: Task に「finished」という状態はありません（todo / done）
-  （直し方: ponte explain E32）
+Stopped: 1 error(s)
+  todo.ponte:20  E32  rule Finish: Task has no state named "finished" (todo / done)
+  (how to fix: ponte explain E32)
 ```
 
 example で確かめていない部分も一覧で示します。
 
 ```
 $ python -m ponte test todo.ponte
-穴（example で確かめていない所 3件）
-  rule Finish: when があるのに example がありません
-  flow Task.status: todo -> done をどの example も通っていません
+Untested parts (not covered by any example: 3)
+  rule Finish: has when but no example
+  flow Task.status: no example covers todo -> done
 ```
 
 ## 比較実験

@@ -314,6 +314,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px dashed va
     <h1>入門 — やることアプリを作る</h1>
 <p class="lead">やることアプリを、エラーを見ながら1歩ずつ作ります。できあがりは <a href="https://github.com/AnIT012/nameless-lang/blob/main/spec/todo.ponte">spec/todo.ponte</a> です。ここに載せたエラーは、<code>python -m ponte check</code> / <code>test</code> を実際に流したときの出力です。</p>
 <p>必要なのは Python 3.11 だけです。インストールする前に試したいときは、ホームページの「試す」を使うと、ブラウザの中で書いて確かめられます。</p>
+<p>「試す」ページや、<code>ponte lsp</code> を使うエディタでは、<code>rule</code> や <code>action</code> などの見出しを書いて Enter を押すと、その見出しに必須の部品の名前（<code>when</code>、<code>do</code> など）だけが入ります。中身は自分で埋めます。Tab で次の部品へ移れます。</p>
 <hr>
 <h2 id="1-データの形を書く">1. データの形を書く</h2>
 <pre class="code"><span class="head">thing</span> <span class="name">Task</span>
@@ -330,10 +331,10 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px dashed va
 <ul><li><code>thing</code> はデータの形です。<code>status [todo | done]</code> は「この2つのどれか」という状態です。</li><li><code>owner User</code> は、別の thing である User を指す項目です。<code>gone[remove too]</code> は「User が消えたら、この Task も消す」という意味です。</li><li><code>flow</code> は状態の流れです。状態は矢印のとおりにしか移りません。</li></ul>
 <p>チェックしてみます。</p>
 <pre class="term"><span class="prompt">$</span> python -m ponte check todo.ponte
-止まります（2件）
-  todo.ponte:1  <span class="ecode">E19</span>  thing Task: 誰が何をできるか（who）が1行もありません。書いてないことは誰もできません
-  todo.ponte:7  <span class="ecode">E19</span>  thing User: 誰が何をできるか（who）が1行もありません。書いてないことは誰もできません
-  （直し方: ponte explain <span class="ecode">E19</span>）</pre>
+Stopped: 2 error(s)
+  todo.ponte:1  <span class="ecode">E19</span>  thing Task: no who lines saying who can do what. Nobody can do anything that is not written
+  todo.ponte:7  <span class="ecode">E19</span>  thing User: no who lines saying who can do what. Nobody can do anything that is not written
+  (how to fix: ponte explain <span class="ecode">E19</span>)</pre>
 <p><strong>書いていないことは、誰にもできません。</strong> そのため「誰が何をできるか」を決めないと、先へ進めません。</p>
 <h2 id="2-誰が何をできるかを書く">2. 誰が何をできるかを書く</h2>
 <pre class="code"><span class="head">who</span>
@@ -346,20 +347,20 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px dashed va
   <span class="clause">when</span>  user taps done-button on <span class="name">Task</span>
   <span class="clause">do</span>    move this to finished</pre><p class="try"><a href="play.html#code=cnVsZSBGaW5pc2gKICB3aGVuICB1c2VyIHRhcHMgZG9uZS1idXR0b24gb24gVGFzawogIGRvICAgIG1vdmUgdGhpcyB0byBmaW5pc2hlZA">このコードを試す ›</a></p>
 <pre class="term"><span class="prompt">$</span> python -m ponte check todo.ponte
-止まります（1件）
-  todo.ponte:20  <span class="ecode">E32</span>  rule Finish: Task に「finished」という状態はありません（todo / done）
-  （直し方: ponte explain <span class="ecode">E32</span>）</pre>
+Stopped: 1 error(s)
+  todo.ponte:20  <span class="ecode">E32</span>  rule Finish: Task has no state named &quot;finished&quot; (todo / done)
+  (how to fix: ponte explain <span class="ecode">E32</span>)</pre>
 <p>打ち間違いは、動かす前にエラーになります。<code>done</code> に直すと通ります。エラーの意味がわからないときは、<code>python -m ponte explain E32</code> を実行すると、止めた理由と直し方が表示されます。</p>
 <pre class="term"><span class="prompt">$</span> python -m ponte check todo.ponte
-決めていないことはありません。動かせます</pre>
+Nothing is undecided. Ready to run</pre>
 <h2 id="4-確かめる-example">4. 確かめる（example）</h2>
 <p>check が通っても、<strong>本当にそう動くか</strong>はまだ確かめていません。test を流すと、確かめていない部分（穴）が表示されます。</p>
 <pre class="term"><span class="prompt">$</span> python -m ponte test todo.ponte
-example 0件中 0件通過
-穴（example で確かめていない所 3件）
-  todo.ponte:18  rule Finish: when があるのに example がありません
-  todo.ponte:10  flow Task.status: todo -&gt; done をどの example も通っていません
-  todo.ponte:10  flow Task.status: done -&gt; todo をどの example も通っていません</pre>
+0 examples, 0 passed
+Untested parts (not covered by any example: 3)
+  todo.ponte:18  rule Finish: has when but no example
+  todo.ponte:10  flow Task.status: no example covers todo -&gt; done
+  todo.ponte:10  flow Task.status: no example covers done -&gt; todo</pre>
 <p>これはエラーではありません。example がなくても <code>ponte check</code> は通り、アプリも動きます。<code>ponte test</code> は、まだ example で確かめていない部分を一覧にしているだけです（<code>--strict</code> を付けたときだけ、1件でも残ると失敗になります）。ただし action だけは、AI が書いた中身を確かめるために example が2つ以上必要です。</p>
 <p>example を書きます。「前の状態」「出来事」「期待する結果」の順に書きます。</p>
 <pre class="code"><span class="head">rule</span> <span class="name">Finish</span>
@@ -383,9 +384,9 @@ example 0件中 0件通過
   <span class="clause">when</span>  due within <span class="val">1 days</span>
   <span class="clause">do</span>    notify owner <span class="val">"{title} の期限です"</span></pre><p class="try"><a href="play.html#code=cnVsZSBSZW1pbmQKICB3aGVuICBkdWUgd2l0aGluIDEgZGF5cwogIGRvICAgIG5vdGlmeSBvd25lciAie3RpdGxlfSDjga7mnJ_pmZDjgafjgZki">このコードを試す ›</a></p>
 <pre class="term"><span class="prompt">$</span> python -m ponte check todo.ponte
-止まります（1件）
-  todo.ponte:23  <span class="ecode">E07</span>  rule Remind: when は出来事だけです。「due within 1 days」は状態なので where に書いてください
-  （直し方: ponte explain <span class="ecode">E07</span>）</pre>
+Stopped: 1 error(s)
+  todo.ponte:23  <span class="ecode">E07</span>  rule Remind: when takes only events. &quot;due within 1 days&quot; is a state, so write it in where
+  (how to fix: ponte explain <span class="ecode">E07</span>)</pre>
 <p>「期限が近い」は<strong>状態</strong>であり、いつ起きるかが決まっていません。そこで、きっかけ（出来事）は「毎朝8時」にし、状態は一覧（list）で絞ります。</p>
 <pre class="code"><span class="head">list</span> <span class="name">Soon</span>
   <span class="clause">of</span>     <span class="name">Task</span>

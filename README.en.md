@@ -13,7 +13,7 @@ Ponte is a language for the top layer of a program. You write *what you want, wh
 - When you work with AI, the same spec is the AI's instructions and the contract it must keep. Unlike instructions in plain language, a misreading stops with an error.
 
 Today it runs on the Python 3.11 standard library only, with no dependencies. JavaScript / TypeScript, Go and Java are being prepared as layers you can choose underneath.
-Errors and output are available in English and Japanese (`--lang en` or `PONTE_LANG=en`; the default follows your system language). The longer documents are still Japanese only.
+Errors and output are in English by default; use `--lang ja` or `PONTE_LANG=ja` for Japanese. The longer documents are still Japanese only.
 
 ## 30 seconds
 

@@ -1,7 +1,7 @@
 [project]
 name = "ponte"
 version = "0.3.1"
-description = "Ponte — 人は決めて、AIが書いて、言語が守る。"
+description = "Ponte：決めるのは人。守るのは言語。"
 requires-python = ">=3.11"
 dependencies = []
 

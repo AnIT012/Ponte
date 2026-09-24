@@ -47,9 +47,9 @@ def test_errors_have_line_numbers():
 
 def test_cli(capsys, tmp_path):
     assert main(["check", "spec/hub.ponte"]) == 1
-    assert "渡せません（1件）" in capsys.readouterr().out
+    assert "止まります（1件）" in capsys.readouterr().out
     assert main(["check", "spec/hub_ready.ponte"]) == 0
-    assert "AIに渡せます" in capsys.readouterr().out
+    assert "動かせます" in capsys.readouterr().out
     # 形を残して、次に thing を変えたら change を求められる
     p = tmp_path / "a.ponte"
     src = open("spec/hub_ready.ponte", encoding="utf-8").read()

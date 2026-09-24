@@ -319,10 +319,13 @@ def fill_action(spec: Spec, action: Node, ai, tries: int = 5, label: str = "") -
 
 
 def load_body(spec: Spec, action: Node):
-    """by ai → <spec>.ai/<名前>.ponte、by code "x.ponte" → spec と同じ場所の x.ponte。無ければ None。"""
+    """by が無く do がある → その do。by ai → <spec>.ai/<名前>.ponte、by code "x.ponte" → spec と同じ場所の x.ponte。無ければ None。"""
     by = action.child("by")
     if by is None:
-        return None
+        do = action.child("do")                  # 中身をその場に書いた action（AI も別ファイルも使わない）
+        if do is None:
+            return None
+        return body_of(action, do, {s.name: s for s in spec.decls("shape")})
     m = re.match(r'^code\s+"([^"]+)"$', by.text.strip())
     if m:
         path = os.path.join(os.path.dirname(spec.where(action.line)[0]), m.group(1))   # use で読んだ action は、そのファイルから

@@ -1,8 +1,0 @@
-action FindMonthDay
-  in       text text
-  out      found monthday | missing
-  example  "10/15(木)12:00まで"      -> found 10/15 12:00
-  example  "来週中にご提出ください"  -> missing
-  never    guess the year
-  never    fail
-  else     skip

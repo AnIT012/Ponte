@@ -49,20 +49,67 @@ def header(current: str) -> str:
 
 
 SPY = """<script>
-(() => {   // 目次の、いま読んでいる所に印を付ける
-  const links = [...document.querySelectorAll(".toc a")], map = new Map(links.map(a => [a.hash.slice(1), a]));
-  const io = new IntersectionObserver(es => es.forEach(e => {
-    if(!e.isIntersecting) return;
-    links.forEach(a => a.classList.remove("on")); const a = map.get(e.target.id); if(a) a.classList.add("on");
-  }), {rootMargin: "0px 0px -70% 0px"});
-  document.querySelectorAll(".prose h2[id], .prose h3[id], .prose section[id]").forEach(h => map.has(h.id) && io.observe(h));
+(() => {   // 目次: いま読んでいる所に印を付ける。狭い画面では畳んで、見出しを上に出す
+  const links = [...document.querySelectorAll(".toc a")], map = new Map(links.map(a => [decodeURIComponent(a.hash.slice(1)), a]));
+  const d = document.querySelector(".toc-d"), now = document.querySelector(".toc-now");
+  const narrow = matchMedia("(max-width:860px)");
+  const fit = () => { if (d) d.open = !narrow.matches; };
+  fit(); narrow.addEventListener("change", fit);
+  if (now && links[0]) now.textContent = links[0].textContent;
+  const heads = [...document.querySelectorAll(".prose h2[id], .prose h3[id], .prose section[id]")].filter(h => map.has(h.id));
+  let cur = null, tick = false;
+  const update = () => {
+    tick = false;
+    const line = (narrow.matches ? 150 : 110);
+    let h = heads[0];
+    for (const x of heads) { if (x.getBoundingClientRect().top <= line) h = x; else break; }
+    if (!h || h === cur) return;
+    cur = h;
+    links.forEach(a => a.classList.remove("on"));
+    const a = map.get(h.id);
+    a.classList.add("on"); if (now) now.textContent = a.textContent;
+    if (!narrow.matches) a.scrollIntoView({block: "nearest"});
+  };
+  addEventListener("scroll", () => { if (!tick) { tick = true; requestAnimationFrame(update); } }, {passive: true});
+  update();
+  links.forEach(a => a.addEventListener("click", () => { if (narrow.matches && d) d.open = false; }));
+})();
+</script>"""
+
+SITE_JS = """<button type="button" class="totop" aria-label="ページの先頭へ" hidden>↑</button>
+<script>
+(() => {
+  const bar = document.querySelector(".bar"), top = document.querySelector(".totop");
+  const onScroll = () => {
+    const y = scrollY;
+    bar && bar.classList.toggle("scrolled", y > 8);
+    if (top) top.hidden = y < 600;
+  };
+  addEventListener("scroll", onScroll, {passive: true}); onScroll();
+  top && top.addEventListener("click", () => scrollTo({top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"}));
+  // 下にあるものは、見えたときにふわっと出す（最初から見えているものは動かさない。動きを減らす設定なら何もしない）
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches && "IntersectionObserver" in window) {
+    const els = [...document.querySelectorAll("[data-reveal]")].filter(el => el.getBoundingClientRect().top > innerHeight);
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }),
+                                        {rootMargin: "0px 0px -8% 0px"});
+    els.forEach(el => { el.classList.add("pre"); io.observe(el); });
+  }
+  // コードの写しボタン
+  document.querySelectorAll("[data-copy]").forEach(b => b.addEventListener("click", async () => {
+    const t = document.getElementById(b.dataset.copy).innerText;
+    try { await navigator.clipboard.writeText(t); b.textContent = "写しました"; }
+    catch (e) { const r = document.createRange(); r.selectNodeContents(document.getElementById(b.dataset.copy));
+                const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = "選びました"; }
+    setTimeout(() => b.textContent = "写す", 1600);
+  }));
 })();
 </script>"""
 
 
 def page(title: str, current: str, body: str, extra_css: str = "") -> str:
     css = CSS if not extra_css else CSS.replace("</style>", extra_css + "\n</style>")
-    return HEAD.replace("__TITLE__", html.escape(title)) + css + body.replace("{HEADER}", header(current)) + (SPY if extra_css else "")
+    return (HEAD.replace("__TITLE__", html.escape(title)) + css + body.replace("{HEADER}", header(current))
+            + (SPY if extra_css else "") + SITE_JS)
 
 
 # ---------------------------------------------------------------------------
@@ -94,6 +141,7 @@ def landing() -> str:
 FEAT_RUNS = {
     "order": ("check order.ponte", HERE / "samples" / "feat"),
     "nowho": ("check nowho.ponte", HERE / "samples" / "feat"),
+    "grade": ("test grade.ponte", HERE / "samples" / "feat"),
     "test": ("test spec/hub_ready.ponte", ROOT),
 }
 
@@ -102,7 +150,7 @@ def terminal(args: str, cwd: Path) -> str:
     import subprocess
     from md import code_block
     r = subprocess.run([sys.executable, "-m", "ponte", *args.split()], cwd=cwd, capture_output=True, text=True,
-                       env={**__import__("os").environ, "PYTHONPATH": str(ROOT)})
+                       env={**__import__("os").environ, "PYTHONPATH": str(ROOT), "PONTE_LANG": "ja"})
     out = (r.stdout + r.stderr).rstrip("\n")
     return code_block(f"$ ponte {args}\n{out}", "", frozenset())
 
@@ -143,7 +191,7 @@ def doc_page(md_path: Path, title: str, current: str, depth: int = 3) -> str:
     body = f"""<div class="wrap">
 {{HEADER}}
 <div class="doc">
-  <aside class="toc" aria-label="目次"><p class="toc-h">目次</p><ol>{nav}</ol></aside>
+  <aside class="toc" aria-label="目次"><details class="toc-d" open><summary class="toc-h"><span>目次</span><span class="toc-now" aria-hidden="true"></span></summary><ol>{nav}</ol></details></aside>
   <article class="prose">
     <p class="eyebrow">{html.escape(current.upper())}</p>
     <h1>{html.escape(title)}</h1>
@@ -264,7 +312,7 @@ def reference() -> str:
     return page("道具とエラー — Ponte", "reference", f"""<div class="wrap">
 {{HEADER}}
 <div class="doc">
-  <aside class="toc" aria-label="目次"><p class="toc-h">目次</p><ol>{nav}</ol></aside>
+  <aside class="toc" aria-label="目次"><details class="toc-d" open><summary class="toc-h"><span>目次</span><span class="toc-now" aria-hidden="true"></span></summary><ol>{nav}</ol></details></aside>
   <article class="prose">
     <p class="eyebrow">REFERENCE</p>
     <h1>道具とエラー</h1>

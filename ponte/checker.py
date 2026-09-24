@@ -193,7 +193,7 @@ def check_tbd(spec: Spec, opt: Options) -> list[Finding]:
         items = t.children or [t]
         for it in items:
             label = it.raw if it is not t else t.text
-            out.append(Finding("E05", it.line, f"tbd が残っています: 「{label}」— 決めてから渡してください"))
+            out.append(Finding("E05", it.line, f"tbd が残っています: 「{label}」。決めてから動かしてください"))
     return out
 
 

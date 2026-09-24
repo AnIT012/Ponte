@@ -35,11 +35,18 @@ section{padding-block:56px}
 .eyebrow{font-family:var(--pop);font-size:13px;letter-spacing:.08em;color:var(--tomato)}
 
 /* ---- top bar ---- */
-.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-block:18px}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:14px;
+  position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--ground) 86%,transparent);
+  -webkit-backdrop-filter:saturate(1.4) blur(10px);backdrop-filter:saturate(1.4) blur(10px);
+  box-shadow:0 0 0 100vmax color-mix(in srgb,var(--ground) 86%,transparent);clip-path:inset(0 -100vmax);transition:box-shadow .2s,border-color .2s;border-bottom:1px solid transparent}
+.bar.scrolled{border-bottom-color:var(--line)}
+.nav a[aria-current="page"]{border-bottom-color:var(--sky);color:var(--ink)}
 .logo{display:flex;align-items:center;gap:10px;text-decoration:none}
 .logo svg{width:44px;height:auto}
 .logo .word{font-size:28px}
-.nav{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--pop);font-size:14px}
+.nav{display:flex;gap:18px;font-family:var(--pop);font-size:14px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.nav::-webkit-scrollbar{display:none}
+.nav a{white-space:nowrap}
 .nav a{text-decoration:none;padding:4px 2px;border-bottom:3px solid transparent}
 .nav a:hover{border-bottom-color:var(--ink)}
 .word{font-family:var(--pop);letter-spacing:.02em;line-height:1}
@@ -77,7 +84,16 @@ section{padding-block:56px}
 .col a.more{font-family:var(--pop);font-size:13px;color:var(--sky);text-decoration:none;margin-top:auto}
 .col pre{margin:0;font-family:var(--mono);font-size:13px;background:var(--code);color:var(--codeink);border-radius:10px;padding:8px 10px;overflow-x:auto}
 
-footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13.5px}
+footer{padding-block:40px 60px;color:var(--muted);font-size:13.5px;border-top:1px solid var(--line);margin-top:56px}
+.foot{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:32px}
+.foot-brand b{font-family:var(--pop);font-size:20px;color:var(--ink)}
+.foot-brand p{margin-top:8px;line-height:1.9;max-width:34em}
+.foot-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.foot-links div{display:flex;flex-direction:column;gap:6px}
+.foot-links p{font-family:var(--pop);font-weight:700;color:var(--ink);margin-bottom:2px}
+.foot-links a{text-decoration:none}.foot-links a:hover{color:var(--sky)}
+.foot-ver{margin-top:28px;font-size:12.5px}
+@media (max-width:640px){.foot{grid-template-columns:minmax(0,1fr)}}
 
 @media (max-width:1100px){
   .slide{grid-template-columns:minmax(0,1fr);min-height:0}
@@ -154,11 +170,57 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
   .term,.feat .code{font-size:11px;white-space:pre-wrap;overflow-wrap:anywhere}
   .table td:first-child{white-space:normal}
 }
+
+/* ---- 全ページ共通の小物 ---- */
+html{scroll-padding-top:84px}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px dashed var(--tomato);outline-offset:3px;border-radius:6px}
+.totop{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:30;
+  width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:18px;cursor:pointer;
+  box-shadow:0 4px 16px rgba(20,24,50,.14)}
+.totop:hover{border-color:var(--sky);color:var(--sky)}
+@media (prefers-reduced-motion:no-preference){
+  .pre{opacity:0;transform:translateY(18px)}
+  .pre.in{opacity:1;transform:none;transition:opacity .6s ease,transform .6s cubic-bezier(.2,.7,.2,1)}
+  .hero-text > *,.hero-demo{animation:rise .7s cubic-bezier(.2,.7,.2,1) both}
+  .hero-text > :nth-child(2){animation-delay:.06s}.hero-text > :nth-child(3){animation-delay:.12s}
+  .hero-text > :nth-child(4){animation-delay:.18s}.hero-text > :nth-child(5){animation-delay:.24s}
+  .hero-demo{animation-delay:.2s}
+  .demo-shot{animation:rise .7s .75s cubic-bezier(.2,.7,.2,1) both}
+  .demo-arrow{animation:rise .5s .6s both}
+  .feat,.col,.shots figure{transition:transform .2s ease,box-shadow .2s ease}
+  .feat:hover,.col:hover{transform:translateY(-3px);box-shadow:0 10px 30px rgba(20,24,50,.10)}
+}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.copy{position:absolute;top:8px;right:8px;font-family:var(--pop);font-size:12px;border:1px solid #3a4068;background:#252a48;color:#D7DBF5;border-radius:999px;padding:3px 10px;cursor:pointer}
+.copyable{position:relative}
+.copyable pre{padding-top:32px!important;overflow-x:auto;white-space:pre}
+.copy{top:6px!important;right:6px!important}
+
+/* ---- 層 ---- */
+.layers{display:grid;gap:8px;max-width:760px;margin:28px auto 0}
+.layer{display:grid;grid-template-columns:minmax(0,19em) minmax(0,1fr);gap:16px;align-items:center;padding:12px 18px;border-radius:12px;border:1px solid var(--line);background:var(--panel);font-size:14px}
+.layer b{font-family:var(--pop)}
+.layer span{color:var(--muted)}
+.layer.top{background:var(--ink);border-color:var(--ink);color:var(--panel);transform:scale(1.02)}
+.layer.top span{color:color-mix(in srgb,var(--panel) 75%,var(--ink))}
+.layer.soon{border-style:dashed}
+.layer.base{background:transparent}
+@media (max-width:600px){.layer{grid-template-columns:minmax(0,1fr);gap:2px}}
+@media (max-width:600px){
+  .bar{flex-wrap:wrap;gap:6px 12px;padding-block:8px}
+  .logo svg{width:32px}.logo .word{font-size:22px}
+  .nav{width:100%;gap:16px;font-size:13.5px}
+  html{scroll-padding-top:110px}
+}
+.feat .num{text-transform:none;letter-spacing:.06em}
 /* ---- 読みものページ（入門・道具とエラー） ---- */
 .nav a[aria-current="page"]{border-bottom-color:var(--sky)}
 .doc{display:grid;grid-template-columns:200px minmax(0,1fr);gap:40px;padding-block:18px 40px;align-items:start}
-.toc{position:sticky;top:16px;font-size:13.5px;max-height:calc(100vh - 32px);overflow:auto}
-.toc-h{font-family:var(--pop);font-weight:700;color:var(--muted);margin-bottom:6px}
+.toc{position:sticky;top:calc(84px + env(safe-area-inset-top,0px));font-size:13.5px;max-height:calc(100vh - 104px);overflow:auto;overscroll-behavior:contain}
+.toc-d summary{list-style:none;pointer-events:none}.toc-d summary::-webkit-details-marker{display:none}
+.toc-now{display:none}
+.toc-h{font-family:var(--pop);font-weight:700;color:var(--muted);margin-bottom:6px;display:flex;gap:8px;align-items:baseline}
 .toc ol{list-style:none;margin:0;padding:0;border-left:2px solid var(--line)}
 .toc li a{display:block;padding:4px 0 4px 12px;text-decoration:none;color:var(--muted);line-height:1.5}
 .toc li.d3 a{padding-left:24px;font-size:12.5px}
@@ -169,8 +231,8 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 .prose .eyebrow{margin-bottom:6px}
 .prose h1{font-size:clamp(26px,4vw,36px);margin-bottom:12px}
 .prose .lead{font-size:17px;color:var(--muted);margin-bottom:28px;line-height:1.9}
-.prose h2{font-size:clamp(21px,3vw,26px);margin:44px 0 14px;padding-top:6px;scroll-margin-top:16px}
-.prose h3{font-size:18px;margin:30px 0 10px;scroll-margin-top:16px}
+.prose h2{font-size:clamp(21px,3vw,26px);margin:44px 0 14px;padding-top:6px}
+.prose h3{font-size:18px;margin:30px 0 10px}
 .prose p{margin:0 0 14px;line-height:1.95}
 .prose ul,.prose ol{margin:0 0 16px;padding-left:1.4em;line-height:1.9}
 .prose li{margin:4px 0}
@@ -209,13 +271,20 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 
 @media (max-width:860px){
   .doc{grid-template-columns:minmax(0,1fr);gap:8px}
-  .toc{position:static;max-height:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:18px}
+  .toc{top:calc(68px + env(safe-area-inset-top,0px));z-index:15;max-height:70vh;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:18px;box-shadow:0 6px 18px rgba(20,24,50,.08)}
+  .toc-d summary{pointer-events:auto;cursor:pointer;margin:0}
+  .toc-d summary::after{content:"▾";margin-left:auto;transition:transform .2s}
+  .toc-d[open] summary::after{transform:rotate(180deg)}
+  .toc-now{display:inline;color:var(--ink);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .toc-d[open] .toc-now{display:none}
+  .toc-d[open] ol{margin-top:8px}
   .toc ol{columns:2;column-gap:16px;border-left:0}
   .toc li a{padding-left:0}
   .toc li.d3{display:none}
   .errs{grid-template-columns:minmax(0,1fr)}
 }
-@media (max-width:520px){
+@media (max-width:600px){
+  .toc{top:calc(92px + env(safe-area-inset-top,0px))}
   .toc ol{columns:1}
   .prose .code,.term{font-size:12px;padding:12px}
   .table td:first-child{white-space:normal}
@@ -239,7 +308,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 </header>
 
 <div class="doc">
-  <aside class="toc" aria-label="目次"><p class="toc-h">目次</p><ol><li class="d2"><a href="#1-データの形を書く">1. データの形を書く</a></li><li class="d2"><a href="#2-誰が何をできるかを書く">2. 誰が何をできるかを書く</a></li><li class="d2"><a href="#3-ボタンを押したら終わりにする">3. ボタンを押したら終わりにする</a></li><li class="d2"><a href="#4-確かめる-example">4. 確かめる（example）</a></li><li class="d2"><a href="#5-きっかけには出来事だけを書く">5. きっかけには出来事だけを書く</a></li><li class="d2"><a href="#6-画面を作る">6. 画面を作る</a></li><li class="d2"><a href="#7-人に使ってもらう">7. 人に使ってもらう</a></li><li class="d2"><a href="#次に読むもの">次に読むもの</a></li></ol></aside>
+  <aside class="toc" aria-label="目次"><details class="toc-d" open><summary class="toc-h"><span>目次</span><span class="toc-now" aria-hidden="true"></span></summary><ol><li class="d2"><a href="#1-データの形を書く">1. データの形を書く</a></li><li class="d2"><a href="#2-誰が何をできるかを書く">2. 誰が何をできるかを書く</a></li><li class="d2"><a href="#3-ボタンを押したら終わりにする">3. ボタンを押したら終わりにする</a></li><li class="d2"><a href="#4-確かめる-example">4. 確かめる（example）</a></li><li class="d2"><a href="#5-きっかけには出来事だけを書く">5. きっかけには出来事だけを書く</a></li><li class="d2"><a href="#6-画面を作る">6. 画面を作る</a></li><li class="d2"><a href="#7-人に使ってもらう">7. 人に使ってもらう</a></li><li class="d2"><a href="#次に読むもの">次に読むもの</a></li></ol></details></aside>
   <article class="prose">
     <p class="eyebrow">LEARN</p>
     <h1>入門 — やることアプリを作る</h1>
@@ -371,12 +440,56 @@ example 0件中 0件通過
 <footer><p>この入門に載せた出力は、実際にコマンドを流した結果です。テストで一致を確かめています。</p></footer>
 </div>
 <script>
-(() => {   // 目次の、いま読んでいる所に印を付ける
-  const links = [...document.querySelectorAll(".toc a")], map = new Map(links.map(a => [a.hash.slice(1), a]));
-  const io = new IntersectionObserver(es => es.forEach(e => {
-    if(!e.isIntersecting) return;
-    links.forEach(a => a.classList.remove("on")); const a = map.get(e.target.id); if(a) a.classList.add("on");
-  }), {rootMargin: "0px 0px -70% 0px"});
-  document.querySelectorAll(".prose h2[id], .prose h3[id], .prose section[id]").forEach(h => map.has(h.id) && io.observe(h));
+(() => {   // 目次: いま読んでいる所に印を付ける。狭い画面では畳んで、見出しを上に出す
+  const links = [...document.querySelectorAll(".toc a")], map = new Map(links.map(a => [decodeURIComponent(a.hash.slice(1)), a]));
+  const d = document.querySelector(".toc-d"), now = document.querySelector(".toc-now");
+  const narrow = matchMedia("(max-width:860px)");
+  const fit = () => { if (d) d.open = !narrow.matches; };
+  fit(); narrow.addEventListener("change", fit);
+  if (now && links[0]) now.textContent = links[0].textContent;
+  const heads = [...document.querySelectorAll(".prose h2[id], .prose h3[id], .prose section[id]")].filter(h => map.has(h.id));
+  let cur = null, tick = false;
+  const update = () => {
+    tick = false;
+    const line = (narrow.matches ? 150 : 110);
+    let h = heads[0];
+    for (const x of heads) { if (x.getBoundingClientRect().top <= line) h = x; else break; }
+    if (!h || h === cur) return;
+    cur = h;
+    links.forEach(a => a.classList.remove("on"));
+    const a = map.get(h.id);
+    a.classList.add("on"); if (now) now.textContent = a.textContent;
+    if (!narrow.matches) a.scrollIntoView({block: "nearest"});
+  };
+  addEventListener("scroll", () => { if (!tick) { tick = true; requestAnimationFrame(update); } }, {passive: true});
+  update();
+  links.forEach(a => a.addEventListener("click", () => { if (narrow.matches && d) d.open = false; }));
+})();
+</script><button type="button" class="totop" aria-label="ページの先頭へ" hidden>↑</button>
+<script>
+(() => {
+  const bar = document.querySelector(".bar"), top = document.querySelector(".totop");
+  const onScroll = () => {
+    const y = scrollY;
+    bar && bar.classList.toggle("scrolled", y > 8);
+    if (top) top.hidden = y < 600;
+  };
+  addEventListener("scroll", onScroll, {passive: true}); onScroll();
+  top && top.addEventListener("click", () => scrollTo({top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"}));
+  // 下にあるものは、見えたときにふわっと出す（最初から見えているものは動かさない。動きを減らす設定なら何もしない）
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches && "IntersectionObserver" in window) {
+    const els = [...document.querySelectorAll("[data-reveal]")].filter(el => el.getBoundingClientRect().top > innerHeight);
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }),
+                                        {rootMargin: "0px 0px -8% 0px"});
+    els.forEach(el => { el.classList.add("pre"); io.observe(el); });
+  }
+  // コードの写しボタン
+  document.querySelectorAll("[data-copy]").forEach(b => b.addEventListener("click", async () => {
+    const t = document.getElementById(b.dataset.copy).innerText;
+    try { await navigator.clipboard.writeText(t); b.textContent = "写しました"; }
+    catch (e) { const r = document.createRange(); r.selectNodeContents(document.getElementById(b.dataset.copy));
+                const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = "選びました"; }
+    setTimeout(() => b.textContent = "写す", 1600);
+  }));
 })();
 </script>

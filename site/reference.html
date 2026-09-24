@@ -43,11 +43,18 @@ section{padding-block:56px}
 .eyebrow{font-family:var(--pop);font-size:13px;letter-spacing:.08em;color:var(--tomato)}
 
 /* ---- top bar ---- */
-.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-block:18px}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:14px;
+  position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--ground) 86%,transparent);
+  -webkit-backdrop-filter:saturate(1.4) blur(10px);backdrop-filter:saturate(1.4) blur(10px);
+  box-shadow:0 0 0 100vmax color-mix(in srgb,var(--ground) 86%,transparent);clip-path:inset(0 -100vmax);transition:box-shadow .2s,border-color .2s;border-bottom:1px solid transparent}
+.bar.scrolled{border-bottom-color:var(--line)}
+.nav a[aria-current="page"]{border-bottom-color:var(--sky);color:var(--ink)}
 .logo{display:flex;align-items:center;gap:10px;text-decoration:none}
 .logo svg{width:44px;height:auto}
 .logo .word{font-size:28px}
-.nav{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--pop);font-size:14px}
+.nav{display:flex;gap:18px;font-family:var(--pop);font-size:14px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.nav::-webkit-scrollbar{display:none}
+.nav a{white-space:nowrap}
 .nav a{text-decoration:none;padding:4px 2px;border-bottom:3px solid transparent}
 .nav a:hover{border-bottom-color:var(--ink)}
 .word{font-family:var(--pop);letter-spacing:.02em;line-height:1}
@@ -85,7 +92,16 @@ section{padding-block:56px}
 .col a.more{font-family:var(--pop);font-size:13px;color:var(--sky);text-decoration:none;margin-top:auto}
 .col pre{margin:0;font-family:var(--mono);font-size:13px;background:var(--code);color:var(--codeink);border-radius:10px;padding:8px 10px;overflow-x:auto}
 
-footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13.5px}
+footer{padding-block:40px 60px;color:var(--muted);font-size:13.5px;border-top:1px solid var(--line);margin-top:56px}
+.foot{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:32px}
+.foot-brand b{font-family:var(--pop);font-size:20px;color:var(--ink)}
+.foot-brand p{margin-top:8px;line-height:1.9;max-width:34em}
+.foot-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.foot-links div{display:flex;flex-direction:column;gap:6px}
+.foot-links p{font-family:var(--pop);font-weight:700;color:var(--ink);margin-bottom:2px}
+.foot-links a{text-decoration:none}.foot-links a:hover{color:var(--sky)}
+.foot-ver{margin-top:28px;font-size:12.5px}
+@media (max-width:640px){.foot{grid-template-columns:minmax(0,1fr)}}
 
 @media (max-width:1100px){
   .slide{grid-template-columns:minmax(0,1fr);min-height:0}
@@ -162,11 +178,57 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
   .term,.feat .code{font-size:11px;white-space:pre-wrap;overflow-wrap:anywhere}
   .table td:first-child{white-space:normal}
 }
+
+/* ---- 全ページ共通の小物 ---- */
+html{scroll-padding-top:84px}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px dashed var(--tomato);outline-offset:3px;border-radius:6px}
+.totop{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:30;
+  width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:18px;cursor:pointer;
+  box-shadow:0 4px 16px rgba(20,24,50,.14)}
+.totop:hover{border-color:var(--sky);color:var(--sky)}
+@media (prefers-reduced-motion:no-preference){
+  .pre{opacity:0;transform:translateY(18px)}
+  .pre.in{opacity:1;transform:none;transition:opacity .6s ease,transform .6s cubic-bezier(.2,.7,.2,1)}
+  .hero-text > *,.hero-demo{animation:rise .7s cubic-bezier(.2,.7,.2,1) both}
+  .hero-text > :nth-child(2){animation-delay:.06s}.hero-text > :nth-child(3){animation-delay:.12s}
+  .hero-text > :nth-child(4){animation-delay:.18s}.hero-text > :nth-child(5){animation-delay:.24s}
+  .hero-demo{animation-delay:.2s}
+  .demo-shot{animation:rise .7s .75s cubic-bezier(.2,.7,.2,1) both}
+  .demo-arrow{animation:rise .5s .6s both}
+  .feat,.col,.shots figure{transition:transform .2s ease,box-shadow .2s ease}
+  .feat:hover,.col:hover{transform:translateY(-3px);box-shadow:0 10px 30px rgba(20,24,50,.10)}
+}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.copy{position:absolute;top:8px;right:8px;font-family:var(--pop);font-size:12px;border:1px solid #3a4068;background:#252a48;color:#D7DBF5;border-radius:999px;padding:3px 10px;cursor:pointer}
+.copyable{position:relative}
+.copyable pre{padding-top:32px!important;overflow-x:auto;white-space:pre}
+.copy{top:6px!important;right:6px!important}
+
+/* ---- 層 ---- */
+.layers{display:grid;gap:8px;max-width:760px;margin:28px auto 0}
+.layer{display:grid;grid-template-columns:minmax(0,19em) minmax(0,1fr);gap:16px;align-items:center;padding:12px 18px;border-radius:12px;border:1px solid var(--line);background:var(--panel);font-size:14px}
+.layer b{font-family:var(--pop)}
+.layer span{color:var(--muted)}
+.layer.top{background:var(--ink);border-color:var(--ink);color:var(--panel);transform:scale(1.02)}
+.layer.top span{color:color-mix(in srgb,var(--panel) 75%,var(--ink))}
+.layer.soon{border-style:dashed}
+.layer.base{background:transparent}
+@media (max-width:600px){.layer{grid-template-columns:minmax(0,1fr);gap:2px}}
+@media (max-width:600px){
+  .bar{flex-wrap:wrap;gap:6px 12px;padding-block:8px}
+  .logo svg{width:32px}.logo .word{font-size:22px}
+  .nav{width:100%;gap:16px;font-size:13.5px}
+  html{scroll-padding-top:110px}
+}
+.feat .num{text-transform:none;letter-spacing:.06em}
 /* ---- 読みものページ（入門・道具とエラー） ---- */
 .nav a[aria-current="page"]{border-bottom-color:var(--sky)}
 .doc{display:grid;grid-template-columns:200px minmax(0,1fr);gap:40px;padding-block:18px 40px;align-items:start}
-.toc{position:sticky;top:16px;font-size:13.5px;max-height:calc(100vh - 32px);overflow:auto}
-.toc-h{font-family:var(--pop);font-weight:700;color:var(--muted);margin-bottom:6px}
+.toc{position:sticky;top:calc(84px + env(safe-area-inset-top,0px));font-size:13.5px;max-height:calc(100vh - 104px);overflow:auto;overscroll-behavior:contain}
+.toc-d summary{list-style:none;pointer-events:none}.toc-d summary::-webkit-details-marker{display:none}
+.toc-now{display:none}
+.toc-h{font-family:var(--pop);font-weight:700;color:var(--muted);margin-bottom:6px;display:flex;gap:8px;align-items:baseline}
 .toc ol{list-style:none;margin:0;padding:0;border-left:2px solid var(--line)}
 .toc li a{display:block;padding:4px 0 4px 12px;text-decoration:none;color:var(--muted);line-height:1.5}
 .toc li.d3 a{padding-left:24px;font-size:12.5px}
@@ -177,8 +239,8 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 .prose .eyebrow{margin-bottom:6px}
 .prose h1{font-size:clamp(26px,4vw,36px);margin-bottom:12px}
 .prose .lead{font-size:17px;color:var(--muted);margin-bottom:28px;line-height:1.9}
-.prose h2{font-size:clamp(21px,3vw,26px);margin:44px 0 14px;padding-top:6px;scroll-margin-top:16px}
-.prose h3{font-size:18px;margin:30px 0 10px;scroll-margin-top:16px}
+.prose h2{font-size:clamp(21px,3vw,26px);margin:44px 0 14px;padding-top:6px}
+.prose h3{font-size:18px;margin:30px 0 10px}
 .prose p{margin:0 0 14px;line-height:1.95}
 .prose ul,.prose ol{margin:0 0 16px;padding-left:1.4em;line-height:1.9}
 .prose li{margin:4px 0}
@@ -217,13 +279,20 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 
 @media (max-width:860px){
   .doc{grid-template-columns:minmax(0,1fr);gap:8px}
-  .toc{position:static;max-height:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:18px}
+  .toc{top:calc(68px + env(safe-area-inset-top,0px));z-index:15;max-height:70vh;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:18px;box-shadow:0 6px 18px rgba(20,24,50,.08)}
+  .toc-d summary{pointer-events:auto;cursor:pointer;margin:0}
+  .toc-d summary::after{content:"▾";margin-left:auto;transition:transform .2s}
+  .toc-d[open] summary::after{transform:rotate(180deg)}
+  .toc-now{display:inline;color:var(--ink);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .toc-d[open] .toc-now{display:none}
+  .toc-d[open] ol{margin-top:8px}
   .toc ol{columns:2;column-gap:16px;border-left:0}
   .toc li a{padding-left:0}
   .toc li.d3{display:none}
   .errs{grid-template-columns:minmax(0,1fr)}
 }
-@media (max-width:520px){
+@media (max-width:600px){
+  .toc{top:calc(92px + env(safe-area-inset-top,0px))}
   .toc ol{columns:1}
   .prose .code,.term{font-size:12px;padding:12px}
   .table td:first-child{white-space:normal}
@@ -247,7 +316,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
 </header>
 
 <div class="doc">
-  <aside class="toc" aria-label="目次"><p class="toc-h">目次</p><ol><li class="d2"><a href="#commands">コマンド</a></li><li class="d2"><a href="#rules">rule の書き方</a></li><li class="d2"><a href="#tools">do で使える道具</a></li><li class="d2"><a href="#std">標準ライブラリ</a></li><li class="d2"><a href="#errors">エラー</a></li></ol></aside>
+  <aside class="toc" aria-label="目次"><details class="toc-d" open><summary class="toc-h"><span>目次</span><span class="toc-now" aria-hidden="true"></span></summary><ol><li class="d2"><a href="#commands">コマンド</a></li><li class="d2"><a href="#rules">rule の書き方</a></li><li class="d2"><a href="#tools">do で使える道具</a></li><li class="d2"><a href="#std">標準ライブラリ</a></li><li class="d2"><a href="#errors">エラー</a></li></ol></details></aside>
   <article class="prose">
     <p class="eyebrow">REFERENCE</p>
     <h1>道具とエラー</h1>
@@ -262,19 +331,63 @@ footer{padding-block:30px 50px;text-align:center;color:var(--muted);font-size:13
   space
   hour digits <span class="val">1</span>..<span class="val">2</span>
   <span class="val">":"</span>
-  minute digits <span class="val">2</span></pre></section><section class="ref" id="std"><h2>標準ライブラリ</h2><p>中身も Ponte で書かれており、example が付いています。</p><div class="table"><table><tr><th>書き方</th><th>中身</th><th>action</th></tr><tr><td><code>use std/contact</code></td><td>文の中からメールアドレスと電話番号を取り出す（use std/contact）</td><td><code>FindEmail</code> <span class='muted'>text text → found text | missing</span><br><code>FindPhone</code> <span class='muted'>text text → found text | missing</span><br><code>FindPostal</code> <span class='muted'>text text → found text | missing</span></td></tr><tr><td><code>use std/date</code></td><td>文の中から日付を取り出す（use std/date）</td><td><code>FindMonthDay</code> <span class='muted'>text text → found monthday | missing</span><br><code>FindDate</code> <span class='muted'>text text → found date | missing</span></td></tr><tr><td><code>use std/money</code></td><td>文の中から金額（円）を取り出す（use std/money）</td><td><code>FindYen</code> <span class='muted'>text text → found number | missing</span></td></tr></table></div></section><section class="ref" id="errors"><h2>エラー</h2><p><code>ponte check</code> がエラーにする理由と直し方です。<code>ponte explain E32</code> でも同じ内容を表示できます。</p><div class="errs"><div class="errcard" id="E01"><p class="ehead"><span class="badge err">E01</span> match に else がない</p><p><b>なぜ止めるか</b> 書いていない値が来たときに、何をするかが決まっていないためです。</p><p><b>どう直すか</b> 最後に <code>else -&gt; 結果</code> を書きます。宣言した状態をすべて書いた場合、else は不要です。</p></div><div class="errcard" id="E02"><p class="ehead"><span class="badge err">E02</span> until に上限がない</p><p><b>なぜ止めるか</b> 終わらない可能性のある待ちは、アプリを止めてしまうためです。</p><p><b>どう直すか</b> <code>repeat ... until 〇〇 or 1 hour passed</code> のように、回数か時間の上限を書きます。</p></div><div class="errcard" id="E03"><p class="ehead"><span class="badge err">E03</span> action の example が2つ未満</p><p><b>なぜ止めるか</b> 例が1つだけでは、AI が書いた中身が正しいかを確かめられないためです。</p><p><b>どう直すか</b> 当たる例と当たらない例（<code>-&gt; missing</code> など）を、少なくとも1つずつ書きます。</p></div><div class="errcard" id="E04"><p class="ehead"><span class="badge err">E04</span> action に else がない</p><p><b>なぜ止めるか</b> AI の担当部分が答えを出せなかったときの動きが必要なためです。</p><p><b>どう直すか</b> <code>else skip</code> や <code>else ask user</code> のように、答えが出なかったときの動きを書きます。</p></div><div class="errcard" id="E05"><p class="ehead"><span class="badge err">E05</span> tbd が残っている</p><p><b>なぜ止めるか</b> 決まっていないことを残したまま動かすと、AI がその部分を独自に決めてしまうためです。</p><p><b>どう直すか</b> 内容を決めて tbd を消します。決められない場合は、その部分を使わない形に書き換えます。</p></div><div class="errcard" id="E06"><p class="ehead"><span class="badge err">E06</span> <code>##</code> が残っている</p><p><b>なぜ止めるか</b> <code>##</code> は、書いた人が確認を保留している箇所を示す印です。</p><p><b>どう直すか</b> 内容を確かめてから、<code>##</code> を消すか <code>#</code>（通常のコメント）に変えます。</p></div><div class="errcard" id="E07"><p class="ehead"><span class="badge err">E07</span> when に状態を書いている</p><p><b>なぜ止めるか</b> 「期限が近い」のような状態は、いつ起きるかが決まっていないためです。</p><p><b>どう直すか</b> when には出来事（<code>every day at 8:00</code> や <code>user taps ...</code>）を書き、状態は where か list で絞り込みます。</p></div><div class="errcard" id="E08"><p class="ehead"><span class="badge err">E08</span> move の対象が絞り込まれていない</p><p><b>なぜ止めるか</b> どの1件を動かすかが決まらないまま、複数のレコードがまとめて動いてしまうためです。</p><p><b>どう直すか</b> <code>move this to 状態</code> にするか、list で1件に絞り込みます。</p></div><div class="errcard" id="E10"><p class="ehead"><span class="badge err">E10</span> 競合する move の優先順位が決まっていない</p><p><b>なぜ止めるか</b> 同じ1件に異なる move が同時に届いたとき、どちらを優先するかが決まらないためです。</p><p><b>どう直すか</b> flow に <code>failed &gt; passed</code> のように優先順位を書きます。</p></div><div class="errcard" id="E11"><p class="ehead"><span class="badge err">E11</span> list の参照が循環している</p><p><b>なぜ止めるか</b> A の元が B で、B の元が A だと、中身が決まらないためです。</p><p><b>どう直すか</b> どちらかを thing から直接絞り込む形に変えます。</p></div><div class="errcard" id="E12"><p class="ehead"><span class="badge err">E12</span> 入れ子</p><p><b>なぜ止めるか</b> 入れ子は読む人にも AI にも誤解されやすいため、1段で書く決まりにしています。</p><p><b>どう直すか</b> 内側の部分に名前を付けて外に出し、その名前を使います。</p></div><div class="errcard" id="E13"><p class="ehead"><span class="badge err">E13</span> action の約束が食い違っている</p><p><b>なぜ止めるか</b> example の答えや never が out の形に合っていないと、確かめることができないためです。</p><p><b>どう直すか</b> out に書いた形（<code>found monthday | missing</code> など）に合わせて、example と never を書き直します。</p></div><div class="errcard" id="E14"><p class="ehead"><span class="badge err">E14</span> relate の then / before が循環している</p><p><b>なぜ止めるか</b> A の後に B、B の後に A が動くと、処理が終わらないためです。</p><p><b>どう直すか</b> どこかの then を外すか、条件付きの rule に分けます。</p></div><div class="errcard" id="E15"><p class="ehead"><span class="badge err">E15</span> relate の優先順位が双方向になっている</p><p><b>なぜ止めるか</b> <code>A &gt; B</code> と <code>B &gt; A</code> が両方あると、どちらも優先されないためです。</p><p><b>どう直すか</b> どちらか一方だけを残します。</p></div><div class="errcard" id="E16"><p class="ehead"><span class="badge err">E16</span> before の前の rule が起きない</p><p><b>なぜ止めるか</b> <code>A before B</code> と書いても A が起きる経路がなければ、B はいつまでも起きないためです。</p><p><b>どう直すか</b> A のきっかけ（when）を書くか、before を外します。</p></div><div class="errcard" id="E17"><p class="ehead"><span class="badge err">E17</span> 失敗したときの動きが2つある</p><p><b>なぜ止めるか</b> action の else と relate の else が両方あると、どちらが動くかが決まらないためです。</p><p><b>どう直すか</b> どちらか1つにします。</p></div><div class="errcard" id="E18"><p class="ehead"><span class="badge err">E18</span> match に宣言されていない状態がある</p><p><b>なぜ止めるか</b> 宣言にない状態の枝は、打ち間違いであることが多いためです。</p><p><b>どう直すか</b> 宣言にある状態名に直すか、宣言に状態を追加します。</p></div><div class="errcard" id="E19"><p class="ehead"><span class="badge err">E19</span> who がない thing がある</p><p><b>なぜ止めるか</b> 書いていない操作は誰にもできない決まりのため、このままでは誰も見ることができません。</p><p><b>どう直すか</b> <code>who</code> に <code>user can see Thing where ...</code> などを書きます。</p></div><div class="errcard" id="E20"><p class="ehead"><span class="badge err">E20</span> 他のレコードを指す項目に gone がない</p><p><b>なぜ止めるか</b> 指している先が消えたときに、こちらのレコードをどうするかが決まっていないためです。</p><p><b>どう直すか</b> <code>gone[remove too]</code>、<code>gone[leave empty]</code>、<code>gone[block]</code> のいずれかを付けます。</p></div><div class="errcard" id="E21"><p class="ehead"><span class="badge err">E21</span> thing の形を変えたのに change がない</p><p><b>なぜ止めるか</b> 保存済みのデータを新しい形にどう合わせるかが、決まっていないためです。</p><p><b>どう直すか</b> <code>change Thing to v2</code> に、追加した項目の初期値（<code>add memo text = </code>）や名前の変更を書きます。</p></div><div class="errcard" id="E22"><p class="ehead"><span class="badge err">E22</span> ask ai に上限がない</p><p><b>なぜ止めるか</b> AI への問い合わせが止まらないと、費用と時間がかかり続けるためです。</p><p><b>どう直すか</b> how に時間か費用の上限（<code>limit 5 seconds</code> や <code>limit 1 yen</code>）を書きます。</p></div><div class="errcard" id="E23"><p class="ehead"><span class="badge err">E23</span> connect が失敗したときの動きがない</p><p><b>なぜ止めるか</b> 外部サービスは失敗することがあり、そのときの動きが決まっていないためです。</p><p><b>どう直すか</b> relate に <code>rule名 else 〇〇</code> を書きます。</p></div><div class="errcard" id="E24"><p class="ehead"><span class="badge err">E24</span> flow scene にない画面の移動</p><p><b>なぜ止めるか</b> 画面の移動も flow と同じく、書いた経路しか通れないためです。</p><p><b>どう直すか</b> <code>flow scene</code> に矢印を追加するか、移動先を直します。</p></div><div class="errcard" id="E25"><p class="ehead"><span class="badge err">E25</span> words の訳が足りない</p><p><b>なぜ止めるか</b> 一方の言語だけ文字が欠けていると、その言語の利用者に意味が伝わらないためです。</p><p><b>どう直すか</b> words ja と words en の両方に、同じ名前で書きます。1つの言語だけのアプリでは、words を書かずに <code>&quot;文字&quot;</code> と直接書くこともできます。</p></div><div class="errcard" id="E26"><p class="ehead"><span class="badge err">E26</span> 名前のないボタンまたは説明のない画像</p><p><b>なぜ止めるか</b> 読み上げ機能の利用者に、ボタンの役割が伝わらないためです。公開するときだけエラーになります。</p><p><b>どう直すか</b> ボタンには <code>named 名前</code> を、画像には説明を付けます。</p></div><div class="errcard" id="E27"><p class="ehead"><span class="badge err">E27</span> 通貨の異なる money の足し算</p><p><b>なぜ止めるか</b> 円とドルをそのまま足すと、意味のない数になるためです。</p><p><b>どう直すか</b> 同じ通貨どうしで足すか、通貨ごとに分けて表示します。</p></div><div class="errcard" id="E28"><p class="ehead"><span class="badge err">E28</span> 定義されていない名前、または知らない言葉</p><p><b>なぜ止めるか</b> 存在しない部品、list、項目、アイコンを指したり、節や操作の言葉を打ち間違えたりすると、その行は無視されます。書いたつもりの動きが起きないため、エラーにします。</p><p><b>どう直すか</b> エラーに表示された「もしかして」の名前に直すか、定義を追加します。</p></div><div class="errcard" id="E29"><p class="ehead"><span class="badge err">E29</span> rule に do が2つ以上ある</p><p><b>なぜ止めるか</b> 1つの rule には1つの処理だけを書きます。2つあると、片方だけ失敗したときの結果が決まらないためです。</p><p><b>どう直すか</b> rule を2つに分けて、relate の <code>A then B</code> でつなぎます。</p></div><div class="errcard" id="E30"><p class="ehead"><span class="badge err">E30</span> 通知の宛先がない</p><p><b>なぜ止めるか</b> 誰に知らせるかが決まっていないと、通知が誰にも届かないためです。</p><p><b>どう直すか</b> <code>notify owner ...</code> のように、人を指す項目か me を書きます。</p></div><div class="errcard" id="E31"><p class="ehead"><span class="badge err">E31</span> 書き方が正しくない（do、example の手順、読めない行）</p><p><b>なぜ止めるか</b> 決まった形以外は、実行エンジンが動かせないためです。また、example の手順の打ち間違いを見逃すと、確かめていない例が通ってしまいます。</p><p><b>どう直すか</b> do は <code>ponte guide --rules</code> の表にある形で書きます。example の手順は given / adds / at / says / taps / gets / expect のいずれかです。</p></div><div class="errcard" id="E32"><p class="ehead"><span class="badge err">E32</span> 型が合わない、または存在しない状態や項目</p><p><b>なぜ止めるか</b> 存在しない状態や項目、型の違う値は、空の一覧や起きない rule になります。動かす前に見つけるため、エラーにします。</p><p><b>どう直すか</b> エラーに表示された候補（「todo / done」など）から選んで直します。</p></div><div class="errcard" id="W09"><p class="ehead"><span class="badge warn">W09</span> （注意）flow の状態に対応する rule がない</p><p><b>なぜ止めるか</b> 他の状態には rule があるのに、その状態のときの rule だけがありません。考慮漏れの可能性があります。</p><p><b>どう直すか</b> その状態のときに起きることを rule に書きます。何もしない場合は、この注意は無視してかまいません。</p></div><div class="errcard" id="W26"><p class="ehead"><span class="badge warn">W26</span> （注意）名前のないボタンまたは説明のない画像</p><p><b>なぜ止めるか</b> 試作中は注意だけを表示します。公開するとき（<code>--publish</code>）はエラーになります。</p><p><b>どう直すか</b> ボタンには <code>named 名前</code> を、画像には説明を付けます。</p></div></div></section>
+  minute digits <span class="val">2</span></pre></section><section class="ref" id="std"><h2>標準ライブラリ</h2><p>中身も Ponte で書かれており、example が付いています。</p><div class="table"><table><tr><th>書き方</th><th>中身</th><th>action</th></tr><tr><td><code>use std/contact</code></td><td>文の中からメールアドレスと電話番号を取り出す（use std/contact）</td><td><code>FindEmail</code> <span class='muted'>text text → found text | missing</span><br><code>FindPhone</code> <span class='muted'>text text → found text | missing</span><br><code>FindPostal</code> <span class='muted'>text text → found text | missing</span></td></tr><tr><td><code>use std/date</code></td><td>文の中から日付を取り出す（use std/date）</td><td><code>FindMonthDay</code> <span class='muted'>text text → found monthday | missing</span><br><code>FindDate</code> <span class='muted'>text text → found date | missing</span></td></tr><tr><td><code>use std/money</code></td><td>文の中から金額（円）を取り出す（use std/money）</td><td><code>FindYen</code> <span class='muted'>text text → found number | missing</span></td></tr></table></div></section><section class="ref" id="errors"><h2>エラー</h2><p><code>ponte check</code> がエラーにする理由と直し方です。<code>ponte explain E32</code> でも同じ内容を表示できます。</p><div class="errs"><div class="errcard" id="E01"><p class="ehead"><span class="badge err">E01</span> match に else がない</p><p><b>なぜ止めるか</b> 書いていない値が来たときに、何をするかが決まっていないためです。</p><p><b>どう直すか</b> 最後に <code>else -&gt; 結果</code> を書きます。宣言した状態をすべて書いた場合、else は不要です。</p></div><div class="errcard" id="E02"><p class="ehead"><span class="badge err">E02</span> until に上限がない</p><p><b>なぜ止めるか</b> 終わらない可能性のある待ちは、アプリを止めてしまうためです。</p><p><b>どう直すか</b> <code>repeat ... until 〇〇 or 1 hour passed</code> のように、回数か時間の上限を書きます。</p></div><div class="errcard" id="E03"><p class="ehead"><span class="badge err">E03</span> action の example が2つ未満</p><p><b>なぜ止めるか</b> 例が1つだけでは、中身（自分で書いても AI が書いても）が正しいかを確かめられないためです。</p><p><b>どう直すか</b> 当たる例と当たらない例（<code>-&gt; missing</code> など）を、少なくとも1つずつ書きます。</p></div><div class="errcard" id="E04"><p class="ehead"><span class="badge err">E04</span> action に else がない</p><p><b>なぜ止めるか</b> action の中身が答えを出せなかったときの動きが必要なためです。</p><p><b>どう直すか</b> <code>else skip</code> や <code>else ask user</code> のように、答えが出なかったときの動きを書きます。</p></div><div class="errcard" id="E05"><p class="ehead"><span class="badge err">E05</span> tbd が残っている</p><p><b>なぜ止めるか</b> 決まっていないことを残したまま動かすと、その部分を誰かが推測で決めてしまうためです。</p><p><b>どう直すか</b> 内容を決めて tbd を消します。決められない場合は、その部分を使わない形に書き換えます。</p></div><div class="errcard" id="E06"><p class="ehead"><span class="badge err">E06</span> <code>##</code> が残っている</p><p><b>なぜ止めるか</b> <code>##</code> は、書いた人が確認を保留している箇所を示す印です。</p><p><b>どう直すか</b> 内容を確かめてから、<code>##</code> を消すか <code>#</code>（通常のコメント）に変えます。</p></div><div class="errcard" id="E07"><p class="ehead"><span class="badge err">E07</span> when に状態を書いている</p><p><b>なぜ止めるか</b> 「期限が近い」のような状態は、いつ起きるかが決まっていないためです。</p><p><b>どう直すか</b> when には出来事（<code>every day at 8:00</code> や <code>user taps ...</code>）を書き、状態は where か list で絞り込みます。</p></div><div class="errcard" id="E08"><p class="ehead"><span class="badge err">E08</span> move の対象が絞り込まれていない</p><p><b>なぜ止めるか</b> どの1件を動かすかが決まらないまま、複数のレコードがまとめて動いてしまうためです。</p><p><b>どう直すか</b> <code>move this to 状態</code> にするか、list で1件に絞り込みます。</p></div><div class="errcard" id="E10"><p class="ehead"><span class="badge err">E10</span> 競合する move の優先順位が決まっていない</p><p><b>なぜ止めるか</b> 同じ1件に異なる move が同時に届いたとき、どちらを優先するかが決まらないためです。</p><p><b>どう直すか</b> flow に <code>failed &gt; passed</code> のように優先順位を書きます。</p></div><div class="errcard" id="E11"><p class="ehead"><span class="badge err">E11</span> list の参照が循環している</p><p><b>なぜ止めるか</b> A の元が B で、B の元が A だと、中身が決まらないためです。</p><p><b>どう直すか</b> どちらかを thing から直接絞り込む形に変えます。</p></div><div class="errcard" id="E12"><p class="ehead"><span class="badge err">E12</span> 入れ子</p><p><b>なぜ止めるか</b> 入れ子は読み違えやすいため、1段で書く決まりにしています。</p><p><b>どう直すか</b> 内側の部分に名前を付けて外に出し、その名前を使います。</p></div><div class="errcard" id="E13"><p class="ehead"><span class="badge err">E13</span> action の約束が食い違っている</p><p><b>なぜ止めるか</b> example の答えや never が out の形に合っていないと、確かめることができないためです。</p><p><b>どう直すか</b> out に書いた形（<code>found monthday | missing</code> など）に合わせて、example と never を書き直します。</p></div><div class="errcard" id="E14"><p class="ehead"><span class="badge err">E14</span> relate の then / before が循環している</p><p><b>なぜ止めるか</b> A の後に B、B の後に A が動くと、処理が終わらないためです。</p><p><b>どう直すか</b> どこかの then を外すか、条件付きの rule に分けます。</p></div><div class="errcard" id="E15"><p class="ehead"><span class="badge err">E15</span> relate の優先順位が双方向になっている</p><p><b>なぜ止めるか</b> <code>A &gt; B</code> と <code>B &gt; A</code> が両方あると、どちらも優先されないためです。</p><p><b>どう直すか</b> どちらか一方だけを残します。</p></div><div class="errcard" id="E16"><p class="ehead"><span class="badge err">E16</span> before の前の rule が起きない</p><p><b>なぜ止めるか</b> <code>A before B</code> と書いても A が起きる経路がなければ、B はいつまでも起きないためです。</p><p><b>どう直すか</b> A のきっかけ（when）を書くか、before を外します。</p></div><div class="errcard" id="E17"><p class="ehead"><span class="badge err">E17</span> 失敗したときの動きが2つある</p><p><b>なぜ止めるか</b> action の else と relate の else が両方あると、どちらが動くかが決まらないためです。</p><p><b>どう直すか</b> どちらか1つにします。</p></div><div class="errcard" id="E18"><p class="ehead"><span class="badge err">E18</span> match に宣言されていない状態がある</p><p><b>なぜ止めるか</b> 宣言にない状態の枝は、打ち間違いであることが多いためです。</p><p><b>どう直すか</b> 宣言にある状態名に直すか、宣言に状態を追加します。</p></div><div class="errcard" id="E19"><p class="ehead"><span class="badge err">E19</span> who がない thing がある</p><p><b>なぜ止めるか</b> 書いていない操作は誰にもできない決まりのため、このままでは誰も見ることができません。</p><p><b>どう直すか</b> <code>who</code> に <code>user can see Thing where ...</code> などを書きます。</p></div><div class="errcard" id="E20"><p class="ehead"><span class="badge err">E20</span> 他のレコードを指す項目に gone がない</p><p><b>なぜ止めるか</b> 指している先が消えたときに、こちらのレコードをどうするかが決まっていないためです。</p><p><b>どう直すか</b> <code>gone[remove too]</code>、<code>gone[leave empty]</code>、<code>gone[block]</code> のいずれかを付けます。</p></div><div class="errcard" id="E21"><p class="ehead"><span class="badge err">E21</span> thing の形を変えたのに change がない</p><p><b>なぜ止めるか</b> 保存済みのデータを新しい形にどう合わせるかが、決まっていないためです。</p><p><b>どう直すか</b> <code>change Thing to v2</code> に、追加した項目の初期値（<code>add memo text = </code>）や名前の変更を書きます。</p></div><div class="errcard" id="E22"><p class="ehead"><span class="badge err">E22</span> ask ai に上限がない</p><p><b>なぜ止めるか</b> AI への問い合わせが止まらないと、費用と時間がかかり続けるためです。</p><p><b>どう直すか</b> how に時間か費用の上限（<code>limit 5 seconds</code> や <code>limit 1 yen</code>）を書きます。</p></div><div class="errcard" id="E23"><p class="ehead"><span class="badge err">E23</span> connect が失敗したときの動きがない</p><p><b>なぜ止めるか</b> 外部サービスは失敗することがあり、そのときの動きが決まっていないためです。</p><p><b>どう直すか</b> relate に <code>rule名 else 〇〇</code> を書きます。</p></div><div class="errcard" id="E24"><p class="ehead"><span class="badge err">E24</span> flow scene にない画面の移動</p><p><b>なぜ止めるか</b> 画面の移動も flow と同じく、書いた経路しか通れないためです。</p><p><b>どう直すか</b> <code>flow scene</code> に矢印を追加するか、移動先を直します。</p></div><div class="errcard" id="E25"><p class="ehead"><span class="badge err">E25</span> words の訳が足りない</p><p><b>なぜ止めるか</b> 一方の言語だけ文字が欠けていると、その言語の利用者に意味が伝わらないためです。</p><p><b>どう直すか</b> words ja と words en の両方に、同じ名前で書きます。1つの言語だけのアプリでは、words を書かずに <code>&quot;文字&quot;</code> と直接書くこともできます。</p></div><div class="errcard" id="E26"><p class="ehead"><span class="badge err">E26</span> 名前のないボタンまたは説明のない画像</p><p><b>なぜ止めるか</b> 読み上げ機能の利用者に、ボタンの役割が伝わらないためです。公開するときだけエラーになります。</p><p><b>どう直すか</b> ボタンには <code>named 名前</code> を、画像には説明を付けます。</p></div><div class="errcard" id="E27"><p class="ehead"><span class="badge err">E27</span> 通貨の異なる money の足し算</p><p><b>なぜ止めるか</b> 円とドルをそのまま足すと、意味のない数になるためです。</p><p><b>どう直すか</b> 同じ通貨どうしで足すか、通貨ごとに分けて表示します。</p></div><div class="errcard" id="E28"><p class="ehead"><span class="badge err">E28</span> 定義されていない名前、または知らない言葉</p><p><b>なぜ止めるか</b> 存在しない部品、list、項目、アイコンを指したり、節や操作の言葉を打ち間違えたりすると、その行は無視されます。書いたつもりの動きが起きないため、エラーにします。</p><p><b>どう直すか</b> エラーに表示された「もしかして」の名前に直すか、定義を追加します。</p></div><div class="errcard" id="E29"><p class="ehead"><span class="badge err">E29</span> rule に do が2つ以上ある</p><p><b>なぜ止めるか</b> 1つの rule には1つの処理だけを書きます。2つあると、片方だけ失敗したときの結果が決まらないためです。</p><p><b>どう直すか</b> rule を2つに分けて、relate の <code>A then B</code> でつなぎます。</p></div><div class="errcard" id="E30"><p class="ehead"><span class="badge err">E30</span> 通知の宛先がない</p><p><b>なぜ止めるか</b> 誰に知らせるかが決まっていないと、通知が誰にも届かないためです。</p><p><b>どう直すか</b> <code>notify owner ...</code> のように、人を指す項目か me を書きます。</p></div><div class="errcard" id="E31"><p class="ehead"><span class="badge err">E31</span> 書き方が正しくない（do、example の手順、読めない行）</p><p><b>なぜ止めるか</b> 決まった形以外は、実行エンジンが動かせないためです。また、example の手順の打ち間違いを見逃すと、確かめていない例が通ってしまいます。</p><p><b>どう直すか</b> do は <code>ponte guide --rules</code> の表にある形で書きます。example の手順は given / adds / at / says / taps / gets / expect のいずれかです。</p></div><div class="errcard" id="E32"><p class="ehead"><span class="badge err">E32</span> 型が合わない、または存在しない状態や項目</p><p><b>なぜ止めるか</b> 存在しない状態や項目、型の違う値は、空の一覧や起きない rule になります。動かす前に見つけるため、エラーにします。</p><p><b>どう直すか</b> エラーに表示された候補（「todo / done」など）から選んで直します。</p></div><div class="errcard" id="W09"><p class="ehead"><span class="badge warn">W09</span> （注意）flow の状態に対応する rule がない</p><p><b>なぜ止めるか</b> 他の状態には rule があるのに、その状態のときの rule だけがありません。考慮漏れの可能性があります。</p><p><b>どう直すか</b> その状態のときに起きることを rule に書きます。何もしない場合は、この注意は無視してかまいません。</p></div><div class="errcard" id="W26"><p class="ehead"><span class="badge warn">W26</span> （注意）名前のないボタンまたは説明のない画像</p><p><b>なぜ止めるか</b> 試作中は注意だけを表示します。公開するとき（<code>--publish</code>）はエラーになります。</p><p><b>どう直すか</b> ボタンには <code>named 名前</code> を、画像には説明を付けます。</p></div></div></section>
   </article>
 </div>
 <footer><p>v0.3 ・ Python 3.11</p></footer>
 </div>
 <script>
-(() => {   // 目次の、いま読んでいる所に印を付ける
-  const links = [...document.querySelectorAll(".toc a")], map = new Map(links.map(a => [a.hash.slice(1), a]));
-  const io = new IntersectionObserver(es => es.forEach(e => {
-    if(!e.isIntersecting) return;
-    links.forEach(a => a.classList.remove("on")); const a = map.get(e.target.id); if(a) a.classList.add("on");
-  }), {rootMargin: "0px 0px -70% 0px"});
-  document.querySelectorAll(".prose h2[id], .prose h3[id], .prose section[id]").forEach(h => map.has(h.id) && io.observe(h));
+(() => {   // 目次: いま読んでいる所に印を付ける。狭い画面では畳んで、見出しを上に出す
+  const links = [...document.querySelectorAll(".toc a")], map = new Map(links.map(a => [decodeURIComponent(a.hash.slice(1)), a]));
+  const d = document.querySelector(".toc-d"), now = document.querySelector(".toc-now");
+  const narrow = matchMedia("(max-width:860px)");
+  const fit = () => { if (d) d.open = !narrow.matches; };
+  fit(); narrow.addEventListener("change", fit);
+  if (now && links[0]) now.textContent = links[0].textContent;
+  const heads = [...document.querySelectorAll(".prose h2[id], .prose h3[id], .prose section[id]")].filter(h => map.has(h.id));
+  let cur = null, tick = false;
+  const update = () => {
+    tick = false;
+    const line = (narrow.matches ? 150 : 110);
+    let h = heads[0];
+    for (const x of heads) { if (x.getBoundingClientRect().top <= line) h = x; else break; }
+    if (!h || h === cur) return;
+    cur = h;
+    links.forEach(a => a.classList.remove("on"));
+    const a = map.get(h.id);
+    a.classList.add("on"); if (now) now.textContent = a.textContent;
+    if (!narrow.matches) a.scrollIntoView({block: "nearest"});
+  };
+  addEventListener("scroll", () => { if (!tick) { tick = true; requestAnimationFrame(update); } }, {passive: true});
+  update();
+  links.forEach(a => a.addEventListener("click", () => { if (narrow.matches && d) d.open = false; }));
+})();
+</script><button type="button" class="totop" aria-label="ページの先頭へ" hidden>↑</button>
+<script>
+(() => {
+  const bar = document.querySelector(".bar"), top = document.querySelector(".totop");
+  const onScroll = () => {
+    const y = scrollY;
+    bar && bar.classList.toggle("scrolled", y > 8);
+    if (top) top.hidden = y < 600;
+  };
+  addEventListener("scroll", onScroll, {passive: true}); onScroll();
+  top && top.addEventListener("click", () => scrollTo({top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"}));
+  // 下にあるものは、見えたときにふわっと出す（最初から見えているものは動かさない。動きを減らす設定なら何もしない）
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches && "IntersectionObserver" in window) {
+    const els = [...document.querySelectorAll("[data-reveal]")].filter(el => el.getBoundingClientRect().top > innerHeight);
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }),
+                                        {rootMargin: "0px 0px -8% 0px"});
+    els.forEach(el => { el.classList.add("pre"); io.observe(el); });
+  }
+  // コードの写しボタン
+  document.querySelectorAll("[data-copy]").forEach(b => b.addEventListener("click", async () => {
+    const t = document.getElementById(b.dataset.copy).innerText;
+    try { await navigator.clipboard.writeText(t); b.textContent = "写しました"; }
+    catch (e) { const r = document.createRange(); r.selectNodeContents(document.getElementById(b.dataset.copy));
+                const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = "選びました"; }
+    setTimeout(() => b.textContent = "写す", 1600);
+  }));
 })();
 </script>
 </body>

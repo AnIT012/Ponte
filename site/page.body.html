@@ -4,79 +4,88 @@
 
 <section class="hero">
   <div class="hero-text">
-    <p class="eyebrow">AI と一緒にアプリを作るための言語</p>
-    <h1><span>仕様を書けば、</span><span>そのままアプリになる。</span></h1>
-    <p class="lead">Ponte で書くのは「どう作るか」ではなく「何を作るか」です。データの形、誰が何をできるか、ボタンを押したら何が起きるかを書くと、ログイン付きの Web アプリとして動きます。決めていないことが残っていれば、動かす前にエラーで止まります。</p>
+    <p class="eyebrow">プログラムのいちばん上の層に書く言語</p>
+    <h1><span>何を作るかだけ書く。</span><span>あとは言語が守る。</span></h1>
+    <p class="lead">Ponte で書くのは、データの形、誰が何をできるか、何が起きたら何をするかだけです。書いたことは必ず守られる約束になり、決めていないことが残っていれば、動かす前にエラーで止まります。Python や Java は、その下で動く層になります。</p>
     <p class="cta"><a class="btn main" href="play.html">ブラウザで試す</a><a class="btn" href="learn.html">入門を読む</a></p>
-    <p class="note">Python 3.11 だけで動きます。ほかに入れるものはありません。</p>
+    <p class="note">覚える言葉は少なく、自分だけで書いても完結します。AI と作るときは、同じ仕様が AI への指示になり、AI が守る約束になります。</p>
   </div>
   <div class="hero-demo">
     <div class="demo-code"><div class="demo-label">todo.ponte</div><pre class="code">{CODE:hero}</pre></div>
     <div class="demo-arrow" aria-hidden="true">↓ <code>ponte run todo.ponte</code></div>
-    <img class="demo-shot" src="{{IMG:todo}}" alt="この仕様から動いた、やることアプリの画面" loading="lazy">
+    <img class="demo-shot" src="{{IMG:todo}}" alt="この仕様から動いた、やることアプリの画面">
   </div>
 </section>
 
-<p class="motto">人は決めて、AI が書いて、言語が守る。</p>
+<section class="layers" data-reveal aria-label="Ponte の位置">
+  <div class="layer top"><b>Ponte</b><span>何を作るか。決めたこと、してはいけないこと、まだ決めていないこと</span></div>
+  <div class="layer"><b>Python</b><span>いまはこの上で動きます</span></div>
+  <div class="layer soon"><b>JavaScript / TypeScript・Go・Java</b><span>下の層として選べるように準備しています</span></div>
+  <div class="layer base"><b>機械</b><span>アセンブリ、CPU</span></div>
+</section>
+
+<p class="motto" data-reveal>決めるのは人。守るのは言語。</p>
 
 <section class="feats" aria-label="特徴">
-  <article class="feat sticker">
-    <p class="num">1</p>
-    <h2>決め忘れは、動かす前に止まる</h2>
-    <p>AI にアプリを頼むと、決めていないことは AI が勝手に補って進みます。Ponte では、まだ決めていないことを <code>tbd</code> に書いておけます。1つでも残っていれば <code>ponte check</code> が通らず、アプリは動きません。</p>
+  <article class="feat sticker" data-reveal>
+    <p class="num">決め忘れ</p>
+    <h2>決めていないことは、動かす前に止まる</h2>
+    <p>まだ決めていないことは <code>tbd</code> に書いておけます。1つでも残っていれば <code>ponte check</code> が通らず、動きません。曖昧なまま先に進むことはありません。</p>
     <pre class="code">{CODE:order}</pre>
     {OUT:order}
   </article>
 
-  <article class="feat sticker">
-    <p class="num">2</p>
+  <article class="feat sticker" data-reveal>
+    <p class="num">権限</p>
     <h2>書いていない権限は、誰にもない</h2>
-    <p>誰が何を見られるか、変えられるかは <code>who</code> に書きます。書いていない操作は誰にもできません。書き忘れると「誰も使えないアプリ」になるので、エラーとしてすぐに見つかります。</p>
+    <p>誰が何を見られるか、変えられるかは <code>who</code> に書きます。書いていない操作は誰にもできません。書き忘れは「誰も使えない」になるので、エラーとしてすぐに見つかります。</p>
     <pre class="code">{CODE:nowho}</pre>
     {OUT:nowho}
   </article>
 
-  <article class="feat sticker">
-    <p class="num">3</p>
-    <h2>AI に任せる部分は、約束で囲む</h2>
-    <p>文章から日付を拾うような処理は <code>action</code> にして、中身を AI に書かせます。先に答えの例と、してはいけないことを書いておきます。AI が書いた中身は、この約束に照らして機械が確かめます。</p>
-    <pre class="code">{CODE:action}</pre>
+  <article class="feat sticker" data-reveal>
+    <p class="num">約束</p>
+    <h2>中身は、約束を先に書いてから</h2>
+    <p>計算や判定の中身は <code>action</code> に書きます。先に答えの例と、してはいけないことを書き、中身はその下の <code>do</code> に書きます。中身は自分で書いても、<code>by ai</code> で AI に任せてもかまいません。どちらでも同じ約束で確かめます。</p>
+    <pre class="code">{CODE:grade}</pre>
+    {OUT:grade}
   </article>
 
-  <article class="feat sticker">
-    <p class="num">4</p>
+  <article class="feat sticker" data-reveal>
+    <p class="num">テスト</p>
     <h2>例がそのままテストになる</h2>
-    <p>ルールの下に書いた <code>example</code> が、そのままテストになります。<code>ponte test</code> は例が通るかを確かめたうえで、まだどの例でも確かめていない状態の変化を一覧にします。</p>
+    <p>ルールの下に書いた <code>example</code> が、そのままテストになります。<code>ponte test</code> は例が通るかを確かめたうえで、まだどの例でも確かめていない部分を一覧にします。example は書かなくても動きます。</p>
     {OUT:test}
   </article>
 </section>
 
-<section class="compare">
-  <h2>AI に直接コードを書かせる場合との違い</h2>
+<section class="compare" data-reveal>
+  <h2>ほかの作り方との違い</h2>
   <div class="table"><table>
-    <tr><th></th><th>AI に直接書かせる</th><th>Ponte</th></tr>
-    <tr><td>決めていないこと</td><td>AI が推測して埋める</td><td>エラーで止まり、人が決める</td></tr>
-    <tr><td>権限</td><td>書き忘れると、誰でも操作できる</td><td>書いた操作しかできない</td></tr>
-    <tr><td>確かめ方</td><td>動かして画面を目で見る</td><td>例がテストになり、確かめていない部分も一覧になる</td></tr>
-    <tr><td>読める人</td><td>コードが読める人だけ</td><td>仕様は誰でも読める。<code>ponte doc</code> で1枚の HTML にもなる</td></tr>
+    <tr><th></th><th>Python などで直接書く</th><th>AI に日本語で頼む</th><th>Ponte</th></tr>
+    <tr><td>覚えること</td><td>言語と、たくさんの道具</td><td>ほとんどない</td><td>少ない言葉だけ</td></tr>
+    <tr><td>決めていないこと</td><td>書く人が気づかずに埋める</td><td>AI が推測して埋める</td><td>エラーで止まり、人が決める</td></tr>
+    <tr><td>権限</td><td>自分で作る。漏れやすい</td><td>書き忘れると誰でも操作できる</td><td>書いた操作しかできない</td></tr>
+    <tr><td>確かめ方</td><td>テストを別に書く</td><td>動かして画面を目で見る</td><td>例がテストになり、確かめていない部分も一覧になる</td></tr>
+    <tr><td>読める人</td><td>コードが読める人だけ</td><td>誰でも読めるが、曖昧</td><td>誰でも読めて、曖昧さがない</td></tr>
   </table></div>
 </section>
 
-<section class="gets">
+<section class="gets" data-reveal>
   <h2>1つのファイルから動くもの</h2>
-  <p class="lead">画面やサーバーのコードは書きません。仕様を書けば、次のものがそろったアプリとして動きます。</p>
+  <p class="lead">画面やサーバーのコードは書きません。仕様を書けば、次のものがそろった状態で動きます。</p>
   <ul class="chips">
     <li>ログインと登録</li><li>一覧・ボード・カレンダー</li><li>入力フォームと確認</li><li>通知と定期実行</li>
     <li>リアルタイム更新</li><li>画像のアップロード</li><li>スマートフォン表示</li><li>ダークモード</li><li>日本語と英語</li>
   </ul>
   <div class="shots">
-    <figure><img src="{{IMG:board}}" alt="ボード表示"><figcaption>ボード</figcaption></figure>
-    <figure><img src="{{IMG:lend_home}}" alt="備品の貸し出しアプリ"><figcaption>備品の貸し出し</figcaption></figure>
-    <figure><img src="{{IMG:kakeibo}}" alt="家計メモとグラフ"><figcaption>家計メモとグラフ</figcaption></figure>
+    <figure><img src="{{IMG:board}}" alt="ボード表示" loading="lazy"><figcaption>ボード</figcaption></figure>
+    <figure><img src="{{IMG:lend_home}}" alt="備品の貸し出しアプリ" loading="lazy"><figcaption>備品の貸し出し</figcaption></figure>
+    <figure><img src="{{IMG:kakeibo}}" alt="家計メモとグラフ" loading="lazy"><figcaption>家計メモとグラフ</figcaption></figure>
   </div>
 </section>
 
-<section class="show sticker" aria-label="書き方の見本">
+<section class="show sticker" data-reveal aria-label="書き方の見本">
   <h2 class="show-h">書き方を6つの見本で見る</h2>
 {SLIDES}
   <div class="ctrl">
@@ -86,17 +95,24 @@
   </div>
 </section>
 
-<section class="cols">
+<section class="cols" data-reveal>
   <div class="col sticker"><h3>はじめる</h3><p>入門では、やることアプリをエラーを見ながら少しずつ作ります。はじめての方は、ここから読んでください。</p><a class="more" href="learn.html">入門を読む ›</a></div>
-  <div class="col sticker"><h3>入れる</h3><p>Python 3.11 があれば動きます。ほかに入れるものはありません。</p><pre>pip install -e .
-ponte new myapp</pre><a class="more" href="{REPO}">GitHub から入手 ›</a></div>
+  <div class="col sticker"><h3>入れる</h3><p>Python 3.11 があれば動きます。ほかに入れるものはありません。</p><div class="copyable"><pre id="install">git clone {REPO}
+cd nameless-lang
+python -m ponte new myapp</pre><button type="button" class="copy" data-copy="install">写す</button></div><a class="more" href="{REPO}">GitHub から入手 ›</a></div>
   <div class="col sticker"><h3>ドキュメント</h3><p>書き方の決まりは仕様書にまとめています。使える道具とエラーの一覧も用意しています。</p><a class="more" href="reference.html">道具とエラーを見る ›</a></div>
   <div class="col sticker"><h3>試す</h3><p>インストールしなくても、ブラウザの中で書いて確かめられます。書いたものはどこにも送りません。</p><a class="more" href="play.html">試してみる ›</a></div>
 </section>
 
 <footer>
-  <p>Ponte（ポンテ）はイタリア語で「橋」という意味です。人と AI のあいだにかける橋という意味を込めて名付けました。</p>
-  <p>v0.3 ・ Python 3.11 ・ <a href="how.html">しくみ</a></p>
+  <div class="foot">
+    <div class="foot-brand"><b>Ponte</b><p>Ponte（ポンテ）はイタリア語で「橋」という意味です。人と機械のあいだ、人と AI のあいだにかける橋という意味を込めて名付けました。</p></div>
+    <nav class="foot-links" aria-label="サイトの中">
+      <div><p>使う</p><a href="play.html">ブラウザで試す</a><a href="learn.html">入門</a><a href="{REPO}">GitHub</a></div>
+      <div><p>調べる</p><a href="reference.html">道具とエラー</a><a href="spec.html">仕様書</a><a href="how.html">しくみ</a></div>
+    </nav>
+  </div>
+  <p class="foot-ver">v0.3 ・ Python 3.11 の標準機能だけで動きます</p>
 </footer>
 </div>
 

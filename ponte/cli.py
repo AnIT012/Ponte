@@ -90,7 +90,7 @@ def check_once(args) -> int:
             e = BY_CODE.get(f.code)
             rows.append({"code": f.code, "file": path, "line": line, "message": f.message, "error": f.is_error,
                          "fix": e[3] if e else None})
-        print(json.dumps({"ok": not errors, "findings": rows}, ensure_ascii=False, indent=2))
+        print(json.dumps(_msgs({"ok": not errors, "findings": rows}), ensure_ascii=False, indent=2))
         return 1 if errors else 0
     if errors:
         print(f"止まります（{len(errors)}件）")
@@ -134,12 +134,12 @@ def cmd_test(args) -> int:
         try:
             spec = parse_file(args.spec)
         except (ParseError, FileNotFoundError) as e:
-            print(json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False))
+            print(json.dumps(_msgs({"ok": False, "error": str(e)}), ensure_ascii=False))
             return 1
         errs = [f for f in check(spec) if f.is_error]
         if errs:
-            print(json.dumps({"ok": False, "error": "先に check を通してください",
-                              "findings": [{"code": f.code, "line": spec.where(f.line)[1], "message": f.message} for f in errs]},
+            print(json.dumps(_msgs({"ok": False, "error": "先に check を通してください",
+                              "findings": [{"code": f.code, "line": spec.where(f.line)[1], "message": f.message} for f in errs]}),
                              ensure_ascii=False, indent=2))
             return 1
     spec = _load_checked(args.spec) if not args.json else spec
@@ -151,8 +151,8 @@ def cmd_test(args) -> int:
         from .examples import holes
         hs = holes(spec, results)
         rows = [{"rule": r.rule, "line": spec.where(r.line)[1], "file": spec.where(r.line)[0], "ok": r.ok, "message": r.message} for r in results]
-        print(json.dumps({"ok": not bad and not (hs and args.strict), "results": rows,
-                          "holes": [{"file": spec.where(h.line)[0], "line": spec.where(h.line)[1], "message": h.message} for h in hs]},
+        print(json.dumps(_msgs({"ok": not bad and not (hs and args.strict), "results": rows,
+                          "holes": [{"file": spec.where(h.line)[0], "line": spec.where(h.line)[1], "message": h.message} for h in hs]}),
                          ensure_ascii=False, indent=2))
         return 1 if bad or (hs and args.strict) else 0
     for r in results:
@@ -535,10 +535,21 @@ def cmd_explain(args) -> int:
     return 0
 
 
+
+def _msgs(obj):
+    """JSON に出す前に、メッセージだけを出力の言語にする（JSON の形は崩さない）"""
+    from .i18n import tr
+    if isinstance(obj, dict):
+        return {k: (tr(v) if isinstance(v, str) and k in ("message", "error", "fix") else _msgs(v)) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_msgs(x) for x in obj]
+    return obj
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="ponte", description="Ponte — 人は決めて、AIが書いて、言語が守る（v0.3）")
     from . import __version__
     p.add_argument("--version", action="version", version=f"ponte {__version__}")
+    p.add_argument("--lang", choices=["ja", "en"], help="出力の言語（省略時は PONTE_LANG、なければシステムの言語）")
     sub = p.add_subparsers(dest="cmd", required=True)
     c = sub.add_parser("check", help="決めてないことを探す")
     c.add_argument("spec")
@@ -621,7 +632,14 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    from . import i18n
+    i18n.set_lang(args.lang)
+    if args.cmd in TRANSLATED and not getattr(args, "json", False):
+        i18n.install()                  # 利用者のデータを出すコマンド（data・fmt など）は訳さない
     return args.fn(args)
+
+
+TRANSLATED = {"check", "test", "explain", "guide", "new", "user", "role", "fill", "build", "run", "lint"}
 
 
 if __name__ == "__main__":

@@ -59,11 +59,13 @@ def read(node: Node) -> Job:
             j.run = t
         elif k == "at":
             j.at = t.strip('"')
-        elif k == "with":
-            j.settings, j.raw, bad = parse_with(t)
+        elif k == "with":                            # 何行に分けて書いてもよい
+            s, r, bad = parse_with(t)
+            j.settings.update(s)
+            j.raw.update(r)
             j.problems += [(c.line, f"with は `名前 値` を , で並べます: '{b}'") for b in bad]
         elif k == "confirm":
-            j.confirm = names(t)
+            j.confirm += names(t)
         elif k in ("require", "suspect"):
             m = CONDITION.match(t)
             if not m:

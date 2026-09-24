@@ -107,3 +107,9 @@ def test_job_contract_is_checked():
     assert "E28" in codes("job J\n  with  lr 1\n")                                    # run がない
     assert "E32" in codes("job J\n  run  python t.py\n  with  lr 1\n  confirm  lrr\n")
     assert "E31" in codes("job J\n  run  python t.py\n  require  accuracy high\n")
+
+
+def test_with_and_confirm_can_span_lines():
+    src = "job J\n  run      python t.py\n  with     a 1, b 2\n  with     c yes\n  confirm  a\n  confirm  c\n"
+    j = read(parse(src).find("job", "J"))
+    assert j.settings == {"a": 1, "b": 2, "c": True} and j.confirm == ["a", "c"] and codes(src) == []

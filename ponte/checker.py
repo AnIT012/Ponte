@@ -1737,11 +1737,12 @@ def check_confirm(spec: Spec, opt: Options) -> list[Finding]:
             out.append(Finding("E31", (w or c).line, f"{n.keyword} {n.name}: with と confirm は、中身を下の層に任せる部品（`by python \"x.py\"` の action、connect）に書きます"))
             continue
         declared = {}
-        if w is not None:
-            declared, _, bad = parse_with(w.text)
+        for w in n.children_of("with"):                   # with と confirm は何行に分けてもよい
+            got, _, bad = parse_with(w.text)
+            declared.update(got)
             for b in bad:
                 out.append(Finding("E31", w.line, f"{n.keyword} {n.name}: with は `名前 値` を , で並べます: '{b}'"))
-        if c is not None:
+        for c in n.children_of("confirm"):
             for x in names(c.text):
                 if x not in declared:
                     out.append(Finding("E32", c.line, f"{n.keyword} {n.name}: confirm の「{x}」は with にありません（{', '.join(declared) or 'with がありません'}）{did_you_mean(x, declared)}"))

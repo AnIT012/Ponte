@@ -93,13 +93,13 @@ def check_once(args) -> int:
         print(json.dumps({"ok": not errors, "findings": rows}, ensure_ascii=False, indent=2))
         return 1 if errors else 0
     if errors:
-        print(f"渡せません（{len(errors)}件）")
+        print(f"止まります（{len(errors)}件）")
         for f in errors:
             path, line = spec.where(f.line)
             print(f"  {path}:{line}  {f.code}  {f.message}")
         print(f"  （直し方: ponte explain {errors[0].code}）")
     else:
-        print("決めてないことなし。AIに渡せます")
+        print("決めていないことはありません。動かせます")
         if args.save_shape:
             with open(shape_path(args.spec), "w", encoding="utf-8") as f:
                 json.dump(shape_of(spec), f, ensure_ascii=False, indent=2, sort_keys=True)
@@ -121,7 +121,7 @@ def _load_checked(path: str):
         return None
     errors = [f for f in check(spec) if f.is_error]
     if errors:
-        print(f"渡せません（{len(errors)}件）。先に check を通してください")
+        print(f"止まります（{len(errors)}件）。先に check を通してください")
         for f in errors:
             print(f"  - {f}")
         return None

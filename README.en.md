@@ -2,17 +2,18 @@
 
 <img src="docs/logo/ponte.svg" alt="Ponte" width="96">
 
-> *Ponte* is Italian for "bridge" — between people and AI, and between the rules you write and the Python that runs them.
+> *Ponte* is Italian for "bridge": between people and machines, and between people and AI.
 
-**People decide. AI writes. The language guards.**
+**People decide. The language guards.**
 
-When you ask an AI to build an app, the hardest problem is not that it writes bad code — it is that it quietly **decides things you never decided**. In Ponte you only write *what you want, what must never happen, and what you have not decided yet*.
+Ponte is a language for the top layer of a program. You write *what you want, what must never happen, and what is still undecided*, never *how to do it*. Existing languages such as Python or Java become the layer underneath.
 
-- Everything decided (data shapes, state flows, who may do what, screens) is run by the language itself.
-- The AI only fills small, contracted holes (examples, forbidden behaviours, a fallback).
-- Anything left undecided **stops the app before it runs**.
+- What you write is a contract that is always kept. Anything left undecided stops the program before it runs, any operation you did not grant is impossible, and anything that breaks an example does not pass.
+- The vocabulary is small, and you can finish a whole program on your own: even calculations and decisions can be written in Ponte's `do`.
+- When you work with AI, the same spec is the AI's instructions and the contract it must keep. Unlike instructions in plain language, a misreading stops with an error.
 
-No dependencies: Python 3.11 standard library only. (The documentation and error messages are in Japanese.)
+Today it runs on the Python 3.11 standard library only, with no dependencies. JavaScript / TypeScript, Go and Java are being prepared as layers you can choose underneath.
+Errors and output are available in English and Japanese (`--lang en` or `PONTE_LANG=en`; the default follows your system language). The longer documents are still Japanese only.
 
 ## 30 seconds
 

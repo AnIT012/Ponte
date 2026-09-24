@@ -546,7 +546,7 @@ def _msgs(obj):
     return obj
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="ponte", description="Ponte — 人は決めて、AIが書いて、言語が守る（v0.3）")
+    p = argparse.ArgumentParser(prog="ponte", description="Ponte：決めるのは人。守るのは言語。（v0.3）")
     from . import __version__
     p.add_argument("--version", action="version", version=f"ponte {__version__}")
     p.add_argument("--lang", choices=["ja", "en"], help="出力の言語（省略時は PONTE_LANG、なければシステムの言語）")

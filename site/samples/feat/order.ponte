@@ -1,0 +1,12 @@
+thing Order
+  item    text
+  status  [new | paid | shipped]
+
+flow Order.status
+  new -> paid -> shipped
+
+who
+  user  can see     Order
+  user  can create  Order
+
+tbd  発送した後でも、キャンセルできる？

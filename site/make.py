@@ -81,7 +81,30 @@ def landing() -> str:
                    % (i, i + 1, ' aria-current="true"' if i == 0 else "", i + 1) for i in range(len(SLIDES)))
     body = (HERE / "page.body.html").read_text(encoding="utf-8")
     body = body.replace("{REPO}", REPO).replace("{DOC}", DOC).replace("{SLIDES}", "\n".join(items)).replace("{DOTS}", dots)
+    feat = HERE / "samples" / "feat"
+    for n in sorted(set(re.findall(r"\{CODE:(\w+)\}", body))):
+        src = (feat / f"{n}.ponte").read_text(encoding="utf-8").rstrip("\n")
+        body = body.replace("{CODE:%s}" % n, highlight(src, states_in(src)))
+    for n in sorted(set(re.findall(r"\{OUT:(\w+)\}", body))):
+        body = body.replace("{OUT:%s}" % n, terminal(*FEAT_RUNS[n]))
     return page("Ponte", "", body)
+
+
+# トップに載せる端末の出力は、その場で本物を流して作る（書き写さない）
+FEAT_RUNS = {
+    "order": ("check order.ponte", HERE / "samples" / "feat"),
+    "nowho": ("check nowho.ponte", HERE / "samples" / "feat"),
+    "test": ("test spec/hub_ready.ponte", ROOT),
+}
+
+
+def terminal(args: str, cwd: Path) -> str:
+    import subprocess
+    from md import code_block
+    r = subprocess.run([sys.executable, "-m", "ponte", *args.split()], cwd=cwd, capture_output=True, text=True,
+                       env={**__import__("os").environ, "PYTHONPATH": str(ROOT)})
+    out = (r.stdout + r.stderr).rstrip("\n")
+    return code_block(f"$ ponte {args}\n{out}", "", frozenset())
 
 
 # ---------------------------------------------------------------------------

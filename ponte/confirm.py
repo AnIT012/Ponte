@@ -65,6 +65,11 @@ def problems(declared: dict, wanted: list[str], reported: dict, raw: dict | None
 
 def parts(node) -> tuple[dict, dict, list[str]]:
     """部品の with と confirm → (宣言した値, 書いたままの値, 照合する名前)"""
-    w, c = node.child("with"), node.child("confirm")
-    settings, raw, _ = parse_with(w.text) if w is not None else ({}, {}, [])
-    return settings, raw, names(c.text) if c is not None else []
+    settings, raw, wanted = {}, {}, []
+    for w in node.children_of("with"):                 # 何行に分けて書いてもよい
+        s, r, _ = parse_with(w.text)
+        settings.update(s)
+        raw.update(r)
+    for c in node.children_of("confirm"):
+        wanted += names(c.text)
+    return settings, raw, wanted

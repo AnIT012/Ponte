@@ -345,8 +345,8 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px dashed va
 <span class="block">  ## where deadline is after now    # 締切が過ぎた応募も通知する？</span></pre>
 <hr>
 <h2 id="4-パーツ一覧">4. パーツ一覧</h2>
-<p>見出し（行頭に書くもの）: thing, flow, list, match, rule, relate, action, group, tbd, never, scene, look, part, style, input, words, who, change, connect</p>
-<p>節（見出しの中に字下げして書くもの）: of, where, sort, when, do, why, in, out, example, by, how, given, expect</p>
+<p>見出し（行頭に書くもの）: thing, flow, list, match, rule, relate, action, model, group, tbd, never, scene, look, part, style, input, words, who, change, connect</p>
+<p>節（見出しの中に字下げして書くもの）: of, where, sort, when, do, why, in, out, example, by, how, given, expect, learn, using, require</p>
 <p>守り（言語が守らせるもの。赤で表示）: never, else, <code>&gt;</code>, <code>##</code>, tbd, who, gone, limit</p>
 <hr>
 <h2 id="5-各パーツ">5. 各パーツ</h2>
@@ -466,6 +466,26 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px dashed va
   hour   digits <span class="val">1</span>..<span class="val">2</span>
   <span class="val">":"</span>
   minute digits <span class="val">2</span></pre>
+<h3 id="model-レコードから学んで当てる部品">model（レコードから学んで当てる部品）</h3>
+<p>model は、thing のレコードから学んで、状態の項目を当てる部品です。書くのは「何を学ぶか」「何を見てよいか」「どこまでできれば合格か」「使えないときにどうするか」で、学び方は書きません。</p>
+<pre class="term">model Churn
+  learn    will_leave from Customer
+  using    visits, spend, months
+  require  accuracy at least 80%
+  else     skip
+  example  visits 0, spend 0, months 1 -&gt; yes</pre>
+<div class="table"><table><tr><th>部品</th><th>必須</th><th>意味</th></tr><tr><td><code>learn 項目 from Thing</code></td><td>必須</td><td>当てる項目と、学ぶレコードの thing。項目は状態の項目（<code>[yes | no]</code> など）に限ります</td></tr><tr><td><code>using 項目, 項目</code></td><td>必須</td><td>モデルが見てよい項目。数の項目（number / count / money / percent）か状態の項目に限ります。当てる項目そのものは書けません</td></tr><tr><td><code>require accuracy at least N%</code></td><td>必須</td><td>合格の条件。取り置いたレコードでの正解率が N% 以上であること</td></tr><tr><td><code>else</code></td><td>必須</td><td>モデルを使えないときの動き。<code>skip</code>（当てたことにしない）か <code>use default 状態</code>（その状態として扱う）</td></tr><tr><td><code>how layers 16 8, epochs 200</code></td><td>任意</td><td>学び方の細かい指定。書かなければこの値です</td></tr><tr><td><code>example 項目 値, 項目 値 -&gt; 状態</code></td><td>任意</td><td>必ず当てなければならない例</td></tr></table></div>
+<h4 id="学ぶ-ponte-train">学ぶ（<code>ponte train</code>）</h4>
+<ul><li>学ぶのは、<code>learn</code> の thing のレコードのうち、当てる項目に状態が入っているものです。作られた順に並べます。</li><li>並べた順で5件に1件（5件目、10件目、…）は学びに使わずに取り置き、正解率を測るのに使います。同じレコードは、いつも同じ側に入ります。</li><li>レコードが20件に満たないときは、学びません（エラーになります）。</li><li>モデルに渡すのは <code>using</code> に書いた項目だけです。それ以外の項目は、学ぶときも当てるときも見せません。</li><li>学んだ結果は <code>仕様.ponte.models/名前.json</code> に置きます。どの定義で学んだかの印（<code>learn</code>、<code>using</code>、<code>how</code> と、使う項目の型から作ります）も一緒に置きます。</li></ul>
+<h4 id="使えるモデル">使えるモデル</h4>
+<p>次のすべてを満たすモデルだけを使えます。1つでも欠ければ、そのモデルは使えないものとして扱います。</p>
+<ol><li>学んだ結果がある。</li><li>学んだときの定義の印が、今の定義と同じ。</li><li>取り置いたレコードでの正解率が <code>require</code> 以上。</li><li><code>example</code> をすべて当てる。</li></ol>
+<p><code>ponte test</code> は、学んだ結果があるモデルについて 2〜4 を確かめ、1つでも欠ければ失敗にします。学んだ結果がないモデルは、中身のない action と同じく、確かめていない部分として一覧に出します。</p>
+<h4 id="当てた答えを使う">当てた答えを使う</h4>
+<pre class="code"><span class="head">list</span> <span class="name">AtRisk</span>
+  <span class="clause">of</span>     <span class="name">Customer</span>
+  <span class="clause">where</span>  predict <span class="name">Churn</span> for it is <span class="val">yes</span></pre>
+<ul><li><code>predict 名前 for it is 状態</code>（list の where）と <code>predict 名前 for this is 状態</code>（rule の where）で、モデルが当てた状態で絞ります。</li><li>モデルが使えないときは <code>else</code> に従います。<code>skip</code> なら条件は成り立ちません。<code>use default 状態</code> なら、当てた答えをその状態として扱います。</li></ul>
 <h3 id="how-どうやるか-任意">how（どうやるか。任意）</h3>
 <ul><li>how は rule と action の中にだけ書けます。</li><li>書かなければ AI が決めます。書いたら、AI はその通りにしか作れません。</li><li>例: <code>check every 10 minutes</code> / <code>limit 5 seconds</code> / <code>limit 1 yen</code> / <code>on failure retry 3 times</code> / <code>repeat ... until 〇〇 or 1 hour passed</code></li><li>until には回数か時間の上限が必須です。ないとエラーになります（無限ループを防ぐためです）。</li><li>action の <code>limit N seconds</code> と <code>on failure retry N times</code> は、動かすときに守られます。時間を過ぎたら失敗とし、失敗したら決めた回数だけやり直します。</li></ul>
 <h3 id="group-まとまり">group（まとまり）</h3>

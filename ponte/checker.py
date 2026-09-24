@@ -1155,7 +1155,7 @@ def check_types(spec: Spec, opt: Options) -> list[Finding]:
 
     for l in spec.decls("list"):                   # list の where の項目も
         t = list_thing(spec, l.name)
-        for w in l.children_of("where"):
+        for w in plain_where(l):
             f = w.text.split()[0] if w.text.split() else ""
             if f != "it" and t in fields and f not in fields[t]:
                 out.append(Finding("E32", w.line, f"list {l.name}: {t} に「{f}」という項目はありません（{', '.join(fields[t])}）"))
@@ -1171,7 +1171,7 @@ def check_types(spec: Spec, opt: Options) -> list[Finding]:
                         out.append(Finding("E32", c.line, f"stats: {t}.{m.group(1)} は{'ありません' if ty is None else f' {ty} で、足せません（数の項目だけ）'}"))
     for r in rules(spec).values():
         this = this_of[r.name]
-        for w in r.children_of("where"):
+        for w in plain_where(r):
             if not w.text.split():
                 out.append(Finding("E31", w.line, f"rule {r.name}: where の中身がありません（`where status is todo` のように書く）"))
                 continue
@@ -1295,7 +1295,7 @@ def _check_line_values(spec: Spec, ths_all: dict, all_fields: dict) -> list[Find
 
     for l in spec.decls("list"):
         t = list_thing(spec, l.name)
-        for w in l.children_of("where"):
+        for w in plain_where(l):
             where(t, w.text, w.line, f"list {l.name}")
         so = l.child("sort")
         if so is not None and so.text.split() and t in all_fields and so.text.split()[0] not in all_fields[t]:
@@ -1303,7 +1303,7 @@ def _check_line_values(spec: Spec, ths_all: dict, all_fields: dict) -> list[Find
             out.append(Finding("E32", so.line, f"list {l.name}: sort の「{f0}」という項目はありません（{', '.join(all_fields[t])}）{did_you_mean(f0, all_fields[t])}"))
     this_of = rule_this(spec)
     for r in rules(spec).values():
-        for w in r.children_of("where"):
+        for w in plain_where(r):
             if this_of.get(r.name):
                 where(this_of[r.name], w.text, w.line, f"rule {r.name}")
     for wd in spec.decls("who"):
@@ -1343,7 +1343,7 @@ def _check_line_values(spec: Spec, ths_all: dict, all_fields: dict) -> list[Find
                     out.append(Finding("E32", c.line, f"rule {r.name}: 期間が読めません: {m.group(1)} {m.group(2)}（days / hours / minutes / weeks）{did_you_mean(m.group(2), ['days', 'hours', 'minutes', 'weeks'])}"))
     # list の where の言葉（`iwthin` は黙って何も絞らない）
     for l in spec.decls("list"):
-        for w in l.children_of("where"):
+        for w in plain_where(l):
             m = re.match(r"^(\w+)\s+([a-z]+)\s+", w.text.strip())
             if m and w.text.strip() not in ("it is me", "it is not me") and m.group(2) not in ("is", "within"):
                 out.append(Finding("E28", w.line, f"list {l.name}: 「{m.group(2)}」は where の言葉ではありません（is / within）{did_you_mean(m.group(2), ['is', 'within'])}"))
@@ -1489,6 +1489,7 @@ SLOTS = ("top", "main", "side", "bottom", "over")
 CLAUSES = {"rule": ("why", "when", "where", "do", "example"),
            "list": ("of", "where", "sort"),
            "action": ("in", "out", "example", "never", "else", "by", "ask", "how", "do"),
+           "model": ("learn", "using", "require", "else", "how", "example"),
            "part": ("in", "do", "show", "mark"),
            "connect": ("gives", "needs", "does", "limit"),
            "look": ("title", "sub", "mark", "lead", "image", "button", "empty", "heading", "search", "group", "take", "sum")}
@@ -1575,7 +1576,7 @@ def check_line_forms(spec: Spec, opt: Options) -> list[Finding]:
         so = l.child("sort")
         if so is not None and not so.text.split():
             out.append(Finding("E28", so.line, f"list {l.name}: sort の後ろに項目がありません（`sort deadline`）"))
-        for w in l.children_of("where"):
+        for w in plain_where(l):
             m = re.match(r"^\w+ within (.+)$", w.text.strip())
             if m and not _DUR.match(m.group(1).strip()):
                 out.append(Finding("E32", w.line, f"list {l.name}: 期間が読めません: {m.group(1)}（`3 days` / `12 hours` のように書く）"))
@@ -1631,6 +1632,92 @@ def check_line_forms(spec: Spec, opt: Options) -> list[Finding]:
     return out
 
 
+
+# ---------------------------------------------------------------------------
+# model（仕様 5章 model）
+# ---------------------------------------------------------------------------
+
+PREDICT = re.compile(r"^predict\s+(\w+)\s+for\s+(it|this)\s+is\s+(\w+)$")
+
+
+def plain_where(node: Node) -> list[Node]:
+    """where のうち、predict でないもの（predict は check_model が確かめる）"""
+    return [w for w in node.children_of("where") if not w.text.strip().startswith("predict ")]
+
+
+def check_model(spec: Spec, opt: Options) -> list[Finding]:
+    from .model import NUMERIC, classes, decls, fields_of
+    out = []
+    ms = decls(spec)
+    ths = things(spec)
+    for d in ms.values():
+        for line, msg in d.problems:
+            out.append(Finding("E31", line, f"model {d.name}: {msg}"))
+        if not d.thing:
+            out.append(Finding("E28", d.line, f"model {d.name}: learn がありません（`learn will_leave from Customer` のように書く）"))
+            continue
+        if d.thing not in ths:
+            out.append(Finding("E28", d.line, f"model {d.name}: thing「{d.thing}」がありません{did_you_mean(d.thing, ths)}"))
+            continue
+        fs = fields_of(spec, d.thing)
+        f = fs.get(d.target)
+        if f is None:
+            out.append(Finding("E32", d.line, f"model {d.name}: {d.thing} に「{d.target}」という項目はありません（{', '.join(fs)}）"))
+        elif not f.states:
+            out.append(Finding("E32", d.line, f"model {d.name}: learn の {d.target} は状態の項目ではありません（当てられるのは `[yes | no]` のような状態だけ）"))
+        if not d.using:
+            out.append(Finding("E28", d.line, f"model {d.name}: using がありません（見てよい項目を `using visits, spend` のように書く）"))
+        for u in d.using:
+            g = fs.get(u)
+            if g is None:
+                out.append(Finding("E32", d.line, f"model {d.name}: using の「{u}」は {d.thing} の項目ではありません（{', '.join(fs)}）{did_you_mean(u, fs)}"))
+            elif u == d.target:
+                out.append(Finding("E32", d.line, f"model {d.name}: 当てる項目 {u} を using に入れることはできません"))
+            elif not g.states and g.type not in NUMERIC:
+                out.append(Finding("E32", d.line, f"model {d.name}: using の {u} は {g.type} です。使えるのは数の項目（{' / '.join(NUMERIC)}）か状態の項目です"))
+        if d.require is None and not any("require" in m for _, m in d.problems):
+            out.append(Finding("E28", d.line, f"model {d.name}: require がありません（合格の条件を `require accuracy at least 80%` のように書く）"))
+        cls = classes(spec, d)
+        if d.else_ is None:
+            out.append(Finding("E04", d.line, f"model {d.name}: else がありません（使えないときの動き: skip か use default 状態）"))
+        else:
+            m = re.fullmatch(r"use default (\w+)", d.else_)
+            if d.else_ != "skip" and not m:
+                out.append(Finding("E31", d.line, f"model {d.name}: else は skip か `use default 状態` です: '{d.else_}'"))
+            elif m and cls and m.group(1) not in cls:
+                out.append(Finding("E32", d.line, f"model {d.name}: use default の「{m.group(1)}」は {d.target} の状態ではありません（{' / '.join(cls)}）"))
+        for vals, want, line in d.examples:
+            for k in vals:
+                if k not in d.using:
+                    out.append(Finding("E32", line, f"model {d.name}: example の「{k}」は using にありません（{', '.join(d.using)}）"))
+            if cls and want not in cls:
+                out.append(Finding("E32", line, f"model {d.name}: example の答え「{want}」は {d.target} の状態ではありません（{' / '.join(cls)}）"))
+    # predict を使う所
+    for n in spec.walk():
+        if n.keyword != "where" or n.is_decl or not n.text.strip().startswith("predict "):
+            continue
+        m = PREDICT.match(n.text.strip())
+        if not m:
+            out.append(Finding("E31", n.line, f"predict は `predict 名前 for it is 状態`（list）か `for this`（rule）と書きます: '{n.text.strip()}'"))
+            continue
+        name, who_, state = m.groups()
+        d = ms.get(name)
+        if d is None:
+            out.append(Finding("E28", n.line, f"model「{name}」がありません{did_you_mean(name, ms)}"))
+            continue
+        owner = n.parent
+        if owner is not None and owner.keyword == "list":
+            if who_ != "it":
+                out.append(Finding("E31", n.line, f"list の where では `predict {name} for it is ...` と書きます"))
+            elif list_thing(spec, owner.name) != d.thing:
+                out.append(Finding("E32", n.line, f"model {name} は {d.thing} を当てます。list {owner.name} は {list_thing(spec, owner.name)} の一覧です"))
+        elif owner is not None and owner.keyword == "rule" and who_ != "this":
+            out.append(Finding("E31", n.line, f"rule の where では `predict {name} for this is ...` と書きます"))
+        cls = classes(spec, d)
+        if cls and state not in cls:
+            out.append(Finding("E32", n.line, f"model {name} が当てるのは {' / '.join(cls)} です。「{state}」はありません"))
+    return out
+
 ALL_CHECKS = [
     check_match_else, check_until_limit, check_examples, check_else, check_tbd,
     check_blocking, check_when_is_event, check_move_narrowed, check_flow_coverage,
@@ -1639,7 +1726,7 @@ ALL_CHECKS = [
     check_double_else, check_match_states, check_who, check_gone, check_change,
     check_ask_ai_limit, check_connect_fallback, check_scene_move, check_words,
     check_a11y, check_money, check_undefined, check_single_do, check_do_form, check_roles, check_types, check_notify_recipient,
-    check_line_forms,
+    check_line_forms, check_model,
 ]
 
 

@@ -63,6 +63,8 @@ def cases(spec: Spec) -> list[dict]:
                         "input": {param: _unquote(left.strip())}, "expect": right.strip()})
         for nv in a.children_of("never"):
             out.append({"kind": "never", "action": a.name, "line": nv.line, "never": nv.text.strip()})
+    for m in spec.decls("model"):                       # 使えるモデルの条件（仕様 5章 model）
+        out.append({"kind": "model", "model": m.name, "line": m.line})
     return out
 
 
@@ -112,6 +114,15 @@ def to_ir(spec: Spec) -> dict:
         path = body_path(spec, a)
         if path and os.path.exists(path):
             bodies[a.name] = open(path, encoding="utf-8").read()
+    from .model import decls as model_decls, load as load_model
+    models, trained = {}, {}
+    for d in model_decls(spec).values():
+        models[d.name] = {"line": d.line, "learn": d.target, "from": d.thing, "using": d.using, "require": d.require,
+                          "else": d.else_, "layers": d.layers, "epochs": d.epochs,
+                          "examples": [{"values": v, "expect": w} for v, w, _ in d.examples]}
+        t = load_model(spec, d.name)
+        if t is not None:
+            trained[d.name] = t
     matches = {m.text.strip(): {"line": m.line, "arms": [{"when": lefts, "then": right} for lefts, right, _ in match_arms(m)]}
                for m in spec.decls("match")}
     return {
@@ -120,7 +131,7 @@ def to_ir(spec: Spec) -> dict:
         "source": source,
         "things": things, "flows": flows, "who": who, "lists": lists, "rules": rules,
         "relate": [{"a": a, "kind": k, "b": b, "line": ln} for a, k, b, ln in relate_lines(spec)],
-        "actions": actions, "bodies": bodies, "matches": matches,
+        "actions": actions, "bodies": bodies, "models": models, "trained": trained, "matches": matches,
         "cases": cases(spec),
         "tree": [_tree(n) for n in spec.roots],
     }
@@ -157,16 +168,26 @@ def from_ir(ir: dict) -> Spec:
         block += ["  do"] + [("  " + l) if l.strip() else "" for l in do_lines]
         lines[start:end] = [l.rstrip() for l in block]
         extra += [""] + rest
-    return parse("\n".join(lines + extra) + "\n")
+    back = parse("\n".join(lines + extra) + "\n")
+    back.trained_models = dict(ir.get("trained", {}))    # model の学んだ結果も IR から持って来る
+    return back
 
 
-def run_case(spec: Spec, case: dict):
+def run_case(spec: Spec, case: dict, trained: dict | None = None):
     """Run one shared test case on the Python engine (the reference implementation). → examples.Result"""
     from .body import input_names, out_states_of, parse_expected, same
     from .examples import Result, run_steps
     from .fill import check_nevers, load_body
     if case["kind"] == "rule":
         return run_steps(spec, spec.find("rule", case["rule"]), case["steps"], case["line"])
+    if case["kind"] == "model":
+        from .model import decls as model_decls, verdict
+        d = model_decls(spec)[case["model"]]
+        t = (trained or {}).get(d.name)
+        if t is None:                        # 学んでいないモデルは ponte test と同じく飛ばす
+            return Result(d.name, case["line"], True, "skipped")
+        ok, why = verdict(spec, d, t)
+        return Result(d.name, case["line"], ok, "; ".join(why))
     a = spec.find("action", case["action"])
     body = load_body(spec, a)
     if body is None:                     # 中身がまだ無い action は ponte test と同じく飛ばす（失敗にはしない）

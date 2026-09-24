@@ -7,15 +7,15 @@
       confirm  learning_rate, batch_size, start_from_pretrained
       require  classes is 3
       require  clips_mismatch is 0
-      suspect  train_accuracy above 95
+      suspect  test_accuracy above 90
 
 `ponte job spec.ponte Anticipate` passes every `with` value as a command-line option
 (`--learning_rate 1.25e-4`; `yes` becomes a bare `--start_from_pretrained`, `no` is left out;
 a one-letter name becomes `-j 24`) and runs the program. The program reports facts with
 `ponte.report.report(...)`; they arrive through the file named by PONTE_REPORT.
 
-- confirm is checked while the program runs: the first mismatch stops it at once.
-- require and suspect are checked on the facts reported by the end. A fact that was never
+- confirm and suspect are checked while the program runs: the first mismatch or suspicious fact stops it at once.
+- require is checked on the facts reported by the end (suspect once more too). A fact that was never
   reported fails require (unreported is not confirmed).
 - Ponte knows nothing about what the program does. It only compares reported facts with the contract.
 """
@@ -144,6 +144,8 @@ def run(j: Job, base_dir: str, poll: float = 0.5, out=None) -> tuple[bool, list[
             time.sleep(poll)
             facts = _read_facts(report)
             early = [p for p in problems(j.settings, [n for n in j.confirm if n in facts], facts, j.raw)]
+            early += [f"suspect {n} {op} {want}（L{line}）: 実際は {facts[n]}。良すぎる／おかしい結果なので止めます。確かめてください"
+                      for n, op, want, line in j.suspect if n in facts and holds(facts[n], op, want)]
             if early:
                 proc.terminate()
                 try:

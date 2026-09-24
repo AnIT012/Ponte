@@ -29,12 +29,12 @@ optimizer = OPTIMIZER
 loader = Loader(a.batch_size)
 report(learning_rate=lr_of(optimizer), batch_size=batch_of(loader), start_from_pretrained=PRETRAINED)
 time.sleep(SLEEP)                                    # ここで何日も学習する
-report(classes=CLASSES, clips_mismatch=MISMATCH, train_accuracy=ACC)
+report(classes=CLASSES, clips_mismatch=MISMATCH, train_accuracy=ACC, test_accuracy=TEST)
 sys.exit(EXIT)
 '''
 
 GOOD = dict(OPTIMIZER="Adam([], lr=a.learning_rate, eps=1e-4)", PRETRAINED="a.start_from_pretrained",
-            SLEEP="0", CLASSES="3", MISMATCH="0", ACC="67.3", EXIT="0")
+            SLEEP="0", CLASSES="3", MISMATCH="0", ACC="67.3", TEST="52.0", EXIT="0")
 
 SPEC = """job Anticipate
   run      {py} train.py
@@ -42,7 +42,7 @@ SPEC = """job Anticipate
   confirm  learning_rate, batch_size, start_from_pretrained
   require  classes is 3
   require  clips_mismatch is 0
-  suspect  train_accuracy above 95
+  suspect  test_accuracy above 90
 """
 
 
@@ -86,7 +86,7 @@ def test_dropped_learning_rate_stops_the_run_early(tmp_path):
     (dict(PRETRAINED="False"), "confirm start_from_pretrained"),        # ⑤ 事前学習が読まれていない
     (dict(CLASSES="1"), "require classes"),                              # ① 1クラスしかない
     (dict(MISMATCH="5"), "require clips_mismatch"),                      # ③⑧ clips と labels のズレ
-    (dict(ACC="99.9"), "suspect train_accuracy"),                        # ① 良すぎる数字
+    (dict(TEST="100.0"), "suspect test_accuracy"),                       # ① 良すぎる数字（論文は 64%）
     (dict(EXIT="1"), "終了コード 1"),
 ])
 def test_silent_breakage_is_stopped(tmp_path, over, needle):
@@ -113,3 +113,20 @@ def test_with_and_confirm_can_span_lines():
     src = "job J\n  run      python t.py\n  with     a 1, b 2\n  with     c yes\n  confirm  a\n  confirm  c\n"
     j = read(parse(src).find("job", "J"))
     assert j.settings == {"a": 1, "b": 2, "c": True} and j.confirm == ["a", "c"] and codes(src) == []
+
+
+def test_high_train_accuracy_is_normal_not_suspicious(tmp_path):
+    ok, why, _ = go(tmp_path, ACC="99.9")                   # 過学習はバグではない
+    assert ok, why
+
+
+def test_suspicious_score_stops_the_run_early(tmp_path):
+    """epoch 0 で test が 100%。残りの学習を待たずに止める"""
+    (tmp_path / "t.py").write_text(
+        f"import sys, time\nsys.path.insert(0, {ROOT!r})\nfrom ponte.report import report\n"
+        "report(test_accuracy=100.0)\ntime.sleep(30)\n", encoding="utf-8")
+    j = read(parse(f"job J\n  run      {sys.executable} t.py\n  suspect  test_accuracy above 90\n").find("job", "J"))
+    t = time.time()
+    ok, why, _ = run(j, str(tmp_path), poll=0.05)
+    assert not ok and "suspect test_accuracy" in why[0] and "途中で止めました" in why[0]
+    assert time.time() - t < 15

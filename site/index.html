@@ -303,9 +303,9 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px dashed va
 
 <span class="guard">tbd</span>  発送した後でも、キャンセルできる？</pre>
     <pre class="term"><span class="prompt">$</span> ponte check order.ponte
-止まります（1件）
-  order.ponte:12  <span class="ecode">E05</span>  tbd が残っています: 「発送した後でも、キャンセルできる？」。決めてから動かしてください
-  （直し方: ponte explain <span class="ecode">E05</span>）</pre>
+Stopped: 1 error(s)
+  order.ponte:12  <span class="ecode">E05</span>  tbd remains: &quot;発送した後でも、キャンセルできる？&quot;. Decide it before running
+  (how to fix: ponte explain <span class="ecode">E05</span>)</pre>
   </article>
 
   <article class="feat sticker" data-reveal>
@@ -319,9 +319,9 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px dashed va
 <span class="head">flow</span> <span class="name">Task</span>.status
   <span class="val">todo</span> <span class="op">-&gt;</span> <span class="val">done</span></pre>
     <pre class="term"><span class="prompt">$</span> ponte check nowho.ponte
-止まります（1件）
-  nowho.ponte:1  <span class="ecode">E19</span>  thing Task: 誰が何をできるか（who）が1行もありません。書いてないことは誰もできません
-  （直し方: ponte explain <span class="ecode">E19</span>）</pre>
+Stopped: 1 error(s)
+  nowho.ponte:1  <span class="ecode">E19</span>  thing Task: no who lines saying who can do what. Nobody can do anything that is not written
+  (how to fix: ponte explain <span class="ecode">E19</span>)</pre>
   </article>
 
   <article class="feat sticker" data-reveal>
@@ -340,10 +340,10 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px dashed va
       <span class="val">60</span>.. <span class="op">-&gt;</span> <span class="val">pass</span>
       <span class="guard">else</span> <span class="op">-&gt;</span> <span class="val">fail</span></pre>
     <pre class="term"><span class="prompt">$</span> ponte test grade.ponte
-  通過  action Grade（L4）
-  通過  action Grade（L5）
-  通過  action Grade（L6）
-example 3件中 3件通過</pre>
+  pass  action Grade (L4)
+  pass  action Grade (L5)
+  pass  action Grade (L6)
+3 examples, 3 passed</pre>
   </article>
 
   <article class="feat sticker" data-reveal>
@@ -351,12 +351,12 @@ example 3件中 3件通過</pre>
     <h2>例がそのままテストになる</h2>
     <p>ルールの下に書いた <code>example</code> が、そのままテストになります。<code>ponte test</code> は例が通るかを確かめたうえで、まだどの例でも確かめていない部分を一覧にします。example は書かなくても動きます。</p>
     <pre class="term"><span class="prompt">$</span> ponte test spec/hub_ready.ponte
-  通過  rule Remind（L57）
-  通過  rule MarkSubmitted（L68）
-example 2件中 2件通過
-穴（example で確かめていない所 2件）
-  spec/hub_ready.ponte:12  flow Application.status: submitted -&gt; passed をどの example も通っていません
-  spec/hub_ready.ponte:12  flow Application.status: submitted -&gt; failed をどの example も通っていません</pre>
+  pass  rule Remind (L57)
+  pass  rule MarkSubmitted (L68)
+2 examples, 2 passed
+Untested parts (not covered by any example: 2)
+  spec/hub_ready.ponte:12  flow Application.status: no example covers submitted -&gt; passed
+  spec/hub_ready.ponte:12  flow Application.status: no example covers submitted -&gt; failed</pre>
   </article>
 </section>
 

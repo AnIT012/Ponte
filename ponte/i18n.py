@@ -10,7 +10,7 @@ each Japanese message is translated on its way out, using the catalog in `i18n_e
 `tests/test_i18n.py` extracts every Japanese string from the source and fails if one has no entry,
 so a new message cannot be added without its English version.
 
-Which language: `--lang` → `PONTE_LANG` → the system locale (`LANG` / `LC_ALL` starting with `ja` → Japanese) → English.
+Which language: `--lang` → `PONTE_LANG` → English. Errors are English unless Japanese is asked for.
 """
 from __future__ import annotations
 
@@ -34,10 +34,7 @@ def lang() -> str:
     if _lang:
         return _lang
     env = os.environ.get("PONTE_LANG", "").lower()
-    if env in ("ja", "en"):
-        return env
-    loc = (os.environ.get("LC_ALL") or os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or "").lower()
-    return "ja" if loc.startswith("ja") else "en"
+    return env if env in ("ja", "en") else "en"
 
 
 @lru_cache(maxsize=1)

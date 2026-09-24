@@ -13,8 +13,18 @@ def code(i):
     return BLOCKS[i]
 
 
+def en(text):
+    """入門に載せた出力は英語（ponte の標準の出力）"""
+    from ponte import i18n
+    i18n.set_lang("en")
+    try:
+        return i18n.tr(text)
+    finally:
+        i18n.set_lang(None)
+
+
 def findings(src):
-    return [f"todo.ponte:{f.line}  {f.code}  {f.message}" for f in check(parse(src)) if f.is_error]
+    return [en(f"todo.ponte:{f.line}  {f.code}  {f.message}") for f in check(parse(src)) if f.is_error]
 
 
 def test_tutorial_outputs_are_real():
@@ -28,7 +38,7 @@ def test_tutorial_outputs_are_real():
     assert findings(fixed) == []
     s = parse(fixed)
     for h in holes(s, run_examples(s)):
-        assert f"todo.ponte:{h.line}  {h.message}" in DOC, h.message
+        assert en(f"todo.ponte:{h.line}  {h.message}") in DOC, h.message
     step5 = fixed + "\n" + [b for b in BLOCKS if "due within 1 days" in b and "rule Remind" in b][0]
     for line in findings(step5):
         assert line in DOC, line

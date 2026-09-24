@@ -150,7 +150,7 @@ def terminal(args: str, cwd: Path) -> str:
     import subprocess
     from md import code_block
     r = subprocess.run([sys.executable, "-m", "ponte", *args.split()], cwd=cwd, capture_output=True, text=True,
-                       env={**__import__("os").environ, "PYTHONPATH": str(ROOT), "PONTE_LANG": "ja"})
+                       env={**__import__("os").environ, "PYTHONPATH": str(ROOT), "PONTE_LANG": "en"})
     out = (r.stdout + r.stderr).rstrip("\n")
     return code_block(f"$ ponte {args}\n{out}", "", frozenset())
 
@@ -338,6 +338,8 @@ from ponte.checker import check
 from ponte.errors import BY_CODE
 from ponte.examples import run_examples, holes
 from highlight import highlight
+from ponte.i18n import set_lang, tr
+set_lang("en")                       # エラーは英語（手元の ponte と同じ）
 
 def _spec(src):
     return parse_file("/play/main.ponte", text=src)
@@ -346,23 +348,23 @@ def run_check(src):
     try:
         spec = _spec(src)
     except ParseError as e:
-        return json.dumps({"findings": [["読めません", e.line, e.message, True, "字下げ（2つずつ）と、行の書き方を確かめてください"]]})
+        return json.dumps({"findings": [["E00", e.line, tr(e.message), True, "Check the indentation (2 spaces per level) and how the line is written."]]})
     out = []
     for f in check(spec):
         e = BY_CODE.get(f.code)
-        out.append([f.code, f.line, f.message, f.is_error, e[3] if e else None])
+        out.append([f.code, f.line, tr(f.message), f.is_error, tr(e[3]) if e else None])
     return json.dumps({"findings": out})
 
 def run_test(src):
     try:
         spec = _spec(src)
     except ParseError as e:
-        return json.dumps({"error": f"L{e.line}: {e.message}"})
+        return json.dumps({"error": f"L{e.line}: {tr(e.message)}"})
     if any(f.is_error for f in check(spec)):
-        return json.dumps({"error": "先に check のエラーを直してください"})
+        return json.dumps({"error": "Fix the check errors first"})
     res = run_examples(spec)
-    return json.dumps({"results": [[r.rule, r.line, r.ok, r.message] for r in res],
-                       "holes": [[h.line, h.message] for h in holes(spec, res)]})
+    return json.dumps({"results": [[r.rule, r.line, r.ok, tr(r.message)] for r in res],
+                       "holes": [[h.line, tr(h.message)] for h in holes(spec, res)]})
 
 def run_highlight(src):
     return highlight(src)

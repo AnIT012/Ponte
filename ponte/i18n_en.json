@@ -471,7 +471,7 @@
  "内容を決めて tbd を消します。決められない場合は、その部分を使わない形に書き換えます。": "Decide the content and remove tbd. If you cannot decide, rewrite it so that part is not used.",
  "内容を確かめてから、`##` を消すか `#`（通常のコメント）に変えます。": "Check the content, then remove `##` or change it to `#` (a normal comment).",
  "円とドルをそのまま足すと、意味のない数になるためです。": "Adding yen and dollars as-is gives a meaningless number.",
- "出力の言語（省略時は PONTE_LANG、なければシステムの言語）": "Output language (default: PONTE_LANG, otherwise the system language)",
+ "出力の言語（省略時は PONTE_LANG、なければ英語）": "Output language (default: PONTE_LANG, otherwise English)",
  "分かれ道は `名前[a | b] = match 式` と、その下の枝 `値 -> 結果` で書きます": "Branch with `name[a | b] = match expression` and arms `value -> result` below it",
  "別の shape の利用（その shape で付けた名前も取り出せる）": "Use another shape (the names it defines can be extracted too)",
  "別のファイルか標準ライブラリの読み込み": "Import of another file or the standard library",

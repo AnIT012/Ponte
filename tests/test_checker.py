@@ -42,7 +42,7 @@ def test_every_error_code_has_a_case():
     codes = {c.name.split("_", 1)[0] for c in CASES}
     expected = {f"E{i:02d}" for i in range(1, 33) if i != 9} | {"W09", "W26"}
     assert expected <= codes, sorted(expected - codes)
-    assert len(ALL_CHECKS) == 34
+    assert len(ALL_CHECKS) == 35
 
 
 def test_spec_appendix():

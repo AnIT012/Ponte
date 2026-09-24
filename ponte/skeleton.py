@@ -12,6 +12,7 @@ REQUIRED: dict[str, list[str]] = {
     "action": ["in", "out", "example", "example", "else"],
     "list": ["of"],
     "match": ["else ->"],
+    "model": ["learn", "using", "require", "else"],
 }
 
 

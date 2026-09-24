@@ -193,12 +193,29 @@ def run_action_examples(spec: Spec) -> list[Result]:
     return out
 
 
+def run_model_checks(spec: Spec) -> list[Result]:
+    """学んだ結果がある model が、使えるモデルの条件（仕様 5章 model）を満たすか。学んでいないものは穴に出す"""
+    from .model import decls, load, verdict
+    out = []
+    for d in decls(spec).values():
+        try:
+            t = load(spec, d.name)
+        except (OSError, ValueError) as e:
+            out.append(Result(d.name, d.line, False, f"model {d.name}: 学んだ結果が読めません: {e}"))
+            continue
+        if t is None:
+            continue
+        ok, why = verdict(spec, d, t)
+        out.append(Result(d.name, d.line, ok, "; ".join(why)))
+    return out
+
+
 def run_examples(spec: Spec) -> list[Result]:
     out = run_action_examples(spec)
     for r in spec.decls("rule"):
         for ex in r.children_of("example"):
             out.append(run_example(spec, r, ex))
-    return out
+    return out + run_model_checks(spec)
 
 
 @dataclass
@@ -228,6 +245,12 @@ def holes(spec: Spec, results: list[Result]) -> list[Hole]:
         if len(dos) == 1 and dos[0] in tested_actions:      # 中身は action の example で確かめている
             continue
         out.append(Hole(r.line, f"rule {r.name}: when があるのに example がありません"))
+    from .model import path_of
+    import os
+    from .model import load as load_model
+    for m in spec.decls("model"):
+        if load_model(spec, m.name) is None:
+            out.append(Hole(m.line, f"model {m.name}: まだ学習していません（ponte train）"))
     for f in spec.decls("flow"):
         if "." not in f.name:
             continue

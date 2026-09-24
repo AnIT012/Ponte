@@ -156,7 +156,7 @@ def cmd_test(args) -> int:
                          ensure_ascii=False, indent=2))
         return 1 if bad or (hs and args.strict) else 0
     for r in results:
-        kind = "action" if r.rule in {a.name for a in spec.decls("action")} else "rule"
+        kind = "action" if r.rule in {a.name for a in spec.decls("action")} else ("model" if r.rule in {m.name for m in spec.decls("model")} else "rule")
         path, line = spec.where(r.line)
         at = f"L{line}" if path == spec.path else f"{os.path.relpath(path)}:{line}"
         print(f"  {'通過' if r.ok else '失敗'}  {kind} {r.rule}（{at}）{'' if r.ok else ': ' + r.message}")
@@ -563,13 +563,52 @@ def cmd_conform(args) -> int:
     with open(args.ir, encoding="utf-8") as f:
         ir = json.load(f)
     spec = from_ir(ir)
-    results = [(c, run_case(spec, c)) for c in ir["cases"]]
+    results = [(c, run_case(spec, c, ir.get("trained"))) for c in ir["cases"]]
     for c, r in results:
-        name = c.get("rule") or c.get("action")
+        name = c.get("rule") or c.get("action") or c.get("model")
         mark = "飛ばす" if r.message == "skipped" else ("通過" if r.ok else "失敗")
         print(f"  {mark}  {c['kind']} {name}（L{c['line']}）" + (f": {r.message}" if not r.ok else ""))
     bad = sum(not r.ok for _, r in results)
     print(f"共通テスト {len(results)}件中 {len(results) - bad}件通過")
+    return 1 if bad else 0
+
+
+def cmd_train(args) -> int:
+    """model を、アプリに保存したレコード（か CSV）から学ぶ"""
+    from .model import decls, save, train, verdict
+    from .runtime import Engine
+    spec = _load_checked(args.spec)
+    if spec is None:
+        return 1
+    ms = decls(spec)
+    if args.model:
+        ms = {k: v for k, v in ms.items() if k == args.model}
+    if not ms:
+        print("model がありません")
+        return 1
+    if args.csv:
+        import csv
+        with open(args.csv, encoding="utf-8-sig", newline="") as f:
+            rows_csv = list(csv.DictReader(f))
+    else:
+        store = args.data or (data_base(args.spec) + ".data.jsonl")
+        eng = Engine(spec, store=store)
+    bad = 0
+    for d in ms.values():
+        rows = rows_csv if args.csv else [b.values for b in eng.all(d.thing)]
+        try:
+            t = train(spec, d, rows)
+        except ValueError as e:
+            print(str(e))
+            bad += 1
+            continue
+        path = save(spec, t)
+        ok, why = verdict(spec, d, t)
+        print(f"model {d.name}: {t['records']}件から学びました。取り置いた {t['held_back']}件での正解率 {t['accuracy']:.0%}（require {d.require:.0%}）→ {path}")
+        for w in why:
+            print(f"  {w}")
+        print("  使えます" if ok else f"  使えません（else: {d.else_}）")
+        bad += not ok
     return 1 if bad else 0
 
 def _msgs(obj):
@@ -668,6 +707,12 @@ def build_parser() -> argparse.ArgumentParser:
     ir.add_argument("-o", help="書き出すファイル（省略時は画面に出す）")
     ir.add_argument("--cases", action="store_true", help="共通テスト（example）だけを出す")
     ir.set_defaults(fn=cmd_ir)
+    tr_ = sub.add_parser("train", help="model を、保存したレコード（か --csv）から学ぶ")
+    tr_.add_argument("spec")
+    tr_.add_argument("--model", help="この model だけ学ぶ")
+    tr_.add_argument("--data", help="レコードのファイル（省略時はアプリのデータ）")
+    tr_.add_argument("--csv", help="CSV から学ぶ（1行目は項目の名前）")
+    tr_.set_defaults(fn=cmd_train)
     co = sub.add_parser("conform", help="IR の共通テストを、基準の実装（Python）で流す")
     co.add_argument("ir")
     co.set_defaults(fn=cmd_conform)
@@ -683,7 +728,7 @@ def main(argv: list[str] | None = None) -> int:
     return args.fn(args)
 
 
-TRANSLATED = {"check", "test", "explain", "conform", "guide", "new", "user", "role", "fill", "build", "run", "lint"}
+TRANSLATED = {"check", "test", "explain", "conform", "train", "guide", "new", "user", "role", "fill", "build", "run", "lint"}
 
 
 if __name__ == "__main__":

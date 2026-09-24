@@ -103,10 +103,13 @@ $("pick").addEventListener("change", e => { src.value = SAMPLES[e.target.value];
 testBtn.addEventListener("click", () => {
   const r = JSON.parse(py.globals.get("run_test")(src.value));
   if (r.error) { out.innerHTML = `<p class="bad">${esc(r.error)}</p>`; return; }
-  const ok = r.results.filter(x => x[2]).length;
-  out.innerHTML = `<p class="${ok === r.results.length ? "ok" : "bad"}">example ${r.results.length}件中 ${ok}件通過</p>` +
+  const ok = r.results.filter(x => x[2]).length, n = r.results.length;
+  const head = n === 0
+    ? `<p class="info-h">example はまだありません。</p><p class="info">example は書かなくてもアプリは動きます。書くと、それがそのままテストになります。</p>`
+    : `<p class="${ok === n ? "ok" : "bad"}">example ${n}件中 ${ok}件通過</p>`;
+  out.innerHTML = head +
     r.results.map(x => `<button type="button" class="finding ${x[2] ? "pass" : "err"}" data-line="${x[1]}"><span class="where">${x[2] ? "通過" : "失敗"} ・ ${esc(x[0])}</span>${x[3] ? `<span class="msg">${esc(x[3])}</span>` : ""}</button>`).join("") +
-    (r.holes.length ? `<p class="holes">確かめていない部分（${r.holes.length}件）</p>` + r.holes.map(h => `<button type="button" class="finding warn" data-line="${h[0]}"><span class="where">${h[0]}行目</span><span class="msg">${esc(h[1])}</span></button>`).join("") : "");
+    (r.holes.length ? `<p class="holes">まだ example で確かめていない部分（${r.holes.length}件）</p><p class="info">エラーではありません。ここに example を足すと、この部分も確かめられます。</p>` + r.holes.map(h => `<button type="button" class="finding info-row" data-line="${h[0]}"><span class="where">${h[0]}行目</span><span class="msg">${esc(h[1])}</span></button>`).join("") : "");
 });
 $("share").addEventListener("click", async () => {
   const url = location.href.split("#")[0] + "#code=" + b64(src.value);

@@ -536,6 +536,42 @@ def cmd_explain(args) -> int:
 
 
 
+
+def cmd_ir(args) -> int:
+    from .i18n import tr                            # IR はデータなので出力全体は訳さない。知らせだけ訳す
+    from .ir import NotChecked, cases, to_ir
+    try:
+        spec = parse_file(args.spec)
+        ir = to_ir(spec)
+    except (ParseError, FileNotFoundError, NotChecked) as e:
+        print(tr(f"IR を作れません（先に check を通してください）: {e}"), file=sys.stderr)
+        return 1
+    data = cases(spec) if args.cases else ir
+    text = json.dumps(data, ensure_ascii=False, indent=1)
+    if args.o:
+        with open(args.o, "w", encoding="utf-8") as f:
+            f.write(text + "\n")
+        print(tr(f"書きました: {args.o}（共通テスト {len(ir['cases'])}件）"), file=sys.stderr)
+    else:
+        print(text)
+    return 0
+
+
+def cmd_conform(args) -> int:
+    """IR の共通テストを、基準の実装（Python の実行エンジン）で流す"""
+    from .ir import from_ir, run_case
+    with open(args.ir, encoding="utf-8") as f:
+        ir = json.load(f)
+    spec = from_ir(ir)
+    results = [(c, run_case(spec, c)) for c in ir["cases"]]
+    for c, r in results:
+        name = c.get("rule") or c.get("action")
+        mark = "飛ばす" if r.message == "skipped" else ("通過" if r.ok else "失敗")
+        print(f"  {mark}  {c['kind']} {name}（L{c['line']}）" + (f": {r.message}" if not r.ok else ""))
+    bad = sum(not r.ok for _, r in results)
+    print(f"共通テスト {len(results)}件中 {len(results) - bad}件通過")
+    return 1 if bad else 0
+
 def _msgs(obj):
     """JSON に出す前に、メッセージだけを出力の言語にする（JSON の形は崩さない）"""
     from .i18n import tr
@@ -627,6 +663,14 @@ def build_parser() -> argparse.ArgumentParser:
     ex = sub.add_parser("explain", help="エラーの意味と直し方（例: explain E32。無しなら一覧）")
     ex.add_argument("code", nargs="?")
     ex.set_defaults(fn=cmd_explain)
+    ir = sub.add_parser("ir", help="check を通った仕様を、下の層の言語に渡す中間の形（JSON）にする")
+    ir.add_argument("spec")
+    ir.add_argument("-o", help="書き出すファイル（省略時は画面に出す）")
+    ir.add_argument("--cases", action="store_true", help="共通テスト（example）だけを出す")
+    ir.set_defaults(fn=cmd_ir)
+    co = sub.add_parser("conform", help="IR の共通テストを、基準の実装（Python）で流す")
+    co.add_argument("ir")
+    co.set_defaults(fn=cmd_conform)
     return p
 
 
@@ -639,7 +683,7 @@ def main(argv: list[str] | None = None) -> int:
     return args.fn(args)
 
 
-TRANSLATED = {"check", "test", "explain", "guide", "new", "user", "role", "fill", "build", "run", "lint"}
+TRANSLATED = {"check", "test", "explain", "conform", "guide", "new", "user", "role", "fill", "build", "run", "lint"}
 
 
 if __name__ == "__main__":

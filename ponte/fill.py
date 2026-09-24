@@ -318,6 +318,19 @@ def fill_action(spec: Spec, action: Node, ai, tries: int = 5, label: str = "") -
     return res
 
 
+def body_path(spec: Spec, action: Node) -> str | None:
+    """by code "x.ponte" / by ai の中身が置かれるファイル。by が無い（その場の do）か、ほかの by なら None。"""
+    by = action.child("by")
+    if by is None:
+        return None
+    m = re.match(r'^code\s+"([^"]+)"$', by.text.strip())
+    if m:
+        return os.path.join(os.path.dirname(spec.where(action.line)[0]), m.group(1))   # use で読んだ action は、そのファイルから
+    if by.text.strip() == "ai":
+        return os.path.join(ai_dir(spec), f"{action.name}.ponte")
+    return None
+
+
 def load_body(spec: Spec, action: Node):
     """by が無く do がある → その do。by ai → <spec>.ai/<名前>.ponte、by code "x.ponte" → spec と同じ場所の x.ponte。無ければ None。"""
     by = action.child("by")
@@ -326,14 +339,8 @@ def load_body(spec: Spec, action: Node):
         if do is None:
             return None
         return body_of(action, do, {s.name: s for s in spec.decls("shape")})
-    m = re.match(r'^code\s+"([^"]+)"$', by.text.strip())
-    if m:
-        path = os.path.join(os.path.dirname(spec.where(action.line)[0]), m.group(1))   # use で読んだ action は、そのファイルから
-    elif by.text.strip() == "ai":
-        path = os.path.join(ai_dir(spec), f"{action.name}.ponte")
-    else:
-        return None
-    if not os.path.exists(path):
+    path = body_path(spec, action)
+    if path is None or not os.path.exists(path):
         return None
     code = open(path, encoding="utf-8").read()
     mini = parse(combine(action_source(spec, action), code))

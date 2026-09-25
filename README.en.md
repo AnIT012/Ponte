@@ -134,3 +134,7 @@ Full specification (Japanese): [docs/言語仕様_v0.3.md](docs/言語仕様_v0.
 - The toolset for AI-written bodies is deliberately small (no loops, no regex — `shape` instead).
 - Notifications stay inside the app; sending real e-mail or chat messages (`connect … does`) is only a declared shape so far.
 - Single machine, single append-only data file. Not meant for large multi-server services.
+
+## License
+
+[MIT](LICENSE)

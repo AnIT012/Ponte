@@ -2,6 +2,9 @@
 
 <img src="docs/logo/ponte.svg" alt="Ponte" width="96">
 
+**[Website](https://anit012.github.io/Ponte/)** · **[Try it in the browser](https://anit012.github.io/Ponte/play.html)** · [Write from scratch](https://anit012.github.io/Ponte/write.html) · [日本語](README.md)
+
+
 > *Ponte* is Italian for "bridge": between people and machines, and between people and AI.
 
 **People decide. The language guards.**
@@ -14,6 +17,46 @@ Ponte is a language for the top layer of a program. You write *what you want, wh
 
 Today it runs on the Python 3.11 standard library only, with no dependencies. JavaScript / TypeScript, Go and Java are being prepared as layers you can choose underneath.
 Errors and output are in English by default; use `--lang ja` or `PONTE_LANG=ja` for Japanese. The longer documents are still Japanese only.
+
+## Why
+
+- Hand development to an AI and it fills whatever you did not decide with guesses; you find and fix them later, again and again.
+- Plain-language instructions stay ambiguous; code is readable only to some.
+- In research, a learning rate that was passed on was silently dropped inside a library, and two days of experiments were void. No error ever appeared.
+
+The problem was not how things are written, but that there was no way to check that what was decided was really kept. Ponte is for writing what you decided and having the language check it is kept.
+
+## Decided / left out
+
+| | Decision | Why |
+|---|---|---|
+| decided | Nothing runs while something is undecided (`tbd`) | so nothing gets filled in by guessing |
+| decided | An operation not granted in `who` is impossible | a forgotten permission shows up before running |
+| decided | Examples are the tests (`example`) | decisions stay checkable |
+| decided | The lower layer reports the values it actually used; `confirm` compares them | a value that was silently dropped stops the run |
+| left out | A GUI | stay a written language; typing a heading only fills in the names of its required parts |
+| left out | Depending on AI | how AI is used keeps changing; Ponte works without it, and with it the same spec is the instruction |
+| left out | Research-only features | the research incidents have the same shape in apps and APIs, so they became a general part of the core |
+
+## Example: did the value really take effect below?
+
+```
+job Train
+  run      uv run python train.py
+  with     learning_rate 1.25e-4, batch_size 32
+  confirm  learning_rate, batch_size
+  require  test_accuracy at least 52
+  suspect  test_accuracy above 75
+```
+
+```
+$ ponte job train.ponte Train
+job Train: running
+  confirm learning_rate: declared 1.25e-4, but 0.001 was actually used (stopped the run)
+job Train: contract broken (1 problem(s))
+```
+
+The design and the decisions are the author's; the implementation was done with AI coding tools.
 
 ## 30 seconds
 
@@ -60,8 +103,8 @@ $ python -m ponte check todo.ponte
 ## Getting started
 
 ```
-git clone https://github.com/AnIT012/nameless-lang
-cd nameless-lang
+git clone https://github.com/AnIT012/Ponte
+cd Ponte
 python -m ponte run spec/todo.ponte          # → http://127.0.0.1:8000/
 ```
 

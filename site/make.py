@@ -24,7 +24,7 @@ sys.path.insert(0, str(ROOT))
 from highlight import highlight, states_in  # noqa: E402
 from md import inline, render  # noqa: E402
 
-REPO = "https://github.com/AnIT012/nameless-lang"
+REPO = "https://github.com/AnIT012/Ponte"
 DOC = REPO + "/blob/main/docs/"
 BLOB = REPO + "/blob/main/"
 

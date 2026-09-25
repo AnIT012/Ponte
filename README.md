@@ -2,7 +2,7 @@
 
 <img src="docs/logo/ponte.svg" alt="Ponte" width="96">
 
-**[サイト](https://anit012.github.io/nameless-lang/)** ・ **[ブラウザで試す](https://anit012.github.io/nameless-lang/play.html)** ・ [白紙から書く](https://anit012.github.io/nameless-lang/write.html) ・ [English](README.en.md)
+**[サイト](https://anit012.github.io/Ponte/)** ・ **[ブラウザで試す](https://anit012.github.io/Ponte/play.html)** ・ [白紙から書く](https://anit012.github.io/Ponte/write.html) ・ [English](README.en.md)
 
 > Ponte はイタリア語で「橋」という意味です。人と機械のあいだ、人と AI のあいだにかける橋という意味を込めています。
 
@@ -131,8 +131,8 @@ Ponte の側は、1回目で間違えても言語がエラーを返すため、A
 ## はじめる
 
 ```
-git clone https://github.com/AnIT012/nameless-lang
-cd nameless-lang
+git clone https://github.com/AnIT012/Ponte
+cd Ponte
 python -m ponte run spec/todo.ponte        # → http://127.0.0.1:8000/
 
 pip install -e .                           # 入れると `ponte run spec/todo.ponte` だけで動く（依存は増えない）

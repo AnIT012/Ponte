@@ -2,7 +2,7 @@
 
 <img src="docs/logo/ponte.svg" alt="Ponte" width="96">
 
-[English](README.en.md)
+**[サイト](https://anit012.github.io/nameless-lang/)** ・ **[ブラウザで試す](https://anit012.github.io/nameless-lang/play.html)** ・ [白紙から書く](https://anit012.github.io/nameless-lang/write.html) ・ [English](README.en.md)
 
 > Ponte はイタリア語で「橋」という意味です。人と機械のあいだ、人と AI のあいだにかける橋という意味を込めています。
 
@@ -20,11 +20,56 @@ Python や Java のような今までの言語は、Ponte の下で動く層に�
 いまは Python 3.11 の標準機能だけで動きます（ライブラリは必要ありません）。JavaScript / TypeScript、Go、Java を下の層として選べるようにする準備を進めています。
 エラーや出力は英語で出ます。日本語にしたいときは `--lang ja` を付けるか、`PONTE_LANG=ja` にします。
 
+## なぜ作ったか
+
+- AI に開発を任せると、人が決めていない部分を AI が推測で埋めてしまいます。後から見つけて直す手間が、何度も発生していました。
+- 自然言語の指示には曖昧さが残り、コードは読み書きできる人が限られます。
+- 研究では、渡したはずの学習率がライブラリの中で黙って捨てられ、2日分の実験が無効になりました。エラーは一度も出ませんでした。
+
+問題は書き方ではなく、「決めたことが本当に守られたかを確かめる手段がない」ことでした。
+Ponte は、決めたことを書き、それが守られたかを言語が確かめるためのものです。
+
+## 設計で決めたこと、作らなかったこと
+
+| | 判断 | 理由 |
+|---|---|---|
+| 決めた | 決めていないことが残っていれば動かさない（`tbd`） | 推測で埋められるのを防ぐため |
+| 決めた | 書いていない操作は誰にもできない（`who`） | 権限の書き忘れを、動かす前に見つけるため |
+| 決めた | 例がそのままテストになる（`example`） | 決めたことを、確かめられる形で残すため |
+| 決めた | 下の層が実際に使った値を報告させ、宣言と照合する（`confirm`） | 渡したつもりの値が黙って捨てられる事故を止めるため |
+| 作らなかった | GUI（ボタンやフォームで組み立てる形） | 書く言語のまま、覚えることを減らすため。見出しを書くと必須の部品の名前だけが入る形にとどめた |
+| 作らなかった | AI を前提にした作り | AI の使い方は変わっていくため。AI なしで完結し、使うときは同じ仕様が AI への指示になる |
+| 作らなかった | 研究専用の機能 | 研究で見つけた事故は、アプリや外部 API でも起きる同じ形だったため。言語の中核として一般の仕組みにした |
+
+設計の判断の細かい記録は [docs/DECISIONS.md](docs/DECISIONS.md) にあります。実装は AI コーディングツールで行い、設計と判断は作者が行っています。
+
+## 例: 渡した値が、下で本当に効いたか
+
+学習スクリプトに `lr=` を書き忘れた、実際にあった事故を再現したものです。
+
+```
+job Train
+  run      uv run python train.py
+  with     learning_rate 1.25e-4, batch_size 32
+  confirm  learning_rate, batch_size             # 実際に使われた値と照合する
+  require  test_accuracy at least 52             # 結果の条件
+  suspect  test_accuracy above 75                # 良すぎる数字は止める
+```
+
+```
+$ ponte job train.ponte Train
+job Train: running
+  confirm learning_rate: declared 1.25e-4, but 0.001 was actually used (stopped the run)
+job Train: contract broken (1 problem(s))
+```
+
+学習を待たずに、その場で止まります。`train.py` の側は `report(learning_rate=lr_of(optimizer))` の1行で、optimizer が本当に持っている値を報告します。
+
+## アプリの例
+
+1つのファイルが、ログイン付きの Web アプリとしてそのまま動きます。
+
 ![備品かしだし](docs/screenshots/lend_home.png)
-
----
-
-## 30秒で
 
 ```
 thing Item
@@ -138,7 +183,10 @@ pip install -e .                           # 入れると `ponte run spec/todo.p
 | `list` | 条件で絞った一覧 |
 | `rule` | きっかけと、そのときにすること（1つだけ）。`example` で確かめる |
 | `relate` | rule 同士の関係（`then` / `then no` / `before` / `>` / `else`） |
-| `action` | AI が中身を書く部分。`example`、`never`、`else` の契約を付ける |
+| `action` | 計算や判定の部品。`example`、`never`、`else` の約束を先に書き、中身は `do` か `by python` で書く（`by ai` で AI に任せることもできる） |
+| `model` | レコードから学んで状態を当てる部品。当てるもの、見てよい項目、合格の条件、使えないときを書く |
+| `job` | 下の層のプログラム（学習など）を、約束（`confirm` / `require` / `suspect`）付きで走らせる |
+| `connect` | 外部サービスとの境界。`with` / `confirm` で、渡した設定が効いたかを照合できる |
 | `scene` / `look` / `part` / `input` / `style` / `words` | 画面、見せ方、部品、入力、見た目、言葉（日本語と英語） |
 | `use std/...` | 標準ライブラリ（日付、金額、メール、電話） |
 | `tbd` / `##` | まだ決めていないこと。残っていると動かない |
@@ -152,18 +200,18 @@ pip install -e .                           # 入れると `ponte run spec/todo.p
 | `ponte/` | 言語の本体（パーサ、チェッカー、実行エンジン、画面、AI による穴埋め）。[docs/仕組み.md](docs/仕組み.md) を参照 |
 | `ponte/std/` | 標準ライブラリ。中身も Ponte で書いている |
 | `spec/` | 見本のアプリ |
-| `tests/` | テスト（320件ほど） |
+| `tests/` | テスト（490件ほど） |
 | `docs/` | 仕様書、入門、しくみ、設計の判断、画面の写真 |
 | `site/` | ホームページ。`python site/make.py && python site/build.py` で作り、main に入ると GitHub Pages に出る |
 | `experiment/` | 比較実験（プロンプト、AI の返答、採点） |
 | `editor/vscode/` | エディタの色分けと、保存時のエラー表示 |
-| `archive/v01/` | 最初の版（当時のまま） |
+| `docs/history/` | 作業の記録と、最初の版（当時のまま） |
 
 記録は次のとおりです。
 
 - [CHANGELOG.md](CHANGELOG.md): 何が入ったか
-- [REPORT.md](REPORT.md): 作業の記録
-- [REVIEW.md](REVIEW.md): 弱いパーツと欲しいもの
+- [docs/history/REPORT.md](docs/history/REPORT.md): 作業の記録
+- [docs/history/REVIEW.md](docs/history/REVIEW.md): 弱いパーツと欲しいもの
 - [docs/DECISIONS.md](docs/DECISIONS.md): 設計の判断
 
 手を入れる場合は [CONTRIBUTING.md](CONTRIBUTING.md) を読んでください。
@@ -173,6 +221,6 @@ pip install -e .                           # 入れると `ponte run spec/todo.p
 - ログインは合言葉だけです。`ponte run --login` で、名前と合言葉によるログインになります（`--login` なしで外に開こうとすると止まります）。メールでの確認や、合言葉を忘れたときの手続きはまだありません。
 - example と never に書いていないことは守れません。穴さがしで「書いていない部分」は見えますが、書くのは人です。
 - 道具はまだ少なめです。each、group by、json などは「まだない道具」として、書くとエラーになります。
-- 外への通知は、まだ画面の中だけです。メールや LINE に送る部分（connect の does）は形だけで、実際につなぐのは中身の仕事です。
+- 外への通知は、まだ画面の中だけです。メールや LINE に送るには、connect の中身を `by python` で書く必要があります。
 - 地図は出せません。画像は `image` で出せます。
 - 1台で動かす前提です。データは1つのファイルに追記します。たくさんの人が同時に使う大きなサービスには向きません。

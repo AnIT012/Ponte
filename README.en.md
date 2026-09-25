@@ -2,7 +2,7 @@
 
 <img src="docs/logo/ponte.svg" alt="Ponte" width="96">
 
-**[Website](https://anit012.github.io/nameless-lang/)** · **[Try it in the browser](https://anit012.github.io/nameless-lang/play.html)** · [Write from scratch](https://anit012.github.io/nameless-lang/write.html) · [日本語](README.md)
+**[Website](https://anit012.github.io/Ponte/)** · **[Try it in the browser](https://anit012.github.io/Ponte/play.html)** · [Write from scratch](https://anit012.github.io/Ponte/write.html) · [日本語](README.md)
 
 
 > *Ponte* is Italian for "bridge": between people and machines, and between people and AI.
@@ -103,8 +103,8 @@ $ python -m ponte check todo.ponte
 ## Getting started
 
 ```
-git clone https://github.com/AnIT012/nameless-lang
-cd nameless-lang
+git clone https://github.com/AnIT012/Ponte
+cd Ponte
 python -m ponte run spec/todo.ponte          # → http://127.0.0.1:8000/
 ```
 

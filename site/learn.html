@@ -316,7 +316,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px dashed va
     <a href="learn.html" aria-current="page">入門</a>
     <a href="reference.html">道具とエラー</a>
     <a href="spec.html">仕様書</a>
-    <a href="https://github.com/AnIT012/nameless-lang">GitHub</a>
+    <a href="https://github.com/AnIT012/Ponte">GitHub</a>
   </nav>
 </header>
 
@@ -325,7 +325,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px dashed va
   <article class="prose">
     <p class="eyebrow">LEARN</p>
     <h1>入門 — やることアプリを作る</h1>
-<p class="lead">やることアプリを、エラーを見ながら1歩ずつ作ります。できあがりは <a href="https://github.com/AnIT012/nameless-lang/blob/main/spec/todo.ponte">spec/todo.ponte</a> です。ここに載せたエラーは、<code>python -m ponte check</code> / <code>test</code> を実際に流したときの出力です。</p>
+<p class="lead">やることアプリを、エラーを見ながら1歩ずつ作ります。できあがりは <a href="https://github.com/AnIT012/Ponte/blob/main/spec/todo.ponte">spec/todo.ponte</a> です。ここに載せたエラーは、<code>python -m ponte check</code> / <code>test</code> を実際に流したときの出力です。</p>
 <p>必要なのは Python 3.11 だけです。インストールする前に試したいときは、ホームページの「試す」を使うと、ブラウザの中で書いて確かめられます。</p>
 <p>「試す」ページや、<code>ponte lsp</code> を使うエディタでは、<code>rule</code> や <code>action</code> などの見出しを書いて Enter を押すと、その見出しに必須の部品の名前（<code>when</code>、<code>do</code> など）だけが入ります。中身は自分で埋めます。Tab で次の部品へ移れます。</p>
 <hr>
@@ -448,7 +448,7 @@ Stopped: 1 error(s)
 <span class="prompt">$</span> python -m ponte run todo.ponte --login --host 0.0.0.0</pre>
 <hr>
 <h2 id="次に読むもの">次に読むもの</h2>
-<ul><li>AI に中身を書かせる（action）: 仕様書 5章の action と、<a href="https://github.com/AnIT012/nameless-lang/blob/main/spec/hub_app.ponte">spec/hub_app.ponte</a> の ExtractDeadline</li><li>標準ライブラリ: <a href="https://github.com/AnIT012/nameless-lang/blob/main/spec/kakeibo.ponte">spec/kakeibo.ponte</a>（<code>use std/money</code> で金額を拾います）</li><li>役割と2つの thing: <a href="https://github.com/AnIT012/nameless-lang/blob/main/spec/lend.ponte">spec/lend.ponte</a></li><li>言語のすべて: <a href="spec.html">仕様書 v0.3</a></li><li>書き方の一覧: <code>python -m ponte guide --rules</code>（rule）/ <code>python -m ponte guide</code>（action の中身）</li></ul>
+<ul><li>AI に中身を書かせる（action）: 仕様書 5章の action と、<a href="https://github.com/AnIT012/Ponte/blob/main/spec/hub_app.ponte">spec/hub_app.ponte</a> の ExtractDeadline</li><li>標準ライブラリ: <a href="https://github.com/AnIT012/Ponte/blob/main/spec/kakeibo.ponte">spec/kakeibo.ponte</a>（<code>use std/money</code> で金額を拾います）</li><li>役割と2つの thing: <a href="https://github.com/AnIT012/Ponte/blob/main/spec/lend.ponte">spec/lend.ponte</a></li><li>言語のすべて: <a href="spec.html">仕様書 v0.3</a></li><li>書き方の一覧: <code>python -m ponte guide --rules</code>（rule）/ <code>python -m ponte guide</code>（action の中身）</li></ul>
   </article>
 </div>
 <footer><p>この入門に載せた出力は、実際にコマンドを流した結果です。テストで一致を確かめています。</p></footer>

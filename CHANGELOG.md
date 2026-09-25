@@ -1,6 +1,6 @@
 # 変更の記録
 
-細かい作業の記録は [REPORT.md](REPORT.md)。ここは「何が入ったか」だけ。
+細かい作業の記録は [docs/history/REPORT.md](docs/history/REPORT.md)。ここは「何が入ったか」だけ。
 
 ## 上位レイヤーの言語へ（2026-09-24）
 
@@ -120,4 +120,4 @@
 
 ## v0.1（2026-09-22）
 
-最初の版。パーサとチェッカー、Go への変換、比較実験。今は [archive/v01/](archive/v01/) に当時のまま。
+最初の版。パーサとチェッカー、Go への変換、比較実験。今は [docs/history/archive/v01/](docs/history/archive/v01/) に当時のまま。
